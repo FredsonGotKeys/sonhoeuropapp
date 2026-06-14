@@ -6,7 +6,7 @@ import { cookies } from 'next/headers'
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 
 export async function verifyAdminPassword(password: string) {
-  if (password !== process.env.ADMIN_PASSWORD) return { error: 'Senha incorrecta' }
+  if (password.trim() !== (process.env.ADMIN_PASSWORD ?? '').trim()) return { error: 'Senha incorrecta' }
   const cookieStore = await cookies()
   cookieStore.set('admin-session', 'authenticated', {
     httpOnly: true,
