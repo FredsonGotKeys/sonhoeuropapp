@@ -1,0 +1,38 @@
+{
+  "name": "SonhoEuropa",
+  "short_name": "SonhoEuropa",
+  "description": "O teu sonho começa aqui. Deposita, acumula pontos e concorre a 150 000 MT para a Europa.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#003399",
+  "theme_color": "#003399",
+  "orientation": "portrait",
+  "lang": "pt",
+  "categories": ["finance", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Meu Dashboard",
+      "url": "/dashboard",
+      "description": "Ver o meu dashboard"
+    },
+    {
+      "name": "Registar",
+      "url": "/register",
+      "description": "Criar nova conta"
+    }
+  ]
+}
