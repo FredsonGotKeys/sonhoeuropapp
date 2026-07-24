@@ -2,134 +2,116 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Phone, Mail, MessageCircle, ArrowLeft, Clock, Shield } from 'lucide-react'
+import { Phone, Mail, MessageCircle, ArrowLeft, Clock, Shield, ArrowRight } from 'lucide-react'
 
 export default function ContactoPage() {
   const whatsappUrl = 'https://wa.me/258846283051?text=' + encodeURIComponent('Ola, preciso de ajuda com o SonhoEuropa!')
 
+  const channels = [
+    {
+      href: whatsappUrl,
+      target: '_blank',
+      icon: MessageCircle,
+      color: 'var(--emerald)',
+      title: 'WhatsApp',
+      subtitle: '+258 84 628 3051',
+      badge: 'Rápido',
+    },
+    {
+      href: 'tel:+258846283051',
+      icon: Phone,
+      color: 'var(--cobalt)',
+      title: 'Ligar',
+      subtitle: '+258 84 628 3051',
+    },
+    {
+      href: 'tel:+258876252006',
+      icon: Phone,
+      color: 'var(--cobalt)',
+      title: 'Ligar (alternativo)',
+      subtitle: '+258 87 625 2006',
+    },
+    {
+      href: 'mailto:minville@outlook.pt',
+      icon: Mail,
+      color: 'var(--amber)',
+      title: 'Email',
+      subtitle: 'minville@outlook.pt',
+    },
+  ]
+
   return (
-    <div
-      className="min-h-screen flex flex-col items-center px-4 py-10"
-      style={{ background: 'linear-gradient(160deg, #001f6b 0%, #003399 50%, #1D9E75 100%)' }}
-    >
-      {/* Header */}
-      <div className="text-center mb-8">
-        <Link href="/" className="inline-flex flex-col items-center gap-2 group">
-          <Image
-            src="/images/logo.avif"
-            alt="SonhoEuropa"
-            width={56}
-            height={56}
-            className="rounded-2xl shadow-lg group-hover:scale-105 transition-transform"
-          />
-          <h1 className="text-white font-black text-2xl tracking-tight">SonhoEuropa</h1>
-        </Link>
-        <p className="text-white/50 text-sm mt-1">Estamos aqui para te ajudar</p>
-      </div>
+    <div className="min-h-screen flex flex-col items-center px-5 py-12" style={{ background: 'var(--bg)' }}>
 
-      {/* Card principal */}
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
-        <div className="px-6 pt-6 pb-4 border-b" style={{ borderColor: '#F5F5F0' }}>
-          <h2 className="font-black text-xl" style={{ color: '#003399' }}>Contacto e Suporte</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Resposta em menos de 24 horas</p>
-        </div>
+      <Link href="/" className="flex items-center gap-2.5 mb-10 animate-enter-down">
+        <Image src="/images/logo.avif" alt="SonhoEuropa" width={36} height={36} className="rounded-lg" />
+        <span className="font-extrabold text-lg tracking-tight" style={{ color: 'var(--fg)' }}>
+          Sonho<span style={{ color: 'var(--cobalt)' }}>Europa</span>
+        </span>
+      </Link>
 
-        <div className="p-6 space-y-4">
-          {/* WhatsApp - principal */}
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-4 p-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-95"
-            style={{ backgroundColor: '#25D36610', border: '2px solid #25D36630' }}
-          >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#25D366' }}>
-              <MessageCircle className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-black text-sm" style={{ color: '#25D366' }}>WhatsApp</p>
-              <p className="text-gray-500 text-sm">+258 84 628 3051</p>
-              <p className="text-xs text-gray-400 mt-0.5">Resposta rapida · Clica para abrir</p>
-            </div>
-            <ArrowLeft className="w-4 h-4 text-gray-300 rotate-180" />
-          </a>
+      <div className="w-full max-w-md animate-enter-up delay-1">
+        <div className="card p-6">
+          <h2 className="t-heading text-xl mb-1" style={{ color: 'var(--fg)' }}>Contacto e Suporte</h2>
+          <p className="text-sm mb-5" style={{ color: 'var(--fg-muted)' }}>Resposta em menos de 24 horas</p>
 
-          {/* Telefone */}
-          <a
-            href="tel:+258846283051"
-            className="flex items-center gap-4 p-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-95"
-            style={{ backgroundColor: '#00339908', border: '1.5px solid #00339920' }}
-          >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#003399' }}>
-              <Phone className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-black text-sm" style={{ color: '#003399' }}>Ligar</p>
-              <p className="text-gray-500 text-sm">+258 84 628 3051</p>
-            </div>
-          </a>
+          <div className="space-y-2">
+            {channels.map((ch, i) => (
+              <a
+                key={i}
+                href={ch.href}
+                target={ch.target}
+                rel={ch.target ? 'noopener noreferrer' : undefined}
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:shadow-sm"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                <div
+                  className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0"
+                  style={{ background: `color-mix(in srgb, ${ch.color} 10%, transparent)`, color: ch.color }}
+                >
+                  <ch.icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-sm" style={{ color: 'var(--fg)' }}>{ch.title}</p>
+                    {ch.badge && (
+                      <span className="badge" style={{ background: `color-mix(in srgb, ${ch.color} 10%, transparent)`, color: ch.color }}>{ch.badge}</span>
+                    )}
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--fg-muted)' }}>{ch.subtitle}</p>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--fg-subtle)' }} />
+              </a>
+            ))}
+          </div>
 
-          {/* Telefone 2 */}
-          <a
-            href="tel:+258876252006"
-            className="flex items-center gap-4 p-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-95"
-            style={{ backgroundColor: '#00339908', border: '1.5px solid #00339920' }}
-          >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#003399' }}>
-              <Phone className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-black text-sm" style={{ color: '#003399' }}>Ligar (alternativo)</p>
-              <p className="text-gray-500 text-sm">+258 87 625 2006</p>
-            </div>
-          </a>
+          <hr className="divider my-5" />
 
-          {/* Email */}
-          <a
-            href="mailto:minville@outlook.pt"
-            className="flex items-center gap-4 p-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-95"
-            style={{ backgroundColor: '#EF9F2708', border: '1.5px solid #EF9F2720' }}
-          >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#EF9F27' }}>
-              <Mail className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-black text-sm" style={{ color: '#EF9F27' }}>Email</p>
-              <p className="text-gray-500 text-sm">minville@outlook.pt</p>
-            </div>
-          </a>
-
-          {/* Info */}
-          <div className="pt-4 border-t space-y-3" style={{ borderColor: '#F5F5F0' }}>
+          <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Clock className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
+              <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--fg-subtle)' }} />
               <div>
-                <p className="text-sm font-semibold text-gray-600">Horario de atendimento</p>
-                <p className="text-xs text-gray-400">Segunda a Sabado, 08h00 - 20h00</p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>Horário</p>
+                <p className="text-xs" style={{ color: 'var(--fg-muted)' }}>Segunda a Sábado, 08h00 - 20h00</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Shield className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
+              <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--fg-subtle)' }} />
               <div>
-                <p className="text-sm font-semibold text-gray-600">Responsavel</p>
-                <p className="text-xs text-gray-400">Fredson Bernardo Muianga · Maputo, Mocambique</p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>Responsável</p>
+                <p className="text-xs" style={{ color: 'var(--fg-muted)' }}>Fredson Bernardo Muianga · Maputo</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Links */}
-      <div className="flex gap-4 mt-6">
-        <Link href="/" className="text-white/30 text-xs hover:text-white/60 transition-colors">
-          Inicio
+      <div className="flex gap-6 mt-8">
+        <Link href="/" className="text-xs flex items-center gap-1 group" style={{ color: 'var(--fg-subtle)' }}>
+          <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" /> Início
         </Link>
-        <Link href="/privacidade" className="text-white/30 text-xs hover:text-white/60 transition-colors">
-          Privacidade
-        </Link>
-        <Link href="/dashboard" className="text-white/30 text-xs hover:text-white/60 transition-colors">
-          Dashboard
-        </Link>
+        <Link href="/privacidade" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Privacidade</Link>
+        <Link href="/dashboard" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Dashboard</Link>
       </div>
     </div>
   )

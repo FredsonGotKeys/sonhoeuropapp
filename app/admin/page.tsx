@@ -70,7 +70,7 @@ function TabDashboard({ stats }: { stats: any }) {
           { label: 'Fundo Acumulado', value: formatMT(ciclo?.total_acumulado ?? 0), icon: <TrendingUp className="w-4 h-4" />, color: '#003399' },
           { label: 'Participantes', value: stats?.totalParticipantes ?? 0, icon: <Users className="w-4 h-4" />, color: '#1D9E75' },
           { label: 'Depósitos (bruto)', value: formatMT(fin.depositosBruto ?? 0), icon: <DollarSign className="w-4 h-4" />, color: '#EF9F27' },
-          { label: 'Inscrições (bruto)', value: formatMT(fin.inscricoesBruto ?? 0), icon: <CreditCard className="w-4 h-4" />, color: '#7c3aed' },
+          { label: 'Inscrições (bruto)', value: formatMT(fin.totalInscricoes ?? 0), icon: <CreditCard className="w-4 h-4" />, color: '#7c3aed' },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-2" style={{ color: s.color }}>
@@ -113,7 +113,7 @@ function TabDashboard({ stats }: { stats: any }) {
         <div className="rounded-xl overflow-hidden text-sm" style={{ border: '1px solid #e5e7eb' }}>
           <table className="w-full">
             <thead>
-              <tr style={{ backgroundColor: '#F5F5F0' }}>
+              <tr style={{ backgroundColor: 'var(--background)' }}>
                 <th className="text-left py-2 px-4 text-xs font-bold text-gray-400">Fonte</th>
                 <th className="text-right py-2 px-4 text-xs font-bold text-gray-400">Valor Recebido</th>
                 <th className="text-right py-2 px-4 text-xs font-bold text-gray-400">Tua Receita</th>
@@ -177,7 +177,7 @@ function TabDashboard({ stats }: { stats: any }) {
               {((ciclo?.total_acumulado ?? 0) / (ciclo?.meta ?? 150000) * 100).toFixed(1)}%
             </span>
           </div>
-          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#F5F5F0' }}>
+          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--background)' }}>
             <div className="h-full rounded-full transition-all"
               style={{ width: `${Math.min(((ciclo?.total_acumulado ?? 0) / (ciclo?.meta ?? 150000)) * 100, 100)}%`, background: 'linear-gradient(90deg, #EF9F27, #f5c056)' }} />
           </div>
@@ -191,7 +191,7 @@ function TabDashboard({ stats }: { stats: any }) {
 function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; onRefresh: () => void }) {
   const [search, setSearch] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ nome: '', pontos_total: 0, pontos_ciclo_actual: 0, streak_dias: 0 })
+  const [editForm, setEditForm] = useState({ nome: '' })
   const [detalheId, setDetalheId] = useState<string | null>(null)
   const [detalhes, setDetalhes] = useState<any>(null)
   const [confirm, setConfirm] = useState<{ id: string; nome: string } | null>(null)
@@ -201,20 +201,25 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
   const filtered = participantes.filter(u =>
     u.nome?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())
+  ).sort((a, b) => sortBy === 'depositos'
+    ? (b.total_depositado ?? 0) - (a.total_depositado ?? 0)
+    : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
   const formatMT = (v: number) => `${(v ?? 0).toLocaleString('pt-PT')} MT`
 
+  const [sortBy, setSortBy] = useState<'registro' | 'depositos'>('depositos')
+
   const iniciarEdicao = (u: any) => {
     setEditId(u.id)
-    setEditForm({ nome: u.nome, pontos_total: u.pontos_total, pontos_ciclo_actual: u.pontos_ciclo_actual, streak_dias: u.streak_dias })
+    setEditForm({ nome: u.nome })
   }
 
   const guardarEdicao = async () => {
     if (!editId) return
     setLoading('edit-' + editId)
-    const res = await editarParticipante(editId, editForm)
+    const res = await editarParticipante(editId, { nome: editForm.nome })
     if (res.error) setMsg('Erro: ' + res.error)
     else { setMsg('Guardado com sucesso'); setEditId(null); onRefresh() }
     setLoading(null)
@@ -267,6 +272,18 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
           />
         </div>
         <p className="text-xs text-gray-400 mt-2">{filtered.length} de {participantes.length} participantes</p>
+        <div className="flex gap-2 mt-2">
+          <button onClick={() => setSortBy('depositos')}
+            className="text-xs px-3 py-1 rounded-full font-semibold transition-colors"
+            style={{ backgroundColor: sortBy === 'depositos' ? '#003399' : '#f3f4f6', color: sortBy === 'depositos' ? '#fff' : '#666' }}>
+            Maior depositante
+          </button>
+          <button onClick={() => setSortBy('registro')}
+            className="text-xs px-3 py-1 rounded-full font-semibold transition-colors"
+            style={{ backgroundColor: sortBy === 'registro' ? '#003399' : '#f3f4f6', color: sortBy === 'registro' ? '#fff' : '#666' }}>
+            Mais recente
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -274,8 +291,8 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ backgroundColor: '#F5F5F0' }}>
-                {['#', 'Nome / Email', 'Pts Total', 'Pts Ciclo', 'Streak', 'Registo', 'Acções'].map(h => (
+              <tr style={{ backgroundColor: 'var(--background)' }}>
+                {['#', 'Nome / Email', 'Total Depositado', 'Registo', 'Acções'].map(h => (
                   <th key={h} className="text-left py-2.5 px-4 text-xs font-bold text-gray-400 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -297,28 +314,9 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                       )}
                     </td>
                     <td className="py-3 px-4">
-                      {editId === u.id ? (
-                        <input type="number" className="border rounded-lg px-2 py-1 text-sm w-20 outline-none" style={{ borderColor: '#003399' }}
-                          value={editForm.pontos_total} onChange={e => setEditForm(f => ({ ...f, pontos_total: Number(e.target.value) }))} />
-                      ) : (
-                        <span className="font-bold" style={{ color: '#003399' }}>{u.pontos_total}</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editId === u.id ? (
-                        <input type="number" className="border rounded-lg px-2 py-1 text-sm w-20 outline-none" style={{ borderColor: '#003399' }}
-                          value={editForm.pontos_ciclo_actual} onChange={e => setEditForm(f => ({ ...f, pontos_ciclo_actual: Number(e.target.value) }))} />
-                      ) : (
-                        <span className="font-semibold text-gray-600">{u.pontos_ciclo_actual}</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editId === u.id ? (
-                        <input type="number" className="border rounded-lg px-2 py-1 text-sm w-16 outline-none" style={{ borderColor: '#003399' }}
-                          value={editForm.streak_dias} onChange={e => setEditForm(f => ({ ...f, streak_dias: Number(e.target.value) }))} />
-                      ) : (
-                        <span className="text-orange-500 font-bold">{u.streak_dias}d</span>
-                      )}
+                      <span className="font-bold" style={{ color: (u.total_depositado ?? 0) > 0 ? '#003399' : '#ccc' }}>
+                        {formatMT(u.total_depositado ?? 0)}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-gray-400 text-xs whitespace-nowrap">{formatDate(u.created_at)}</td>
                     <td className="py-3 px-4">
@@ -357,12 +355,12 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                   {/* Detalhe expandido */}
                   {detalheId === u.id && (
                     <tr style={{ borderColor: '#F5F5F0' }}>
-                      <td colSpan={7} className="px-4 pb-4">
+                      <td colSpan={5} className="px-4 pb-4">
                         {!detalhes ? (
                           <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-300" /></div>
                         ) : (
                           <div className="grid sm:grid-cols-3 gap-3 pt-2">
-                            <div className="p-3 rounded-xl" style={{ backgroundColor: '#F5F5F0' }}>
+                            <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
                               <p className="text-xs font-bold text-gray-500 mb-2">Depósitos ({detalhes.depositos.length})</p>
                               {detalhes.depositos.slice(0, 5).map((d: any) => (
                                 <div key={d.id} className="flex justify-between text-xs py-1 border-b" style={{ borderColor: '#e5e7eb' }}>
@@ -372,7 +370,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                               ))}
                               {detalhes.depositos.length === 0 && <p className="text-xs text-gray-400">Sem depósitos</p>}
                             </div>
-                            <div className="p-3 rounded-xl" style={{ backgroundColor: '#F5F5F0' }}>
+                            <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
                               <p className="text-xs font-bold text-gray-500 mb-2">Inscrições ({detalhes.inscricoes.length})</p>
                               {detalhes.inscricoes.map((ins: any) => (
                                 <div key={ins.ciclo_id} className="text-xs py-1">
@@ -382,7 +380,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                               ))}
                               {detalhes.inscricoes.length === 0 && <p className="text-xs text-gray-400">Não inscrito</p>}
                             </div>
-                            <div className="p-3 rounded-xl" style={{ backgroundColor: '#F5F5F0' }}>
+                            <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
                               <p className="text-xs font-bold text-gray-500 mb-2">Pagamentos ({detalhes.pagamentos.length})</p>
                               {detalhes.pagamentos.slice(0, 4).map((pg: any) => (
                                 <div key={pg.id} className="flex justify-between items-center text-xs py-1">
@@ -556,7 +554,7 @@ function TabPagamentos() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ backgroundColor: '#F5F5F0' }}>
+                <tr style={{ backgroundColor: 'var(--background)' }}>
                   <th className="py-2.5 px-4">
                     <input type="checkbox" checked={todosSelecionados} onChange={toggleTodos}
                       className="w-4 h-4 rounded cursor-pointer accent-blue-700" />
@@ -704,7 +702,7 @@ function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
   }
 
   const novoCiclo = async () => {
-    if (!confirm('Criar novo ciclo? O ciclo actual será fechado e os pontos do ciclo resetados.')) return
+    if (!confirm('Criar novo ciclo? O ciclo actual será fechado e as inscrições resetadas.')) return
     setCriando(true)
     const res = await criarNovoCiclo()
     if (res.error) setMsg('Erro: ' + res.error)
@@ -740,7 +738,7 @@ function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ backgroundColor: '#F5F5F0' }}>
+                <tr style={{ backgroundColor: 'var(--background)' }}>
                   {['Estado', 'Acumulado', 'Meta', 'Inscritos', 'Mínimo', 'Criado', 'Concluído', 'Alterar Estado'].map(h => (
                     <th key={h} className="text-left py-2.5 px-4 text-xs font-bold text-gray-400 whitespace-nowrap">{h}</th>
                   ))}
@@ -864,7 +862,7 @@ function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void })
         >
           {realizando
             ? <><RefreshCw className="w-4 h-4 animate-spin" /> A realizar sorteio...</>
-            : <><Trophy className="w-4 h-4" /> Realizar Sorteio Ponderado</>}
+            : <><Trophy className="w-4 h-4" /> Seleccionar Vencedor</>}
         </button>
         {!canSorteio && (
           <p className="text-xs text-center text-gray-400 mt-2">
@@ -882,7 +880,7 @@ function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void })
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ backgroundColor: '#F5F5F0' }}>
+                <tr style={{ backgroundColor: 'var(--background)' }}>
                   {['Vencedor', 'Email', 'Prémio', 'Fundo Total', 'Data'].map(h => (
                     <th key={h} className="text-left py-2.5 px-4 text-xs font-bold text-gray-400">{h}</th>
                   ))}
@@ -937,7 +935,7 @@ export default function AdminPage() {
   ]
 
   return (
-    <div className="min-h-screen pb-10" style={{ backgroundColor: '#F5F5F0' }}>
+    <div className="min-h-screen pb-10" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
       <header className="bg-white sticky top-0 z-40" style={{ borderBottom: '3px solid #003399' }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">

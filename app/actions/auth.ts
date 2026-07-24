@@ -4,13 +4,25 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 
-export async function login(formData: FormData) {
-  const supabase = await createClient()
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const NOME_MAX = 120
+const PASSWORD_MIN = 6
+const INVITE_RE = /^[A-Z0-9]{4,16}$/
 
+function sanitize(s: string): string {
+  return s.replace(/<[^>]*>/g, '').trim()
+}
+
+export async function login(formData: FormData) {
+  const email = (formData.get('email') as string ?? '').trim().toLowerCase()
+  const password = formData.get('password') as string ?? ''
+
+  if (!EMAIL_RE.test(email)) return { error: 'Email inválido' }
+  if (password.length < PASSWORD_MIN) return { error: 'Senha demasiado curta' }
+
+  const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) return { error: error.message }
+  if (error) return { error: 'Email ou senha incorrectos' }
 
   redirect('/dashboard')
 }
@@ -21,60 +33,53 @@ export async function register(data: {
   nome: string
   codigoConvite?: string
 }) {
+  const email = (data.email ?? '').trim().toLowerCase()
+  const password = data.password ?? ''
+  const nome = sanitize(data.nome ?? '').slice(0, NOME_MAX)
+  const codigoConvite = (data.codigoConvite ?? '').trim().toUpperCase()
+
+  if (!EMAIL_RE.test(email)) return { error: 'Email inválido' }
+  if (password.length < PASSWORD_MIN) return { error: 'Senha deve ter pelo menos 6 caracteres' }
+  if (nome.length < 2) return { error: 'Nome é obrigatório' }
+  if (codigoConvite && !INVITE_RE.test(codigoConvite)) return { error: 'Código de convite inválido' }
+
   const supabase = await createClient()
   const admin = createAdminClient()
 
   let convidadoPor: string | null = null
 
-  if (data.codigoConvite) {
+  if (codigoConvite) {
     const { data: inviter } = await admin
       .from('usuarios')
       .select('id')
-      .eq('codigo_convite', data.codigoConvite.toUpperCase())
+      .eq('codigo_convite', codigoConvite)
       .maybeSingle()
     convidadoPor = inviter?.id ?? null
   }
 
   const { data: authData, error } = await supabase.auth.signUp({
-    email: data.email,
-    password: data.password,
+    email,
+    password,
   })
 
   if (error) {
-    console.error('Supabase signUp error:', JSON.stringify(error, null, 2))
-    return { error: error.message || error.code || JSON.stringify(error) }
+    if (error.message?.includes('already registered')) return { error: 'Este email já está registado' }
+    return { error: 'Erro ao criar conta. Tenta novamente.' }
   }
   if (!authData.user) return { error: 'Erro ao criar conta' }
 
   const { error: dbError } = await admin.from('usuarios').insert({
     id: authData.user.id,
-    email: data.email,
-    nome: data.nome,
+    email,
+    nome,
     convidado_por: convidadoPor,
+    total_depositado: 0,
+    termos_aceites_at: new Date().toISOString(),
   })
 
   if (dbError) {
-    if (dbError.code === '23505') return { error: 'Este email ja esta registado' }
-    return { error: dbError.message || JSON.stringify(dbError) }
-  }
-
-  if (convidadoPor) {
-    const { data: inviterData } = await admin
-      .from('usuarios')
-      .select('pontos_total')
-      .eq('id', convidadoPor)
-      .single()
-
-    await Promise.all([
-      admin.from('pontos_bonus').insert({
-        usuario_id: convidadoPor,
-        tipo: 'convite',
-        pontos: 50,
-      }),
-      admin.from('usuarios').update({
-        pontos_total: (inviterData?.pontos_total ?? 0) + 50,
-      }).eq('id', convidadoPor),
-    ])
+    if (dbError.code === '23505') return { error: 'Este email já está registado' }
+    return { error: 'Erro ao criar conta. Tenta novamente.' }
   }
 
   if (!authData.session) {

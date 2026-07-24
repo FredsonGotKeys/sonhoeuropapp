@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  LogOut, Copy, Share2, TrendingUp, Star, Flame,
+  LogOut, Copy, Share2, TrendingUp, Star,
   Trophy, Clock, Check, Home, Wallet, Users, Gift,
   AlertCircle, ChevronRight, ShieldCheck, Smartphone, Banknote,
   Mail, Info, Send, ClipboardPaste, CheckCircle2, ImagePlus, X, FileText,
@@ -69,7 +69,7 @@ interface PagamentoHistorico {
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
   aguardando_comprovativo: { label: 'Aguardando comprovativo', bg: '#7c3aed12', color: '#7c3aed' },
   pendente_confirmacao:    { label: 'Em analise',             bg: '#EF9F2712', color: '#EF9F27' },
-  pendente:                { label: 'Pendente',               bg: '#F5F5F0',   color: '#888' },
+  pendente:                { label: 'A aguardar pagamento',   bg: '#3b82f612', color: '#3b82f6' },
   confirmado:              { label: 'Confirmado',             bg: '#1D9E7512', color: '#1D9E75' },
   falhado:                 { label: 'Recusado',               bg: '#fee2e2',   color: '#dc2626' },
 }
@@ -112,7 +112,7 @@ function DadosPagamento({ method, valor }: { method: PayMethod; valor: number })
             {copiado ? 'Copiado!' : 'Copiar'}
           </button>
         </div>
-        <div className="h-px" style={{ backgroundColor: '#F5F5F0' }} />
+        <div className="h-px" style={{ backgroundColor: 'var(--background)' }} />
         <div className="flex justify-between text-sm">
           <span className="text-gray-400">Nome</span>
           <span className="font-bold text-gray-700">{info.nome}</span>
@@ -297,19 +297,18 @@ function CampoComprovativo({
 
 // ─── Termos e Condições ────────────────────────────────────────────────────
 const TERMOS = [
-  { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos diarios para um fundo colectivo. Quando o fundo atinge a meta de 150 000 MT, um sorteio ponderado selecciona um vencedor que recebe o premio integral em dinheiro. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
+  { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos para um fundo colectivo. Quando o fundo atinge a meta de 150 000 MT, o sistema selecciona o vencedor de forma ponderada — quem deposita mais tem maiores chances de ganhar. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
   { t: '2. Inscricao e elegibilidade', p: 'Para participar, o utilizador deve: (a) ter pelo menos 18 anos de idade; (b) possuir um numero de telefone valido para M-Pesa ou E-Mola; (c) pagar a taxa de inscricao unica de 200 MT por ciclo. A taxa de inscricao cobre custos operacionais e nao e reembolsavel apos confirmacao do pagamento. Cada pessoa so pode ter uma conta na plataforma.' },
-  { t: '3. Depositos diarios', p: 'O valor minimo por deposito e 20 MT, sem limite maximo. Cada 10 MT depositados gera 1 ponto no sistema de sorteio ponderado. Os depositos sao feitos por transferencia directa via M-Pesa (846283051) ou E-Mola (876252006) para Fredson Bernardo Muianga, seguidos do envio de comprovativo (texto ou screenshot) na plataforma. O deposito so e contabilizado apos confirmacao manual pelo administrador.' },
+  { t: '3. Depositos', p: 'O valor minimo por deposito e 100 MT, sem limite maximo. Os depositos sao feitos por transferencia directa via M-Pesa (846283051) ou E-Mola (876252006) para Fredson Bernardo Muianga, seguidos do envio de comprovativo (texto ou screenshot) na plataforma, ou por pedido automatico (STK push) no telefone. O deposito so e contabilizado apos confirmacao.' },
   { t: '4. Taxa de gestao e sustentabilidade', p: 'De cada deposito efectuado, 10% (dez por cento) do valor e alocado a gestao e manutencao da plataforma, cobrindo custos operacionais, suporte tecnico, alojamento do sistema, e seguranca. Os restantes 90% sao integralmente direccionados ao fundo comunitario. Exemplo: num deposito de 100 MT, 10 MT vao para gestao e 90 MT vao para o fundo. A taxa de inscricao (200 MT) e integralmente destinada a custos operacionais e nao entra no fundo do premio.' },
-  { t: '5. Sistema de pontos', p: 'Os pontos determinam a probabilidade de cada participante no sorteio. Formas de ganhar pontos: (a) depositos — 1 ponto por cada 10 MT; (b) convites — 50 pontos por cada amigo que se regista com o teu codigo; (c) streak — bonus de 20% nos pontos apos 7 dias consecutivos de deposito; (d) partilha verificada — 100 pontos. Os pontos do ciclo actual sao usados no sorteio. Os pontos totais acumulam-se entre ciclos como vantagem.' },
-  { t: '6. Sorteio ponderado', p: 'O sorteio e ponderado pelos pontos acumulados no ciclo. Mais pontos significam maior probabilidade de ser seleccionado, mas todos os inscritos com pelo menos 1 ponto tem hipotese. O algoritmo de seleccao utiliza geracao de numeros aleatorios criptograficamente seguros. O sorteio e realizado ao vivo no Instagram e YouTube para total transparencia.' },
-  { t: '7. Condicoes para o sorteio', p: 'O sorteio so e realizado quando o fundo comunitario atinge a meta estabelecida e o administrador determina que as condicoes estao reunidas. Enquanto a meta nao for atingida, o ciclo permanece activo e os depositos continuam a acumular.' },
-  { t: '8. Premio', p: 'O vencedor do sorteio recebe 150 000 MT em dinheiro, entregue directamente via M-Pesa ou transferencia bancaria no prazo de 48 horas apos o sorteio. O premio nao esta sujeito a condicoes adicionais.' },
-  { t: '9. Politica de reembolso', p: 'Os depositos efectuados apos confirmacao nao sao reembolsaveis. A taxa de inscricao nao e reembolsavel apos confirmacao. Em caso de cancelamento de um ciclo por motivo de forca maior antes de atingir as condicoes do sorteio, os depositos serao creditados como pontos bonus no ciclo seguinte.' },
-  { t: '10. Privacidade e dados', p: 'Os dados recolhidos (nome, email, numero de telefone) sao utilizados exclusivamente para o funcionamento da plataforma. Nao partilhamos dados com terceiros. Os comprovativos de pagamento sao armazenados de forma segura e acessiveis apenas ao administrador para fins de verificacao.' },
-  { t: '11. Responsabilidade', p: 'A participacao no SonhoEuropa e inteiramente voluntaria. Nao existe garantia de retorno financeiro. O participante reconhece que os depositos sao contribuicoes para um fundo comunitario com caracter de sorteio. A plataforma nao constitui investimento financeiro, jogo de azar regulamentado, ou esquema de rendimento garantido.' },
-  { t: '12. Alteracoes aos termos', p: 'O SonhoEuropa reserva-se o direito de alterar estes termos e condicoes a qualquer momento. As alteracoes serao comunicadas na plataforma e entram em vigor imediatamente apos publicacao. A continuacao do uso da plataforma apos alteracoes constitui aceitacao dos novos termos.' },
-  { t: '13. Contacto', p: 'Para duvidas, reclamacoes ou sugestoes, contacta-nos pelo WhatsApp, redes sociais @SonhoEuropa, ou email suporte@sonhoeuropa.co.mz. Resposta em ate 48 horas uteis.' },
+  { t: '5. Seleccao do vencedor', p: 'O sistema selecciona automaticamente o vencedor quando o fundo atinge a meta estabelecida. A seleccao e ponderada pelo total depositado: quanto mais depositares, maiores sao as tuas chances de ser seleccionado. O algoritmo utiliza geracao de numeros aleatorios criptograficamente seguros para garantir imparcialidade.' },
+  { t: '6. Condicoes para a seleccao', p: 'A seleccao do vencedor so e realizada quando o fundo comunitario atinge a meta estabelecida. Enquanto a meta nao for atingida, o ciclo permanece activo e os depositos continuam a acumular.' },
+  { t: '7. Premio', p: 'O vencedor recebe 150 000 MT em dinheiro, entregue directamente via M-Pesa ou transferencia bancaria no prazo de 48 horas apos a seleccao. O premio nao esta sujeito a condicoes adicionais.' },
+  { t: '8. Politica de reembolso', p: 'Os depositos efectuados apos confirmacao nao sao reembolsaveis. A taxa de inscricao nao e reembolsavel apos confirmacao. Em caso de cancelamento de um ciclo por motivo de forca maior, os valores serao tratados caso a caso pelo administrador.' },
+  { t: '9. Privacidade e dados', p: 'Os dados recolhidos (nome, email, numero de telefone) sao utilizados exclusivamente para o funcionamento da plataforma. Nao partilhamos dados com terceiros. Os comprovativos de pagamento sao armazenados de forma segura e acessiveis apenas ao administrador para fins de verificacao.' },
+  { t: '10. Responsabilidade', p: 'A participacao no SonhoEuropa e inteiramente voluntaria. Nao existe garantia de retorno financeiro. O participante reconhece que os depositos sao contribuicoes para um fundo comunitario com seleccao automatica de vencedor. A plataforma nao constitui investimento financeiro, jogo de azar regulamentado, ou esquema de rendimento garantido.' },
+  { t: '11. Alteracoes aos termos', p: 'O SonhoEuropa reserva-se o direito de alterar estes termos e condicoes a qualquer momento. As alteracoes serao comunicadas na plataforma e entram em vigor imediatamente apos publicacao. A continuacao do uso da plataforma apos alteracoes constitui aceitacao dos novos termos.' },
+  { t: '12. Contacto', p: 'Para duvidas, reclamacoes ou sugestoes, contacta-nos pelo WhatsApp, redes sociais @SonhoEuropa, ou email suporte@sonhoeuropa.co.mz. Resposta em ate 48 horas uteis.' },
 ]
 
 function gerarPdfTermos() {
@@ -335,15 +334,15 @@ function gerarPdfTermos() {
     'maioria das familias.',
     '',
     'A plataforma cria um fundo comunitario onde cada participante contribui com',
-    'pequenos valores diarios (a partir de 20 MT). Quando o fundo atinge 150 000 MT,',
-    'um sorteio ponderado selecciona um vencedor que recebe o premio integral,',
+    'pequenos valores (a partir de 100 MT). Quando o fundo atinge 150 000 MT,',
+    'o sistema selecciona o vencedor de forma ponderada — quem deposita mais tem mais chances de ganhar,',
     'permitindo-lhe dar o primeiro passo rumo ao sonho europeu.',
     '',
     'Principios fundamentais:',
-    '- Transparencia total: fundo visivel em tempo real, sorteio ao vivo',
+    '- Transparencia total: fundo visivel em tempo real para todos',
     '- Acessibilidade: qualquer mocambicano com M-Pesa ou E-Mola pode participar',
-    '- Meritocracia: mais depositas, mais pontos, mais hipoteses',
-    '- Continuidade: pontos nunca se perdem entre ciclos',
+    '- Igualdade: todos os inscritos tem a mesma chance de ganhar',
+    '- Simplicidade: deposita, acompanha o fundo, o sistema faz o resto',
     '',
     '────────────────────────────────────────────',
     '',
@@ -402,7 +401,7 @@ function TermsModal({ onAccept, onClose }: { onAccept: () => void; onClose: () =
           <div className="pt-4 border-t" style={{ borderColor: '#F5F5F0' }}>
             <p className="font-bold text-gray-800 mb-1">Objectivo do Projecto</p>
             <p>O SonhoEuropa nasceu da necessidade real de milhares de mocambicanos que sonham em imigrar para a Europa mas enfrentam barreiras financeiras significativas. Vistos, passagens aereas, alojamento inicial e documentacao podem facilmente ultrapassar 150 000 MT.</p>
-            <p className="mt-2">A plataforma cria um fundo comunitario onde cada participante contribui com pequenos valores diarios. Quando o fundo atinge a meta, um sorteio ponderado selecciona um vencedor que recebe o premio integral, permitindo-lhe dar o primeiro passo rumo ao sonho europeu.</p>
+            <p className="mt-2">A plataforma cria um fundo comunitario onde cada participante contribui com depositos. Quando o fundo atinge a meta, o sistema selecciona o vencedor de forma ponderada — quanto mais depositares, maiores sao as tuas chances. O vencedor recebe o premio integral, permitindo-lhe dar o primeiro passo rumo ao sonho europeu.</p>
           </div>
         </div>
         <div className="px-6 py-4 border-t flex-shrink-0 space-y-2" style={{ borderColor: '#F5F5F0' }}>
@@ -435,7 +434,7 @@ function InscricaoObrigatoria({
   onComprovativoEnviado,
 }: {
   ciclo: Ciclo | null
-  onIniciar: (method: PayMethod) => void
+  onIniciar: (method: PayMethod, telefone?: string) => void
   loading: boolean
   error: string
   pagamentoPendente: PagamentoPendente | null
@@ -443,11 +442,12 @@ function InscricaoObrigatoria({
 }) {
   const [method, setMethod] = useState<PayMethod>('mpesa')
   const [showTerms, setShowTerms] = useState(false)
+  const [tel, setTel] = useState('')
 
-  const metaReal = ciclo ? Math.round(ciclo.meta * 1.2) : 180000
+  const metaReal = ciclo ? ciclo.meta * 2 : 180000
   const metaUtilizador = ciclo?.meta ?? 150000
   const progress = ciclo ? Math.min((ciclo.total_acumulado / metaReal) * 100, 100) : 0
-  const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado / 1.2) : 0
+  const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado / 2) : 0
 
   return (
     <>
@@ -509,14 +509,14 @@ function InscricaoObrigatoria({
                 {
                   icon: <Star className="w-4 h-4" />,
                   color: '#003399',
-                  title: 'Quanto mais participas, mais chances tens',
-                  desc: 'Cada deposito gera pontos. Mais pontos = maior probabilidade no sorteio ponderado. O teu esforco conta.',
+                  title: 'Todos têm a mesma chance',
+                  desc: 'Cada participante inscrito concorre de forma igual. O sistema selecciona o vencedor automaticamente.',
                 },
                 {
                   icon: <Users className="w-4 h-4" />,
                   color: '#1D9E75',
                   title: 'Comunidade real, impacto real',
-                  desc: 'Nao estas sozinho. Centenas de pessoas com o mesmo objectivo, a construir algo juntas. Convida amigos e ganha pontos bonus.',
+                  desc: 'Nao estas sozinho. Centenas de pessoas com o mesmo objectivo, a construir algo juntas.',
                 },
                 {
                   icon: <ShieldCheck className="w-4 h-4" />,
@@ -525,7 +525,7 @@ function InscricaoObrigatoria({
                   desc: 'Fundo visivel em tempo real. Todos os pagamentos sao verificados. O sorteio e justo e auditavel.',
                 },
               ].map((item) => (
-                <div key={item.title} className="flex gap-3 p-3.5 rounded-xl" style={{ backgroundColor: '#F5F5F0' }}>
+                <div key={item.title} className="flex gap-3 p-3.5 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
                     style={{ backgroundColor: item.color }}>
                     {item.icon}
@@ -554,9 +554,9 @@ function InscricaoObrigatoria({
           <div className="space-y-4">
             {[
               { step: '1', title: 'Inscreve-te', desc: 'Paga a taxa unica de inscricao para entrar no ciclo actual.', color: '#003399' },
-              { step: '2', title: 'Deposita diariamente', desc: 'A partir de 20 MT por dia. Cada 10 MT = 1 ponto no sorteio.', color: '#EF9F27' },
-              { step: '3', title: 'Acumula pontos', desc: 'Convida amigos (+50 pts), mantem streak diario, sobe no ranking.', color: '#1D9E75' },
-              { step: '4', title: 'Ganha o sorteio', desc: 'Quando o fundo atinge 150 000 MT, o sorteio ponderado selecciona o vencedor.', color: '#e74c3c' },
+              { step: '2', title: 'Deposita', desc: 'A partir de 100 MT. Acompanha o fundo a crescer em tempo real.', color: '#EF9F27' },
+              { step: '3', title: 'O fundo cresce', desc: 'Todos os depositos vao para o fundo comunitario. Quanto mais participantes, mais rapido.', color: '#1D9E75' },
+              { step: '4', title: 'Ganha o premio', desc: 'Quando o fundo atinge 150 000 MT, o sistema selecciona o vencedor. Quanto mais depositares, mais chances tens.', color: '#e74c3c' },
             ].map((s) => (
               <div key={s.step} className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"
@@ -612,10 +612,10 @@ function InscricaoObrigatoria({
               {/* O que inclui */}
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: 'Sorteio 150k MT', icon: <Trophy className="w-3.5 h-3.5" /> },
-                  { label: 'Depositos diarios', icon: <Wallet className="w-3.5 h-3.5" /> },
-                  { label: 'Ranking pessoal', icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                  { label: 'Convites +50 pts', icon: <Gift className="w-3.5 h-3.5" /> },
+                  { label: 'Prémio 150k MT', icon: <Trophy className="w-3.5 h-3.5" /> },
+                  { label: 'Depósitos livres', icon: <Wallet className="w-3.5 h-3.5" /> },
+                  { label: 'Fundo ao vivo', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+                  { label: 'Convida amigos', icon: <Gift className="w-3.5 h-3.5" /> },
                 ].map((f) => (
                   <div key={f.label} className="flex items-center gap-2 p-2.5 rounded-xl" style={{ backgroundColor: '#1D9E7508' }}>
                     <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1D9E75', color: 'white' }}>
@@ -626,7 +626,7 @@ function InscricaoObrigatoria({
                 ))}
               </div>
 
-              <div className="h-px" style={{ backgroundColor: '#F5F5F0' }} />
+              <div className="h-px" style={{ backgroundColor: 'var(--background)' }} />
 
               {/* Método de pagamento */}
               <div>
@@ -653,6 +653,19 @@ function InscricaoObrigatoria({
                     )
                   })}
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Número de telefone (opcional)</label>
+                <input
+                  type="tel" placeholder="84/85/86... para pagamento automático"
+                  value={tel} onChange={(e) => setTel(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all"
+                  style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
+                  onFocus={(e) => { e.target.style.borderColor = '#003399'; e.target.style.backgroundColor = 'white' }}
+                  onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa' }}
+                />
+                <p className="text-xs text-gray-400 mt-1">Recebes o pedido directo no telefone via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
               </div>
 
               {error && (
@@ -694,7 +707,7 @@ function InscricaoObrigatoria({
 
       {showTerms && (
         <TermsModal
-          onAccept={() => { setShowTerms(false); onIniciar(method) }}
+          onAccept={() => { setShowTerms(false); onIniciar(method, tel || undefined) }}
           onClose={() => setShowTerms(false)}
         />
       )}
@@ -708,7 +721,6 @@ function DashboardContent() {
   const [user, setUser] = useState<Usuario | null>(null)
   const [ciclo, setCiclo] = useState<Ciclo | null>(null)
   const [depositos, setDepositos] = useState<Deposito[]>([])
-  const [ranking, setRanking] = useState(0)
   const [loading, setLoading] = useState(true)
   const [inscrito, setInscrito] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -716,8 +728,10 @@ function DashboardContent() {
 
   const [method, setMethod] = useState<PayMethod>('mpesa')
   const [valor, setValor] = useState('')
+  const [telefone, setTelefone] = useState('')
   const [payLoading, setPayLoading] = useState(false)
   const [payError, setPayError] = useState('')
+  const [stkEnviado, setStkEnviado] = useState(false)
 
   // Fluxo de pagamento manual
   const [pagamentoPendente, setPagamentoPendente] = useState<PagamentoPendente | null>(null)
@@ -741,10 +755,6 @@ function DashboardContent() {
 
     if (userData.data) {
       setUser(userData.data)
-      const { count } = await supabase.from('usuarios')
-        .select('id', { count: 'exact', head: true })
-        .gt('pontos_total', userData.data.pontos_total)
-      setRanking((count ?? 0) + 1)
     }
 
     if (cicloData.data) {
@@ -783,12 +793,12 @@ function DashboardContent() {
     return () => { supabase.removeChannel(channel) }
   }, [router])
 
-  const handleInscrever = async (m: PayMethod) => {
+  const handleInscrever = async (m: PayMethod, tel?: string) => {
     setPayLoading(true)
     setPayError('')
-    const result = await criarPedidoPagamento({ valor: 200, tipo: 'inscricao', method: m })
+    const result = await criarPedidoPagamento({ valor: 200, tipo: 'inscricao', method: m, telefone: tel })
     if (result.error) { setPayError(result.error); setPayLoading(false); return }
-    // Pagamento criado — recarregar para mostrar dados de transferência
+    if (result.stkStatus === 'sent') setStkEnviado(true)
     await recarregarDados()
     setPayLoading(false)
   }
@@ -796,10 +806,11 @@ function DashboardContent() {
   const handleDepositar = async () => {
     setPayError('')
     const valorNum = Number(valor)
-    if (valorNum < 20) { setPayError('Valor minimo e 20 MT'); return }
+    if (valorNum < 100) { setPayError('Valor minimo e 100 MT'); return }
     setPayLoading(true)
-    const result = await criarPedidoPagamento({ valor: valorNum, tipo: 'deposito', method })
+    const result = await criarPedidoPagamento({ valor: valorNum, tipo: 'deposito', method, telefone: telefone || undefined })
     if (result.error) { setPayError(result.error); setPayLoading(false); return }
+    if (result.stkStatus === 'sent') setStkEnviado(true)
     setPedidoCriado({ referencia: result.reference!, method, valor: valorNum })
     setPayLoading(false)
   }
@@ -820,10 +831,10 @@ function DashboardContent() {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
-  const metaReal = ciclo ? Math.round(ciclo.meta * 1.2) : 180000
+  const metaReal = ciclo ? ciclo.meta * 2 : 180000
   const metaUtilizador = ciclo?.meta ?? 150000
   const progress = ciclo ? Math.min((ciclo.total_acumulado / metaReal) * 100, 100) : 0
-  const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado / 1.2) : 0
+  const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado / 2) : 0
   const formatMT = (v: number) => `${v.toLocaleString('pt-PT')} MT`
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
@@ -839,7 +850,7 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F5F5F0' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
         <div className="text-center">
           <div className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mx-auto mb-3"
             style={{ borderColor: '#003399', borderTopColor: 'transparent' }} />
@@ -852,9 +863,9 @@ function DashboardContent() {
   // ── Se não está inscrito ──
   if (!inscrito) {
     return (
-      <div className="min-h-screen pb-6" style={{ backgroundColor: '#F5F5F0' }}>
+      <div className="min-h-screen pb-6" style={{ backgroundColor: 'var(--background)' }}>
         <header className="sticky top-0 z-40 border-b"
-          style={{ backgroundColor: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderColor: '#f0f0f0' }}>
+          style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs"
@@ -889,10 +900,10 @@ function DashboardContent() {
 
   // ── Dashboard completo (utilizador inscrito) ──
   return (
-    <div className="min-h-screen pb-24" style={{ backgroundColor: '#F5F5F0' }}>
+    <div className="min-h-screen pb-24" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
       <header className="sticky top-0 z-40 border-b"
-        style={{ backgroundColor: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderColor: '#f0f0f0' }}>
+        style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs"
@@ -926,31 +937,21 @@ function DashboardContent() {
             {/* Stats */}
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2" style={{ color: '#EF9F27' }}>
+                <div className="flex items-center gap-2" style={{ color: '#003399' }}>
                   <Trophy className="w-4 h-4" />
-                  <span className="text-xs font-semibold">Ranking geral</span>
+                  <span className="text-xs font-semibold">A tua participação</span>
                 </div>
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                  style={{ backgroundColor: '#EF9F2715', color: '#EF9F27' }}>Este ciclo</span>
+                  style={{ backgroundColor: '#1D9E7515', color: '#1D9E75' }}>Este ciclo</span>
               </div>
-              <div className="flex items-end gap-4">
-                <div>
-                  <p className="text-4xl font-black" style={{ color: '#EF9F27' }}>#{ranking}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">posicao</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 rounded-xl" style={{ backgroundColor: '#00339908' }}>
+                  <p className="text-2xl font-black" style={{ color: '#003399' }}>{depositos.length}</p>
+                  <p className="text-xs text-gray-400">Depósitos feitos</p>
                 </div>
-                <div className="flex-1 grid grid-cols-3 gap-2">
-                  {[
-                    { label: 'Pts totais', value: user?.pontos_total ?? 0, color: '#003399', suffix: ' pts' },
-                    { label: 'Ciclo actual', value: user?.pontos_ciclo_actual ?? 0, color: '#1D9E75', suffix: ' pts' },
-                    { label: 'Streak', value: user?.streak_dias ?? 0, color: '#e74c3c', suffix: 'd' },
-                  ].map((s) => (
-                    <div key={s.label} className="text-center">
-                      <p className="text-base font-black" style={{ color: s.color }}>
-                        {s.value.toLocaleString('pt-PT')}{s.suffix}
-                      </p>
-                      <p className="text-xs text-gray-400 leading-tight">{s.label}</p>
-                    </div>
-                  ))}
+                <div className="text-center p-3 rounded-xl" style={{ backgroundColor: '#EF9F2708' }}>
+                  <p className="text-2xl font-black" style={{ color: '#EF9F27' }}>{formatMT(depositos.reduce((s, d) => s + d.valor, 0))}</p>
+                  <p className="text-xs text-gray-400">Total depositado</p>
                 </div>
               </div>
             </div>
@@ -970,7 +971,7 @@ function DashboardContent() {
                   <p className="text-xs text-gray-400">de {formatMT(metaUtilizador)}</p>
                 </div>
               </div>
-              <div className="h-4 rounded-full overflow-hidden mb-1" style={{ backgroundColor: '#F5F5F0' }}>
+              <div className="h-4 rounded-full overflow-hidden mb-1" style={{ backgroundColor: 'var(--background)' }}>
                 <div className="h-full rounded-full transition-all duration-700 relative"
                   style={{ width: `${progress || 1}%`, background: 'linear-gradient(90deg, #EF9F27, #f5c056)' }}>
                   <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, transparent 60%, rgba(255,255,255,0.3))' }} />
@@ -1043,7 +1044,7 @@ function DashboardContent() {
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: '#F5F5F0' }}>
                   <h2 className="font-black text-lg" style={{ color: '#003399' }}>Fazer Deposito</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Transferencia directa · 10 MT = 1 ponto</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Transferencia directa · Minimo 100 MT</p>
                 </div>
 
                 <div className="p-5 space-y-5">
@@ -1092,7 +1093,7 @@ function DashboardContent() {
                     </div>
                     <div className="relative">
                       <input
-                        type="number" min={20} placeholder="Outro valor (min. 20)"
+                        type="number" min={100} placeholder="Outro valor (min. 100)"
                         value={valor} onChange={(e) => setValor(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all pr-14"
                         style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
@@ -1101,15 +1102,34 @@ function DashboardContent() {
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">MT</span>
                     </div>
-                    {valor && Number(valor) >= 20 && (
+                    {valor && Number(valor) >= 100 && (
                       <div className="mt-2 flex items-center gap-2 p-2.5 rounded-lg" style={{ backgroundColor: '#1D9E7510' }}>
-                        <Star className="w-3.5 h-3.5" style={{ color: '#1D9E75' }} />
+                        <TrendingUp className="w-3.5 h-3.5" style={{ color: '#1D9E75' }} />
                         <p className="text-xs font-semibold" style={{ color: '#1D9E75' }}>
-                          Vais ganhar <strong>{Math.floor(Number(valor) / 10)} pontos</strong>
+                          <strong>{Number(valor)} MT</strong> vão para o fundo comunitário
                         </p>
                       </div>
                     )}
                   </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Número de telefone (opcional)</label>
+                    <input
+                      type="tel" placeholder="84/85/86... para pagamento automático"
+                      value={telefone} onChange={(e) => setTelefone(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all"
+                      style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
+                      onFocus={(e) => { e.target.style.borderColor = '#003399'; e.target.style.backgroundColor = 'white' }}
+                      onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa' }}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Se preencheres, recebes o pedido directo no telefone via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
+                  </div>
+
+                  {stkEnviado && (
+                    <div className="p-3.5 rounded-xl text-sm bg-green-50 border border-green-200 text-green-700 font-medium">
+                      ✅ Pedido de pagamento enviado ao teu telefone. Confirma no teu telemóvel!
+                    </div>
+                  )}
 
                   {payError && (
                     <div className="p-3.5 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100">
@@ -1119,14 +1139,14 @@ function DashboardContent() {
 
                   <button
                     onClick={handleDepositar}
-                    disabled={payLoading || !valor || Number(valor) < 20}
+                    disabled={payLoading || !valor || Number(valor) < 100}
                     className="w-full py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md"
                     style={{ backgroundColor: '#EF9F27', color: '#001f6b', boxShadow: '0 4px 16px rgba(239,159,39,0.3)' }}>
                     {payLoading
                       ? <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       : `Depositar ${valor ? valor + ' MT' : '...'} via ${method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}`}
                   </button>
-                  <p className="text-xs text-center text-gray-400">Transferencia directa · Confirmacao manual pelo admin</p>
+                  <p className="text-xs text-center text-gray-400">{telefone ? 'Pagamento automático via STK push' : 'Transferência directa · Confirmação manual pelo admin'}</p>
                 </div>
               </div>
             )}
@@ -1143,15 +1163,15 @@ function DashboardContent() {
                   <Gift className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="font-black text-lg" style={{ color: '#003399' }}>Convida amigos</h2>
-                <p className="text-xs text-gray-400 mt-1">Ganha <strong>50 pontos</strong> por cada registo</p>
+                <p className="text-xs text-gray-400 mt-1">Quanto mais participantes, mais rápido o fundo cresce</p>
               </div>
               <div className="flex items-center justify-center gap-2 p-4 rounded-2xl mb-4"
-                style={{ backgroundColor: '#F5F5F0' }}>
+                style={{ backgroundColor: 'var(--background)' }}>
                 <span className="text-2xl font-black font-mono tracking-widest" style={{ color: '#003399', letterSpacing: '0.2em' }}>
                   {user?.codigo_convite}
                 </span>
               </div>
-              <div className="flex items-center gap-2 p-3 rounded-xl mb-3" style={{ backgroundColor: '#F5F5F0' }}>
+              <div className="flex items-center gap-2 p-3 rounded-xl mb-3" style={{ backgroundColor: 'var(--background)' }}>
                 <span className="text-xs text-gray-500 flex-1 truncate font-mono">{inviteUrl}</span>
                 <button onClick={copyInvite}
                   className="flex-shrink-0 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg text-white"
@@ -1171,9 +1191,9 @@ function DashboardContent() {
               <div className="space-y-3">
                 {[
                   'Partilha o teu link com amigos',
-                  'O amigo regista-se com o teu codigo',
-                  'Recebes 50 pontos automaticamente',
-                  'Ganhas 10% dos pontos dele para sempre',
+                  'O amigo regista-se com o teu código',
+                  'Ele inscreve-se e começa a depositar',
+                  'O fundo cresce mais rápido para todos',
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-black flex-shrink-0"
@@ -1287,7 +1307,7 @@ function DashboardContent() {
                     </div>
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0"
                       style={{ backgroundColor: '#1D9E7518', color: '#1D9E75' }}>
-                      +{d.pontos_gerados} pts
+                      Confirmado
                     </span>
                   </div>
                 ))}
@@ -1299,14 +1319,14 @@ function DashboardContent() {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t"
-        style={{ backgroundColor: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(10px)', borderColor: '#e5e7eb' }}>
+        style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto px-2 py-2 grid grid-cols-5 gap-1">
           {[
             { id: 'home' as Tab, icon: <Home className="w-5 h-5" />, label: 'Inicio' },
             { id: 'depositar' as Tab, icon: <Wallet className="w-5 h-5" />, label: 'Depositar' },
             { id: 'pagamentos' as Tab, icon: <FileText className="w-5 h-5" />, label: 'Status' },
             { id: 'convite' as Tab, icon: <Gift className="w-5 h-5" />, label: 'Convite' },
-            { id: 'historico' as Tab, icon: <Clock className="w-5 h-5" />, label: 'Pontos' },
+            { id: 'historico' as Tab, icon: <Clock className="w-5 h-5" />, label: 'Depósitos' },
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all"
@@ -1327,7 +1347,7 @@ function DashboardContent() {
 export default function DashboardPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F5F5F0' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
         <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
           style={{ borderColor: '#003399', borderTopColor: 'transparent' }} />
       </div>

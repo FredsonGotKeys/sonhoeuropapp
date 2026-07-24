@@ -2,21 +2,21 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Eye, EyeOff, Shield, ArrowRight } from 'lucide-react'
 import { verifyAdminPassword } from '@/app/actions/admin'
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     const result = await verifyAdminPassword(password)
-
     if (result.error) {
       setError(result.error)
       setLoading(false)
@@ -27,52 +27,68 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: '#003399' }}
-    >
-      <div className="w-full max-w-sm bg-white rounded-2xl p-8 shadow-xl">
-        <div className="text-center mb-8">
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-white font-black text-lg mx-auto mb-3"
-            style={{ backgroundColor: '#003399' }}
-          >
-            SE
-          </div>
-          <h1 className="font-black text-xl" style={{ color: '#003399' }}>
-            Admin · SonhoEuropa
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">Acesso restrito</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password"
-            placeholder="Senha de administrador"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-colors"
-            style={{ borderColor: '#e5e7eb' }}
-            onFocus={(e) => (e.target.style.borderColor = '#003399')}
-            onBlur={(e) => (e.target.style.borderColor = '#e5e7eb')}
-            required
-          />
-
-          {error && (
-            <div className="p-3 rounded-xl text-sm text-red-600 bg-red-50 text-center">
-              {error}
+    <div className="min-h-screen flex items-center justify-center px-5 grain relative" style={{ background: 'var(--bg-dark)' }}>
+      <div className="w-full max-w-[360px] animate-enter-up">
+        <div
+          className="rounded-xl overflow-hidden p-6"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <div className="text-center mb-6">
+            <div
+              className="w-11 h-11 rounded-lg flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'var(--cobalt)', color: 'white' }}
+            >
+              <Shield className="w-5 h-5" />
             </div>
-          )}
+            <h1 className="t-heading text-lg text-white">Admin · SonhoEuropa</h1>
+            <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>Acesso restrito</p>
+          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-white transition-opacity disabled:opacity-60"
-            style={{ backgroundColor: '#003399' }}
-          >
-            {loading ? 'A verificar...' : 'Entrar'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="t-label block mb-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>Senha</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Senha de administrador"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3.5 py-3 rounded-md text-sm text-white outline-none transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)', paddingRight: 44 }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--cobalt)')}
+                  onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                  style={{ color: 'rgba(255,255,255,0.3)' }}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-md text-sm font-medium" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="btn btn-primary w-full" style={{ padding: '11px 20px' }}>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
+                  A verificar...
+                </span>
+              ) : (
+                <>Entrar <ArrowRight className="w-4 h-4" /></>
+              )}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
