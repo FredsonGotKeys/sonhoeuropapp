@@ -78,7 +78,7 @@ export async function criarPedidoPagamento(params: {
     } else {
       stkStatus = 'failed'
       stkError = res.data?.error ?? res.data?.message ?? 'Erro ao enviar STK push'
-      console.error('[ZumboPay] STK push failed:', res.status, stkError)
+      console.error('[ZumboPay] STK push failed:', params.method, res.status, JSON.stringify(res.data))
     }
   }
 
