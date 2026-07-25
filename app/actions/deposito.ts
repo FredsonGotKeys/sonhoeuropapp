@@ -3,6 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createCharge, WALLETS } from '@/lib/zumbopay'
+import { createPayment as createPaysuitePayment } from '@/lib/paysuite'
+
+function activeProvider(): 'paysuite' | 'zumbopay' {
+  return (process.env.PAYMENT_PROVIDER ?? 'paysuite').trim().toLowerCase() === 'zumbopay' ? 'zumbopay' : 'paysuite'
+}
 
 export async function criarPedidoPagamento(params: {
   valor: number
@@ -57,11 +62,31 @@ export async function criarPedidoPagamento(params: {
   const { data: userData } = await admin.from('usuarios').select('nome').eq('id', user.id).single()
   const nome = userData?.nome ?? 'Participante'
 
-  // Tentar STK push via ZumboPay se telefone fornecido
+  const provider = activeProvider()
   let stkStatus: 'sent' | 'failed' | 'skipped' = 'skipped'
   let stkError = ''
+  let checkoutUrl: string | undefined
 
-  if (params.telefone) {
+  if (provider === 'paysuite') {
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
+    const res = await createPaysuitePayment({
+      amount: valor,
+      reference,
+      method: params.method,
+      description: params.tipo === 'inscricao' ? 'Inscrição SonhoEuropa' : 'Depósito SonhoEuropa',
+      ...(siteUrl && { return_url: `${siteUrl}/dashboard`, callback_url: `${siteUrl}/api/webhooks/paysuite` }),
+    })
+
+    if (res.status >= 200 && res.status < 300 && res.data?.data?.checkout_url) {
+      checkoutUrl = res.data.data.checkout_url
+      stkStatus = 'sent'
+    } else {
+      stkStatus = 'failed'
+      stkError = res.data?.message ?? 'Erro ao iniciar pagamento'
+      console.error('[PaySuite] Payment creation failed:', params.method, res.status, JSON.stringify(res.data))
+    }
+  } else if (params.telefone) {
+    // Tentar STK push via ZumboPay
     const msisdn = params.telefone.replace(/\s+/g, '').replace(/^(\+?258)/, '')
     const walletId = params.method === 'mpesa' ? WALLETS.mpesa : WALLETS.emola
 
@@ -99,6 +124,7 @@ export async function criarPedidoPagamento(params: {
     reference,
     stkStatus,
     stkError: stkStatus === 'failed' ? stkError : undefined,
+    checkoutUrl,
   }
 }
 

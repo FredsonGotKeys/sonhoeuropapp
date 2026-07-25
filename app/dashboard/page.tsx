@@ -798,6 +798,7 @@ function DashboardContent() {
     setPayError('')
     const result = await criarPedidoPagamento({ valor: 200, tipo: 'inscricao', method: m, telefone: tel })
     if (result.error) { setPayError(result.error); setPayLoading(false); return }
+    if (result.checkoutUrl) { window.location.href = result.checkoutUrl; return }
     if (result.stkStatus === 'sent') setStkEnviado(true)
     await recarregarDados()
     setPayLoading(false)
@@ -810,6 +811,7 @@ function DashboardContent() {
     setPayLoading(true)
     const result = await criarPedidoPagamento({ valor: valorNum, tipo: 'deposito', method, telefone: telefone || undefined })
     if (result.error) { setPayError(result.error); setPayLoading(false); return }
+    if (result.checkoutUrl) { window.location.href = result.checkoutUrl; return }
     if (result.stkStatus === 'sent') setStkEnviado(true)
     setPedidoCriado({ referencia: result.reference!, method, valor: valorNum })
     setPayLoading(false)
