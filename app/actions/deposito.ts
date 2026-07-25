@@ -9,6 +9,10 @@ function activeProvider(): 'paysuite' | 'zumbopay' {
   return (process.env.PAYMENT_PROVIDER ?? 'paysuite').trim().toLowerCase() === 'zumbopay' ? 'zumbopay' : 'paysuite'
 }
 
+export async function getActiveProvider() {
+  return activeProvider()
+}
+
 export async function criarPedidoPagamento(params: {
   valor: number
   tipo: 'inscricao' | 'deposito'
