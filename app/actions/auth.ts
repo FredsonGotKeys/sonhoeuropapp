@@ -8,6 +8,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NOME_MAX = 120
 const PASSWORD_MIN = 6
 const INVITE_RE = /^[A-Z0-9]{4,16}$/
+const TELEFONE_RE = /^8[2-7]\d{7}$/
 
 function sanitize(s: string): string {
   return s.replace(/<[^>]*>/g, '').trim()
@@ -31,16 +32,19 @@ export async function register(data: {
   email: string
   password: string
   nome: string
+  telefone: string
   codigoConvite?: string
 }) {
   const email = (data.email ?? '').trim().toLowerCase()
   const password = data.password ?? ''
   const nome = sanitize(data.nome ?? '').slice(0, NOME_MAX)
+  const telefone = (data.telefone ?? '').replace(/[\s\-+]/g, '').replace(/^258/, '')
   const codigoConvite = (data.codigoConvite ?? '').trim().toUpperCase()
 
   if (!EMAIL_RE.test(email)) return { error: 'Email inválido' }
   if (password.length < PASSWORD_MIN) return { error: 'Senha deve ter pelo menos 6 caracteres' }
   if (nome.length < 2) return { error: 'Nome é obrigatório' }
+  if (!TELEFONE_RE.test(telefone)) return { error: 'Número de telefone inválido (ex: 84xxxxxxx)' }
   if (codigoConvite && !INVITE_RE.test(codigoConvite)) return { error: 'Código de convite inválido' }
 
   const supabase = await createClient()
@@ -72,6 +76,7 @@ export async function register(data: {
     id: authData.user.id,
     email,
     nome,
+    telefone,
     convidado_por: convidadoPor,
     total_depositado: 0,
     termos_aceites_at: new Date().toISOString(),

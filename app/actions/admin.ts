@@ -103,7 +103,7 @@ export async function getAdminStats() {
   const [cicloRes, usuariosCountRes, usuariosTopRes, depositosRes, inscricoesRes, sorteioRes, pagamentosRes] = await Promise.all([
     admin.from('ciclos').select('*').neq('estado', 'concluido').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('usuarios').select('id', { count: 'exact', head: true }),
-    admin.from('usuarios').select('id, nome, email, codigo_convite, total_depositado, ultimo_deposito_at, created_at').order('created_at', { ascending: false }).limit(4000),
+    admin.from('usuarios').select('id, nome, email, telefone, codigo_convite, total_depositado, ultimo_deposito_at, created_at').order('created_at', { ascending: false }).limit(4000),
     admin.from('depositos').select('valor'),
     admin.from('inscricoes').select('taxa_paga'),
     admin.from('sorteios').select('*, vencedor:vencedor_id(nome, email)').order('realizado_at', { ascending: false }).limit(1).maybeSingle(),
@@ -339,7 +339,7 @@ export async function realizarSorteio() {
   }
 
   const { data: inscricoes } = await admin.from('inscricoes')
-    .select('usuario_id, usuarios!inner(nome, email)')
+    .select('usuario_id, usuarios!inner(nome, email, telefone)')
     .eq('ciclo_id', ciclo.id)
 
   if (!inscricoes?.length) return { error: 'Sem participantes inscritos' }
@@ -359,6 +359,7 @@ export async function realizarSorteio() {
     userId: i.usuario_id,
     nome: i.usuarios.nome,
     email: i.usuarios.email,
+    telefone: i.usuarios.telefone,
     totalDepositado: depositosPorUser.get(i.usuario_id) ?? 0,
   }))
 
@@ -379,7 +380,7 @@ export async function realizarSorteio() {
     admin.from('ciclos').update({ estado: 'concluido', concluido_at: new Date().toISOString() }).eq('id', ciclo.id),
   ])
 
-  return { success: true, winnerNome: winner.nome, winnerEmail: winner.email, totalDepositado: winner.totalDepositado }
+  return { success: true, winnerNome: winner.nome, winnerEmail: winner.email, winnerTelefone: winner.telefone, totalDepositado: winner.totalDepositado }
 }
 
 export async function getSorteios() {

@@ -51,6 +51,7 @@ export default function RegisterForm() {
     email: '',
     password: '',
     nome: '',
+    telefone: '',
     codigoConvite: inviteCode,
   })
 
@@ -130,6 +131,23 @@ export default function RegisterForm() {
             <div>
               <label className="t-label block mb-1.5">Email</label>
               <input type="email" required value={form.email} onChange={set('email')} autoComplete="email" placeholder="exemplo@email.com" className="input" />
+            </div>
+
+            <div>
+              <label className="t-label block mb-1.5">Número de telefone</label>
+              <input
+                type="tel"
+                required
+                inputMode="numeric"
+                value={form.telefone}
+                onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
+                autoComplete="tel"
+                placeholder="84xxxxxxx"
+                className="input t-mono"
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--fg-subtle)' }}>
+                Usado para te pagarmos o prémio se ganhares
+              </p>
             </div>
 
             <div>

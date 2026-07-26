@@ -310,6 +310,9 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                         <div>
                           <p className="font-semibold truncate max-w-40">{u.nome}</p>
                           <p className="text-xs text-gray-400 truncate max-w-40">{u.email}</p>
+                          <p className="text-xs font-mono" style={{ color: u.telefone ? '#1D9E75' : '#ccc' }}>
+                            {u.telefone ?? 'sem telefone'}
+                          </p>
                         </div>
                       )}
                     </td>
@@ -779,7 +782,7 @@ function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
 // ─── TAB: SORTEIO ────────────────────────────────────────────────────────────
 function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void }) {
   const [realizando, setRealizando] = useState(false)
-  const [resultado, setResultado] = useState<{ nome: string; email: string } | null>(null)
+  const [resultado, setResultado] = useState<{ nome: string; email: string; telefone?: string } | null>(null)
   const [erro, setErro] = useState('')
   const [historico, setHistorico] = useState<any[]>([])
   const [confirm, setConfirm] = useState(false)
@@ -801,7 +804,7 @@ function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void })
     const res = await realizarSorteio()
     if (res.error) setErro(res.error)
     else {
-      setResultado({ nome: res.winnerNome!, email: res.winnerEmail! })
+      setResultado({ nome: res.winnerNome!, email: res.winnerEmail!, telefone: res.winnerTelefone ?? undefined })
       getSorteios().then(setHistorico)
       onRefresh()
     }
@@ -847,6 +850,9 @@ function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void })
             <p className="font-black text-lg" style={{ color: '#1D9E75' }}>Vencedor Seleccionado!</p>
             <p className="font-bold text-xl mt-1">{resultado.nome}</p>
             <p className="text-sm text-gray-400">{resultado.email}</p>
+            {resultado.telefone && (
+              <p className="text-base font-mono font-bold mt-2" style={{ color: '#003399' }}>{resultado.telefone}</p>
+            )}
           </div>
         )}
 
