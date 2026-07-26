@@ -4,6 +4,10 @@ import crypto from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cookies } from 'next/headers'
 
+// Valor real (interno) que o fundo precisa de atingir para ser considerado completo.
+// Independente da "meta" configurada por ciclo, que é o valor/prémio mostrado ao utilizador.
+const ALVO_REAL = 300000
+
 // ─── AUTH (stateless HMAC tokens — works across serverless instances) ────────
 
 const adminAttempts = new Map<string, { count: number; lockedUntil: number }>()
@@ -119,7 +123,6 @@ export async function getAdminStats() {
   }))
 
   const ciclo = cicloRes.data
-  const metaCiclo = Number(ciclo?.meta ?? 150000)
   const fundoActual = Number(ciclo?.total_acumulado ?? 0)
 
   // Pre-coverage: liquid that went into the fund came from gross * 0.9
@@ -153,7 +156,7 @@ export async function getAdminStats() {
       fundoAcumulado: fundoActual,
       numDepositos: depositos.length,
       numInscricoes: inscricoes.length,
-      coberturaAtingida: fundoActual >= metaCiclo,
+      coberturaAtingida: fundoActual >= ALVO_REAL,
     },
   }
 }
@@ -238,7 +241,7 @@ export async function confirmarPagamentoManual(pagamentoId: string) {
 
   const { data: cicloInfo } = await admin.from('ciclos').select('total_acumulado, meta, minimo_participantes').eq('id', cicloId).single()
   const acumulado = Number(cicloInfo?.total_acumulado ?? 0)
-  const meta = Number(cicloInfo?.meta ?? 150000)
+  const meta = Number(cicloInfo?.meta ?? 200000)
   const coberturaAtingida = acumulado >= meta
 
   const taxa = coberturaAtingida ? TAXA_APOS_COBERTURA : TAXA_ANTES_COBERTURA
@@ -259,10 +262,9 @@ export async function confirmarPagamentoManual(pagamentoId: string) {
       await admin.from('depositos').insert({ usuario_id: usuarioId, ciclo_id: cicloId, valor: valorBruto, pontos_gerados: 0, referencia_paysuite: pag.referencia })
       await admin.rpc('increment_user_deposito', { p_user_id: usuarioId, p_amount: valorBruto })
 
-      const metaInterna = meta * 2
-      if (acumulado < metaInterna) {
-        const adicaoFundo = Math.min(valorLiquido, metaInterna - acumulado)
-        await admin.rpc('increment_fundo', { p_ciclo_id: cicloId, p_amount: adicaoFundo, p_max: metaInterna })
+      if (acumulado < ALVO_REAL) {
+        const adicaoFundo = Math.min(valorLiquido, ALVO_REAL - acumulado)
+        await admin.rpc('increment_fundo', { p_ciclo_id: cicloId, p_amount: adicaoFundo, p_max: ALVO_REAL })
       }
     }
   }
@@ -320,7 +322,7 @@ export async function criarNovoCiclo() {
   await admin.from('ciclos').update({ estado: 'concluido', concluido_at: new Date().toISOString() })
     .in('estado', ['activo', 'aguardando_minimo'])
   // Criar novo ciclo
-  const { data, error } = await admin.from('ciclos').insert({ estado: 'aguardando_minimo', meta: 150000, minimo_participantes: 150 }).select().single()
+  const { data, error } = await admin.from('ciclos').insert({ estado: 'aguardando_minimo', meta: 200000, minimo_participantes: 150 }).select().single()
   if (error) return { error: error.message }
   return { success: true, ciclo: data }
 }
@@ -332,8 +334,8 @@ export async function realizarSorteio() {
   const admin = createAdminClient()
   const { data: ciclo } = await admin.from('ciclos').select('*').eq('estado', 'activo').single()
   if (!ciclo) return { error: 'Nenhum ciclo activo' }
-  if (Number(ciclo.total_acumulado ?? 0) < Number(ciclo.meta ?? 150000)) {
-    return { error: `Cobertura ainda não atingida (${Math.round(Number(ciclo.total_acumulado ?? 0))} / ${ciclo.meta ?? 150000} MT)` }
+  if (Number(ciclo.total_acumulado ?? 0) < ALVO_REAL) {
+    return { error: `Cobertura ainda não atingida (${Math.round(Number(ciclo.total_acumulado ?? 0))} / ${ALVO_REAL} MT)` }
   }
 
   const { data: inscricoes } = await admin.from('inscricoes')
@@ -373,7 +375,7 @@ export async function realizarSorteio() {
   }
 
   await Promise.all([
-    admin.from('sorteios').insert({ ciclo_id: ciclo.id, vencedor_id: winner.userId, total_fundo: ciclo.total_acumulado, premio: 150000 }),
+    admin.from('sorteios').insert({ ciclo_id: ciclo.id, vencedor_id: winner.userId, total_fundo: ciclo.total_acumulado, premio: 200000 }),
     admin.from('ciclos').update({ estado: 'concluido', concluido_at: new Date().toISOString() }).eq('id', ciclo.id),
   ])
 

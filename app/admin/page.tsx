@@ -157,7 +157,7 @@ function TabDashboard({ stats }: { stats: any }) {
         <h2 className="font-black mb-3" style={{ color: '#003399' }}>Estado do Ciclo Actual</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
           <div><p className="text-xs text-gray-400">Estado</p><StatusBadge status={ciclo?.estado ?? '—'} /></div>
-          <div><p className="text-xs text-gray-400">Meta</p><p className="font-bold">{formatMT(ciclo?.meta ?? 150000)}</p></div>
+          <div><p className="text-xs text-gray-400">Meta</p><p className="font-bold">{formatMT(ciclo?.meta ?? 200000)}</p></div>
           <div>
             <p className="text-xs text-gray-400">Fundo (visível aos utilizadores)</p>
             <p className="font-bold" style={{ color: '#EF9F27' }}>{formatMT(ciclo?.total_acumulado ?? 0)}</p>
@@ -174,12 +174,12 @@ function TabDashboard({ stats }: { stats: any }) {
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>Progresso (visível ao utilizador)</span>
             <span style={{ color: '#EF9F27' }}>
-              {((ciclo?.total_acumulado ?? 0) / (ciclo?.meta ?? 150000) * 100).toFixed(1)}%
+              {((ciclo?.total_acumulado ?? 0) / 300000 * 100).toFixed(1)}%
             </span>
           </div>
           <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--background)' }}>
             <div className="h-full rounded-full transition-all"
-              style={{ width: `${Math.min(((ciclo?.total_acumulado ?? 0) / (ciclo?.meta ?? 150000)) * 100, 100)}%`, background: 'linear-gradient(90deg, #EF9F27, #f5c056)' }} />
+              style={{ width: `${Math.min(((ciclo?.total_acumulado ?? 0) / 300000) * 100, 100)}%`, background: 'linear-gradient(90deg, #EF9F27, #f5c056)' }} />
           </div>
         </div>
       </div>
@@ -825,8 +825,8 @@ function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void })
           {[
             { label: 'Estado do ciclo', value: <StatusBadge status={ciclo?.estado ?? '—'} />, ok: ciclo?.estado === 'activo' },
             { label: 'Participantes', value: `${ciclo?.participantes_count ?? 0} / ${ciclo?.minimo_participantes ?? 150}`, ok: (ciclo?.participantes_count ?? 0) >= (ciclo?.minimo_participantes ?? 150) },
-            { label: 'Fundo acumulado', value: formatMT(ciclo?.total_acumulado ?? 0), ok: (ciclo?.total_acumulado ?? 0) >= (ciclo?.meta ?? 150000) },
-            { label: 'Meta', value: formatMT(ciclo?.meta ?? 150000), ok: true },
+            { label: 'Fundo acumulado', value: formatMT(ciclo?.total_acumulado ?? 0), ok: (ciclo?.total_acumulado ?? 0) >= 300000 },
+            { label: 'Alvo real necessário', value: formatMT(300000), ok: true },
           ].map(c => (
             <div key={c.label} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: c.ok ? '#1D9E7510' : '#F5F5F0' }}>
               <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"

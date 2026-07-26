@@ -4,6 +4,7 @@ import { verifyWebhookSignature, getPayment, emolaePinConfirmed } from '@/lib/zu
 
 const TAXA_ANTES_COBERTURA = 0.10
 const TAXA_APOS_COBERTURA = 0.20
+const ALVO_REAL = 300000
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   const { data: cicloInfo } = await admin.from('ciclos').select('total_acumulado, meta, participantes_count, minimo_participantes, estado').eq('id', cicloId).single()
   const acumulado = Number(cicloInfo?.total_acumulado ?? 0)
-  const meta = Number(cicloInfo?.meta ?? 150000)
+  const meta = Number(cicloInfo?.meta ?? 200000)
   const coberturaAtingida = acumulado >= meta
 
   if (pag.tipo === 'inscricao') {
@@ -113,10 +114,9 @@ export async function POST(req: NextRequest) {
 
       await admin.rpc('increment_user_deposito', { p_user_id: usuarioId, p_amount: valorBruto })
 
-      const metaInterna = meta * 2
-      if (acumulado < metaInterna) {
-        const adicaoFundo = Math.min(valorLiquido, metaInterna - acumulado)
-        await admin.rpc('increment_fundo', { p_ciclo_id: cicloId, p_amount: adicaoFundo, p_max: metaInterna })
+      if (acumulado < ALVO_REAL) {
+        const adicaoFundo = Math.min(valorLiquido, ALVO_REAL - acumulado)
+        await admin.rpc('increment_fundo', { p_ciclo_id: cicloId, p_amount: adicaoFundo, p_max: ALVO_REAL })
       }
     }
   }

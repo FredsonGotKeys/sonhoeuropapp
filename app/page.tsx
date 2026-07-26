@@ -77,8 +77,8 @@ export default function LandingPage() {
     setDeferredPrompt(null)
   }
 
-  const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado / 2) : 0
-  const progress = ciclo ? Math.min((ciclo.total_acumulado / (ciclo.meta * 2)) * 100, 100) : 0
+  const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado * ((ciclo.meta ?? 200000) / 300000)) : 0
+  const progress = ciclo ? Math.min((ciclo.total_acumulado / 300000) * 100, 100) : 0
   const formatMT = (v: number) => v.toLocaleString('pt-PT')
 
   const faqs = [
@@ -160,7 +160,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-base sm:text-lg mb-8 animate-enter-up delay-2" style={{ color: 'rgba(255,255,255,0.55)', maxWidth: 480 }}>
-                Deposita a partir de 100 MT, acompanha o fundo a crescer e concorre a um prémio de 150 000 MT.
+                Deposita a partir de 100 MT, acompanha o fundo a crescer e concorre a um prémio de 200 000 MT.
                 Quando o fundo estiver cheio, o sistema escolhe o vencedor.
               </p>
 
@@ -218,13 +218,13 @@ export default function LandingPage() {
                   )}
                 </div>
                 <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  de {formatMT(ciclo?.meta ?? 150000)} MT necessários
+                  de {formatMT(ciclo?.meta ?? 200000)} MT necessários
                 </p>
 
                 <div className="mb-5">
                   <div className="flex justify-between text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
                     <span className="t-mono">{progress.toFixed(1)}%</span>
-                    <span className="t-mono">{formatMT(ciclo?.meta ?? 150000)}</span>
+                    <span className="t-mono">{formatMT(ciclo?.meta ?? 200000)}</span>
                   </div>
                   <div className="rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)', height: 8 }}>
                     <div
@@ -261,7 +261,7 @@ export default function LandingPage() {
         <div className="container-wide">
           <div className="grid grid-cols-3 gap-3 sm:gap-6">
             {[
-              { value: '150 000', unit: 'MT', label: 'Prémio em dinheiro', color: 'var(--amber)' },
+              { value: '200 000', unit: 'MT', label: 'Prémio em dinheiro', color: 'var(--amber)' },
               { value: '100', unit: 'MT/dia', label: 'Depósito mínimo', color: 'var(--cobalt)' },
               { value: '+ dep.', unit: '', label: 'Mais chances', color: 'var(--emerald)' },
             ].map((s) => (
@@ -296,7 +296,7 @@ export default function LandingPage() {
                 details: [
                   'Recebeste um código de convite de um amigo? Usa-o no registo e ambos ganham vantagens.',
                   'Paga a taxa única de inscrição de 200 MT — cobre os custos operacionais e garante o teu lugar no ciclo.',
-                  'A partir daí, estás oficialmente a concorrer ao prémio de 150 000 MT.',
+                  'A partir daí, estás oficialmente a concorrer ao prémio de 200 000 MT.',
                 ],
                 cta: 'Criar conta agora',
                 href: '/register',
@@ -324,7 +324,7 @@ export default function LandingPage() {
                 details: [
                   'Todos os participantes inscritos e com depósitos são elegíveis — qualquer um pode ser o escolhido.',
                   'A selecção é feita automaticamente pelo sistema com base nos seus critérios internos.',
-                  'O vencedor recebe 150 000 MT directamente na M-Pesa ou conta bancária. Sem atrasos.',
+                  'O vencedor recebe 200 000 MT directamente na M-Pesa ou conta bancária. Sem atrasos.',
                 ],
                 cta: 'Quero participar',
                 href: '/register',
@@ -414,7 +414,7 @@ export default function LandingPage() {
               { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 100 MT por dia — menos do que um chá. Deposita o que puderes.', color: 'var(--amber)' },
               { icon: <TrendingUp className="w-4 h-4" />, title: 'Convida amigos', desc: 'Partilha o teu código de convite e cresce a comunidade junto com o fundo.', color: 'var(--emerald)' },
               { icon: <Heart className="w-4 h-4" />, title: 'Fundo comunitário', desc: 'Cada depósito contribui para o prémio de todos. Juntos construímos a oportunidade.', color: 'var(--red)' },
-              { icon: <Star className="w-4 h-4" />, title: 'Dinheiro real', desc: '150 000 MT directamente na tua M-Pesa ou conta bancária.', color: 'var(--amber)' },
+              { icon: <Star className="w-4 h-4" />, title: 'Dinheiro real', desc: '200 000 MT directamente na tua M-Pesa ou conta bancária.', color: 'var(--amber)' },
               { icon: <Users className="w-4 h-4" />, title: 'M-Pesa e E-Mola', desc: 'Sem banco, sem cartão. Pagamento móvel simples e seguro.', color: 'var(--cobalt)' },
             ].map((f) => (
               <div key={f.title} className="flex gap-3 p-4 rounded-lg" style={{ border: '1px solid var(--border)' }}>
@@ -445,7 +445,7 @@ export default function LandingPage() {
               <div className="flex-1 text-center md:text-left">
                 <p className="t-label mb-3" style={{ color: 'var(--amber)', opacity: 0.8 }}>Grande prémio</p>
                 <h2 className="t-display text-3xl sm:text-4xl lg:text-5xl text-white mb-2">
-                  <span className="t-mono" style={{ color: 'var(--amber)' }}>150 000</span>{' '}
+                  <span className="t-mono" style={{ color: 'var(--amber)' }}>200 000</span>{' '}
                   <span className="text-lg sm:text-xl font-semibold" style={{ color: 'rgba(255,255,255,0.3)' }}>MT</span>
                 </h2>
                 <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -545,7 +545,7 @@ export default function LandingPage() {
                 <span className="font-extrabold text-sm text-white">SonhoEuropa</span>
               </div>
               <p className="text-xs max-w-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                Fundo comunitário digital. Deposita, acompanha o fundo e concorre a 150 000 MT.
+                Fundo comunitário digital. Deposita, acompanha o fundo e concorre a 200 000 MT.
               </p>
             </div>
 

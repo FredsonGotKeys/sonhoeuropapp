@@ -14,7 +14,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "SonhoEuropa",
-  description: "O teu sonho começa aqui. Deposita, acompanha o fundo e concorre a 150 000 MT para a Europa.",
+  description: "O teu sonho começa aqui. Deposita, acompanha o fundo e concorre a 200 000 MT para a Europa.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
