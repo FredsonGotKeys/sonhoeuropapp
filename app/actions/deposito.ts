@@ -183,10 +183,22 @@ export async function enviarComprovativo(referencia: string, comprovativo: strin
   return { success: true }
 }
 
+// Tempo após o qual um pedido deixado a meio no checkout do fornecedor é
+// dado como abandonado. Se o pagamento acabar por entrar mais tarde, o
+// webhook confirma-o na mesma — só ignora quem já está 'confirmado'.
+const PENDENTE_TTL_MS = 30 * 60 * 1000
+
 export async function getMeusPagamentosPendentes() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
+
+  await createAdminClient()
+    .from('pagamentos')
+    .update({ status: 'falhado' })
+    .eq('usuario_id', user.id)
+    .eq('status', 'pendente')
+    .lt('created_at', new Date(Date.now() - PENDENTE_TTL_MS).toISOString())
 
   const { data } = await supabase
     .from('pagamentos')
@@ -196,6 +208,26 @@ export async function getMeusPagamentosPendentes() {
     .order('created_at', { ascending: false })
 
   return data ?? []
+}
+
+export async function cancelarPagamentoPendente(referencia: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Não autenticado' }
+
+  const admin = createAdminClient()
+  const { data: pag } = await admin.from('pagamentos')
+    .select('id, usuario_id, status')
+    .eq('referencia', referencia)
+    .maybeSingle()
+
+  if (!pag) return { error: 'Pagamento não encontrado' }
+  if (pag.usuario_id !== user.id) return { error: 'Sem permissão' }
+  if (pag.status === 'confirmado') return { error: 'Este pagamento já foi confirmado' }
+
+  const { error } = await admin.from('pagamentos').update({ status: 'falhado' }).eq('id', pag.id)
+  if (error) return { error: error.message }
+  return { success: true }
 }
 
 export async function getMeuHistoricoPagamentos() {

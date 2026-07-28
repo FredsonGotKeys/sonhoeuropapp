@@ -43,6 +43,15 @@ function verifyAdminToken(token: string): boolean {
   }
 }
 
+// Compara via digest de tamanho fixo para não vazar o comprimento da password.
+function adminPasswordMatches(input: string): boolean {
+  const expected = (process.env.ADMIN_PASSWORD ?? '').trim()
+  if (!expected) return false
+  const a = crypto.createHash('sha256').update((input ?? '').trim()).digest()
+  const b = crypto.createHash('sha256').update(expected).digest()
+  return crypto.timingSafeEqual(a, b)
+}
+
 async function requireAdmin(): Promise<{ error?: string }> {
   const cookieStore = await cookies()
   const token = cookieStore.get('admin-session')?.value ?? ''
@@ -60,10 +69,8 @@ export async function verifyAdminPassword(password: string) {
     return { error: `Demasiadas tentativas. Tenta em ${mins} minutos.` }
   }
 
-  if (password.trim() !== (process.env.ADMIN_PASSWORD ?? '').trim()) {
-    const entry = attempt && now < attempt.lockedUntil + ADMIN_LOCKOUT
-      ? { count: attempt.count + 1, lockedUntil: attempt.lockedUntil }
-      : { count: (attempt?.count ?? 0) + 1, lockedUntil: 0 }
+  if (!adminPasswordMatches(password)) {
+    const entry = { count: (attempt?.count ?? 0) + 1, lockedUntil: 0 }
 
     if (entry.count >= ADMIN_MAX_ATTEMPTS) {
       entry.lockedUntil = now + ADMIN_LOCKOUT
@@ -372,7 +379,9 @@ export async function realizarSorteio() {
   let winner = participants[0]
   for (const p of participants) {
     rand -= Math.max(p.totalDepositado, 1)
-    if (rand <= 0) { winner = p; break }
+    // `< 0` (não `<= 0`): rand começa em [0, pesoTotal-1], por isso `<= 0`
+    // daria ao primeiro participante uma hipótese a mais e ao último uma a menos.
+    if (rand < 0) { winner = p; break }
   }
 
   await Promise.all([

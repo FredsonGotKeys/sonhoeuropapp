@@ -72,6 +72,13 @@ export async function register(data: {
   }
   if (!authData.user) return { error: 'Erro ao criar conta' }
 
+  // Quando o email já existe, o Supabase devolve um utilizador sem identities
+  // (protecção contra enumeração) em vez de um erro. É preciso distinguir esse
+  // caso: o id devolvido é o da conta existente, que nunca pode ser apagada.
+  if (authData.user.identities?.length === 0) {
+    return { error: 'Este email já está registado' }
+  }
+
   const { error: dbError } = await admin.from('usuarios').insert({
     id: authData.user.id,
     email,
@@ -83,7 +90,13 @@ export async function register(data: {
   })
 
   if (dbError) {
+    // O utilizador de autenticação já existe neste ponto. Sem o perfil,
+    // a conta fica inutilizável e o email bloqueado para novo registo —
+    // por isso desfaz-se a criação antes de devolver o erro.
+    await admin.auth.admin.deleteUser(authData.user.id).catch(() => {})
+
     if (dbError.code === '23505') return { error: 'Este email já está registado' }
+    console.error('[register] Falha ao criar perfil:', dbError.code, dbError.message)
     return { error: 'Erro ao criar conta. Tenta novamente.' }
   }
 
