@@ -12,6 +12,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { logout } from '@/app/actions/auth'
 import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos, getActiveProvider, cancelarPagamentoPendente } from '@/app/actions/deposito'
+import { getMinhasEstatisticasConvite, type EstatisticasConvite } from '@/app/actions/convite'
 import { Suspense } from 'react'
 
 interface Usuario {
@@ -797,6 +798,7 @@ function DashboardContent() {
   const [pedidoCriado, setPedidoCriado] = useState<{ referencia: string; method: PayMethod; valor: number } | null>(null)
   const [historicoPagamentos, setHistoricoPagamentos] = useState<PagamentoHistorico[]>([])
   const [provider, setProvider] = useState<'paysuite' | 'zumbopay'>('paysuite')
+  const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
 
   const router = useRouter()
 
@@ -832,6 +834,7 @@ function DashboardContent() {
     setPagamentoPendente(pendentes.length > 0 ? pendentes[0] : null)
     const historico = await getMeuHistoricoPagamentos()
     setHistoricoPagamentos(historico)
+    setConvites(await getMinhasEstatisticasConvite())
   }
 
   useEffect(() => {
@@ -889,9 +892,24 @@ function DashboardContent() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const mensagemConvite = `Junta-te ao *SonhoEuropa*!\n\nDepositamos em conjunto e concorremos a *200 000 MT* para a Europa. Quanto mais gente entrar, mais rápido o fundo enche e mais cedo há sorteio.\n\nRegista-te aqui: ${inviteUrl}`
+
   const shareWhatsApp = () => {
-    const msg = `Junta-te ao *SonhoEuropa*!\n\nDepositamos em conjunto e concorremos a *200 000 MT* para a Europa!\n\nRegista-te aqui: ${inviteUrl}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensagemConvite)}`, '_blank')
+  }
+
+  // Abre o menu de partilha do próprio telemóvel (WhatsApp, SMS, Facebook,
+  // Messenger, email...). Se o browser não suportar, cai no WhatsApp.
+  const sharePartilhaNativa = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: 'SonhoEuropa', text: mensagemConvite, url: inviteUrl })
+        return
+      } catch {
+        return // utilizador cancelou
+      }
+    }
+    shareWhatsApp()
   }
 
   const metaReal = 300000
@@ -1245,6 +1263,28 @@ function DashboardContent() {
                 <h2 className="font-black text-lg" style={{ color: '#003399' }}>Convida amigos</h2>
                 <p className="text-xs text-gray-400 mt-1">Quanto mais participantes, mais rápido o fundo cresce</p>
               </div>
+
+              {/* Progresso de quem divulga */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="text-center py-3 rounded-2xl" style={{ backgroundColor: '#00339910' }}>
+                  <p className="text-3xl font-black" style={{ color: '#003399' }}>{convites.registados}</p>
+                  <p className="text-xs font-bold text-gray-400 mt-0.5">
+                    {convites.registados === 1 ? 'registou-se' : 'registaram-se'}
+                  </p>
+                </div>
+                <div className="text-center py-3 rounded-2xl" style={{ backgroundColor: '#1D9E7510' }}>
+                  <p className="text-3xl font-black" style={{ color: '#1D9E75' }}>{convites.participantes}</p>
+                  <p className="text-xs font-bold text-gray-400 mt-0.5">
+                    {convites.participantes === 1 ? 'já participa' : 'já participam'}
+                  </p>
+                </div>
+              </div>
+
+              {convites.registados > 0 && (
+                <p className="text-xs text-center text-gray-400 mb-4 leading-relaxed">
+                  Graças a ti, o fundo cresce mais depressa. Continua a partilhar!
+                </p>
+              )}
               <div className="flex items-center justify-center gap-2 p-4 rounded-2xl mb-4"
                 style={{ backgroundColor: 'var(--background)' }}>
                 <span className="text-2xl font-black font-mono tracking-widest" style={{ color: '#003399', letterSpacing: '0.2em' }}>
@@ -1260,11 +1300,18 @@ function DashboardContent() {
                   {copied ? 'Copiado!' : 'Copiar'}
                 </button>
               </div>
-              <button onClick={shareWhatsApp}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white active:scale-95 transition-all"
-                style={{ backgroundColor: '#25D366' }}>
-                <Share2 className="w-4 h-4" /> Partilhar no WhatsApp
-              </button>
+              <div className="space-y-2">
+                <button onClick={shareWhatsApp}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white active:scale-95 transition-all"
+                  style={{ backgroundColor: '#25D366' }}>
+                  <Share2 className="w-4 h-4" /> Partilhar no WhatsApp
+                </button>
+                <button onClick={sharePartilhaNativa}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold active:scale-95 transition-all"
+                  style={{ backgroundColor: 'var(--background)', color: '#003399' }}>
+                  <Send className="w-4 h-4" /> Partilhar noutra app
+                </button>
+              </div>
             </div>
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <h3 className="font-bold text-sm mb-3" style={{ color: '#003399' }}>Como funciona?</h3>

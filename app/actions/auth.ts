@@ -95,7 +95,11 @@ export async function register(data: {
     // por isso desfaz-se a criação antes de devolver o erro.
     await admin.auth.admin.deleteUser(authData.user.id).catch(() => {})
 
-    if (dbError.code === '23505') return { error: 'Este email já está registado' }
+    if (dbError.code === '23505') {
+      return dbError.message?.includes('telefone')
+        ? { error: 'Este número de telefone já está registado' }
+        : { error: 'Este email já está registado' }
+    }
     console.error('[register] Falha ao criar perfil:', dbError.code, dbError.message)
     return { error: 'Erro ao criar conta. Tenta novamente.' }
   }
