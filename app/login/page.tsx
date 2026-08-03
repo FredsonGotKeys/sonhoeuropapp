@@ -3,13 +3,20 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import { Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react'
 import { login } from '@/app/actions/auth'
+import GoogleButton from '@/components/GoogleButton'
 
-export default function LoginPage() {
+function LoginConteudo() {
+  const searchParams = useSearchParams()
+  const erroGoogle = searchParams.get('erro') === 'google'
+
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [mostrarEmail, setMostrarEmail] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -38,7 +45,32 @@ export default function LoginPage() {
       <div className="w-full max-w-[380px] animate-enter-up delay-1">
         <div className="card p-6">
           <h2 className="t-heading text-xl mb-1" style={{ color: 'var(--fg)' }}>Entrar na conta</h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>Insere as tuas credenciais</p>
+          <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>Rápido e sem senhas para memorizar</p>
+
+          {erroGoogle && (
+            <div className="p-3 rounded-md text-sm font-medium mb-4"
+              style={{ background: 'var(--red-muted)', color: 'var(--red)' }}>
+              Não foi possível entrar com o Google. Tenta novamente.
+            </div>
+          )}
+
+          <GoogleButton label="Entrar com Google" />
+
+          {!mostrarEmail && (
+            <button type="button" onClick={() => setMostrarEmail(true)}
+              className="w-full mt-4 text-xs hover:underline"
+              style={{ color: 'var(--fg-subtle)' }}>
+              Entrar com email e senha
+            </button>
+          )}
+
+          {mostrarEmail && (
+          <>
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+            <span className="text-xs" style={{ color: 'var(--fg-subtle)' }}>ou</span>
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -94,6 +126,8 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+          </>
+          )}
 
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
@@ -111,5 +145,18 @@ export default function LoginPage() {
         <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" /> Voltar ao início
       </Link>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="w-8 h-8 border-4 rounded-full animate-spin"
+          style={{ borderColor: 'var(--border)', borderTopColor: 'var(--cobalt)' }} />
+      </div>
+    }>
+      <LoginConteudo />
+    </Suspense>
   )
 }

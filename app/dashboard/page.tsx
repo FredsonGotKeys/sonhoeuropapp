@@ -815,9 +815,12 @@ function DashboardContent() {
         .order('data_deposito', { ascending: false }).limit(20),
     ])
 
-    if (userData.data) {
-      setUser(userData.data)
+    // Entrou pelo Google mas ainda não criou o perfil (falta o telefone).
+    if (!userData.data) {
+      router.replace('/completar-perfil')
+      return
     }
+    setUser(userData.data)
 
     if (cicloData.data) {
       setCiclo(cicloData.data)

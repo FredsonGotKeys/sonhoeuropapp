@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Eye, EyeOff, Check, Mail, ArrowRight, ArrowLeft } from 'lucide-react'
 import { register } from '@/app/actions/auth'
+import GoogleButton from '@/components/GoogleButton'
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -47,6 +48,7 @@ export default function RegisterForm() {
   const [confirmed, setConfirmed] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [aceitaTermos, setAceitaTermos] = useState(false)
+  const [mostrarEmail, setMostrarEmail] = useState(false)
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -121,6 +123,24 @@ export default function RegisterForm() {
               </div>
             </div>
           )}
+
+          <GoogleButton codigoConvite={form.codigoConvite} label="Criar conta com Google" />
+
+          {!mostrarEmail && (
+            <button type="button" onClick={() => setMostrarEmail(true)}
+              className="w-full mt-4 text-xs hover:underline"
+              style={{ color: 'var(--fg-subtle)' }}>
+              Prefiro usar email e senha
+            </button>
+          )}
+
+          {mostrarEmail && (
+          <>
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+            <span className="text-xs" style={{ color: 'var(--fg-subtle)' }}>ou</span>
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -230,11 +250,14 @@ export default function RegisterForm() {
               )}
             </button>
 
-            <p className="text-center text-xs" style={{ color: 'var(--fg-muted)' }}>
-              Já tens conta?{' '}
-              <Link href="/login" className="font-bold hover:underline" style={{ color: 'var(--cobalt)' }}>Entrar</Link>
-            </p>
           </form>
+          </>
+          )}
+
+          <p className="text-center text-xs mt-5" style={{ color: 'var(--fg-muted)' }}>
+            Já tens conta?{' '}
+            <Link href="/login" className="font-bold hover:underline" style={{ color: 'var(--cobalt)' }}>Entrar</Link>
+          </p>
         </div>
       </div>
 

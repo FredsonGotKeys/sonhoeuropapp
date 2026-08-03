@@ -117,7 +117,7 @@ export default async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // ── Protected routes ──
-  if (!user && path.startsWith('/dashboard')) {
+  if (!user && (path.startsWith('/dashboard') || path.startsWith('/completar-perfil'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

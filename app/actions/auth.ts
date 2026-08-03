@@ -3,6 +3,40 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { REF_COOKIE } from '@/lib/auth-cookies'
+
+/**
+ * Arranca o login com Google no servidor: o cliente do browser guarda o
+ * verificador PKCE em sessionStorage, que o servidor não consegue ler no
+ * regresso. Iniciando aqui, o verificador fica num cookie e a troca do
+ * código em /auth/callback funciona.
+ */
+export async function iniciarLoginGoogle(codigoConvite?: string) {
+  const supabase = await createClient()
+
+  // O código de convite não sobrevive à ida ao Google — guarda-se num cookie.
+  const codigo = (codigoConvite ?? '').trim().toUpperCase()
+  if (codigo && INVITE_RE.test(codigo)) {
+    const cookieStore = await cookies()
+    cookieStore.set(REF_COOKIE, codigo, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 30,
+      path: '/',
+    })
+  }
+
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${siteUrl}/auth/callback` },
+  })
+
+  if (error || !data.url) return { error: 'Não foi possível iniciar o login com Google' }
+  return { url: data.url }
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NOME_MAX = 120
@@ -12,6 +46,81 @@ const TELEFONE_RE = /^8[2-7]\d{7}$/
 
 function sanitize(s: string): string {
   return s.replace(/<[^>]*>/g, '').trim()
+}
+
+/** Estado do perfil de quem já está autenticado (usado após o login Google). */
+export async function getEstadoPerfil() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { autenticado: false, temPerfil: false, nomeSugerido: '' }
+
+  const admin = createAdminClient()
+  const { data: perfil } = await admin.from('usuarios').select('id').eq('id', user.id).maybeSingle()
+
+  const meta = user.user_metadata ?? {}
+  const nomeSugerido = sanitize(String(meta.full_name ?? meta.name ?? '')).slice(0, NOME_MAX)
+
+  return { autenticado: true, temPerfil: !!perfil, nomeSugerido }
+}
+
+/**
+ * Cria o perfil de quem entrou por Google. O Google devolve email e nome,
+ * mas não o telefone — sem ele não há como pagar o prémio ao vencedor.
+ */
+export async function completarPerfil(data: { nome: string; telefone: string }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Não autenticado' }
+
+  const email = (user.email ?? '').trim().toLowerCase()
+  if (!EMAIL_RE.test(email)) return { error: 'A tua conta não tem email associado' }
+
+  const nome = sanitize(data.nome ?? '').slice(0, NOME_MAX)
+  const telefone = (data.telefone ?? '').replace(/[\s\-+]/g, '').replace(/^258/, '')
+
+  if (nome.length < 2) return { error: 'Nome é obrigatório' }
+  if (!TELEFONE_RE.test(telefone)) return { error: 'Número de telefone inválido (ex: 84xxxxxxx)' }
+
+  const admin = createAdminClient()
+
+  const { data: jaExiste } = await admin.from('usuarios').select('id').eq('id', user.id).maybeSingle()
+  if (jaExiste) redirect('/dashboard')
+
+  const cookieStore = await cookies()
+  const codigo = (cookieStore.get(REF_COOKIE)?.value ?? '').trim().toUpperCase()
+
+  let convidadoPor: string | null = null
+  if (codigo && INVITE_RE.test(codigo)) {
+    const { data: inviter } = await admin
+      .from('usuarios')
+      .select('id')
+      .eq('codigo_convite', codigo)
+      .maybeSingle()
+    convidadoPor = inviter?.id ?? null
+  }
+
+  const { error: dbError } = await admin.from('usuarios').insert({
+    id: user.id,
+    email,
+    nome,
+    telefone,
+    convidado_por: convidadoPor,
+    total_depositado: 0,
+    termos_aceites_at: new Date().toISOString(),
+  })
+
+  if (dbError) {
+    if (dbError.code === '23505') {
+      return dbError.message?.includes('telefone')
+        ? { error: 'Este número de telefone já está registado' }
+        : { error: 'Esta conta já está registada' }
+    }
+    console.error('[completarPerfil] Falha:', dbError.code, dbError.message)
+    return { error: 'Erro ao criar perfil. Tenta novamente.' }
+  }
+
+  cookieStore.delete(REF_COOKIE)
+  redirect('/dashboard')
 }
 
 export async function login(formData: FormData) {
