@@ -193,12 +193,16 @@ export async function getMeusPagamentosPendentes() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  await createAdminClient()
+  const { error: erroExpiracao } = await createAdminClient()
     .from('pagamentos')
     .update({ status: 'falhado' })
     .eq('usuario_id', user.id)
     .eq('status', 'pendente')
     .lt('created_at', new Date(Date.now() - PENDENTE_TTL_MS).toISOString())
+
+  if (erroExpiracao) {
+    console.error('[pendentes] Falha ao expirar abandonados:', erroExpiracao.code, erroExpiracao.message)
+  }
 
   const { data } = await supabase
     .from('pagamentos')

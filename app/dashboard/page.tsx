@@ -54,6 +54,9 @@ interface PagamentoPendente {
 }
 
 type PayMethod = 'mpesa' | 'emola'
+
+const FALHA_AUTOMATICO =
+  'Pagamento automático indisponível de momento. Faz a transferência manualmente com os dados abaixo e envia o comprovativo — o teu pedido fica registado na mesma.'
 type Tab = 'home' | 'depositar' | 'convite' | 'historico' | 'pagamentos'
 
 interface PagamentoHistorico {
@@ -867,6 +870,8 @@ function DashboardContent() {
     if (result.error) { setPayError(result.error); setPayLoading(false); return }
     if (result.checkoutUrl) { window.location.href = result.checkoutUrl; return }
     if (result.stkStatus === 'sent') setStkEnviado(true)
+    // Sem isto, uma falha do fornecedor deixava o ecrã a mudar sem explicação.
+    if (result.stkStatus === 'failed') setPayError(FALHA_AUTOMATICO)
     await recarregarDados()
     setPayLoading(false)
   }
@@ -880,6 +885,7 @@ function DashboardContent() {
     if (result.error) { setPayError(result.error); setPayLoading(false); return }
     if (result.checkoutUrl) { window.location.href = result.checkoutUrl; return }
     if (result.stkStatus === 'sent') setStkEnviado(true)
+    if (result.stkStatus === 'failed') setPayError(FALHA_AUTOMATICO)
     setPedidoCriado({ referencia: result.reference!, method, valor: valorNum })
     setPayLoading(false)
   }
