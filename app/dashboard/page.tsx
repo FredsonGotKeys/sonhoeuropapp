@@ -12,7 +12,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { logout } from '@/app/actions/auth'
 import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos, getActiveProvider, cancelarPagamentoPendente } from '@/app/actions/deposito'
-import { getMinhasEstatisticasConvite, type EstatisticasConvite } from '@/app/actions/convite'
+import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
 import { Suspense } from 'react'
 
 interface Usuario {
@@ -812,6 +812,7 @@ function DashboardContent() {
   const [historicoPagamentos, setHistoricoPagamentos] = useState<PagamentoHistorico[]>([])
   const [provider, setProvider] = useState<'paysuite' | 'zumbopay' | 'manual'>('manual')
   const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
+  const [ranking, setRanking] = useState<RankingEmbaixador[]>([])
 
   const router = useRouter()
 
@@ -851,6 +852,7 @@ function DashboardContent() {
     const historico = await getMeuHistoricoPagamentos()
     setHistoricoPagamentos(historico)
     setConvites(await getMinhasEstatisticasConvite())
+    setRanking(await getRankingEmbaixadores())
   }
 
   useEffect(() => {
@@ -911,7 +913,17 @@ function DashboardContent() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const mensagemConvite = `Junta-te ao *SonhoEuropa*!\n\nDepositamos em conjunto e concorremos a *200 000 MT* para a Europa. Quanto mais gente entrar, mais rápido o fundo enche e mais cedo há sorteio.\n\nRegista-te aqui: ${inviteUrl}`
+  const primeiroNome = user?.nome?.trim().split(/\s+/)[0] ?? ''
+  const mensagemConvite = `${primeiroNome ? `${primeiroNome} convida-te para o` : 'Junta-te ao'} *SonhoEuropa*!\n\nDepositamos em conjunto e concorremos a *200 000 MT* para a Europa. Quanto mais gente entrar, mais rápido o fundo enche e mais cedo há sorteio.\n\nRegista-te aqui: ${inviteUrl}`
+
+  const NIVEIS_EMBAIXADOR = [
+    { min: 25, nome: 'Embaixador Ouro', emoji: '🏆', cor: '#EF9F27' },
+    { min: 10, nome: 'Embaixador Prata', emoji: '🥈', cor: '#94a3b8' },
+    { min: 3, nome: 'Embaixador Bronze', emoji: '🥉', cor: '#c2703d' },
+    { min: 1, nome: 'Divulgador', emoji: '🌱', cor: '#1D9E75' },
+  ]
+  const nivelActual = NIVEIS_EMBAIXADOR.find((n) => convites.participantes >= n.min)
+  const proximoNivel = [...NIVEIS_EMBAIXADOR].reverse().find((n) => convites.participantes < n.min)
 
   const shareWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagemConvite)}`, '_blank')
@@ -1292,6 +1304,14 @@ function DashboardContent() {
                 <p className="text-xs text-gray-400 mt-1">Quanto mais participantes, mais rápido o fundo cresce</p>
               </div>
 
+              {nivelActual && (
+                <div className="flex items-center justify-center gap-2 mb-4 py-2.5 px-4 rounded-2xl"
+                  style={{ backgroundColor: `${nivelActual.cor}15`, border: `1.5px solid ${nivelActual.cor}40` }}>
+                  <span className="text-xl">{nivelActual.emoji}</span>
+                  <span className="font-black text-sm" style={{ color: nivelActual.cor }}>{nivelActual.nome}</span>
+                </div>
+              )}
+
               {/* Progresso de quem divulga */}
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <div className="text-center py-3 rounded-2xl" style={{ backgroundColor: '#00339910' }}>
@@ -1308,9 +1328,17 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {convites.registados > 0 && (
+              {proximoNivel ? (
+                <p className="text-xs text-center text-gray-400 mb-4 leading-relaxed">
+                  Falta{proximoNivel.min - convites.participantes === 1 ? '' : 'm'} <strong style={{ color: proximoNivel.cor }}>{proximoNivel.min - convites.participantes}</strong> {proximoNivel.min - convites.participantes === 1 ? 'pessoa' : 'pessoas'} para chegares a <strong>{proximoNivel.emoji} {proximoNivel.nome}</strong>
+                </p>
+              ) : convites.registados > 0 ? (
                 <p className="text-xs text-center text-gray-400 mb-4 leading-relaxed">
                   Graças a ti, o fundo cresce mais depressa. Continua a partilhar!
+                </p>
+              ) : (
+                <p className="text-xs text-center text-gray-400 mb-4 leading-relaxed">
+                  Sê o primeiro a partilhar e torna-te 🌱 Divulgador
                 </p>
               )}
               <div className="flex items-center justify-center gap-2 p-4 rounded-2xl mb-4"
@@ -1341,6 +1369,28 @@ function DashboardContent() {
                 </button>
               </div>
             </div>
+
+            {ranking.length > 0 && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm">
+                <h3 className="font-bold text-sm mb-1" style={{ color: '#003399' }}>🏅 Top Embaixadores</h3>
+                <p className="text-xs text-gray-400 mb-3">Quem já trouxe mais participantes à comunidade</p>
+                <div className="space-y-2">
+                  {ranking.map((r, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl"
+                      style={{ backgroundColor: r.souEu ? '#00339910' : 'var(--background)' }}>
+                      <span className="w-6 text-center font-black text-sm text-gray-400">{i + 1}º</span>
+                      <span className="flex-1 font-bold text-sm truncate" style={{ color: r.souEu ? '#003399' : '#1A1A2E' }}>
+                        {r.nome}{r.souEu && ' (tu)'}
+                      </span>
+                      <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ backgroundColor: '#1D9E7515', color: '#1D9E75' }}>
+                        {r.participantes} {r.participantes === 1 ? 'convidado' : 'convidados'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <h3 className="font-bold text-sm mb-3" style={{ color: '#003399' }}>Como funciona?</h3>
               <div className="space-y-3">
