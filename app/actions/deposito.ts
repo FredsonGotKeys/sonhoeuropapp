@@ -183,12 +183,14 @@ export async function enviarComprovativo(referencia: string, comprovativo: strin
     return { error: 'Envia o texto do comprovativo ou uma imagem/screenshot.' }
   }
 
-  // Validate image URL if provided
+  // Validate image URL if provided — tem de ser um objecto dentro do bucket
+  // 'comprovativos', não apenas qualquer URL do mesmo projecto Supabase.
   if (imagemUrl) {
     try {
       const url = new URL(imagemUrl)
       const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname
-      if (url.hostname !== supabaseHost) return { error: 'URL de imagem inválida' }
+      const dentroDoBucket = url.pathname.includes('/object/public/comprovativos/')
+      if (url.hostname !== supabaseHost || !dentroDoBucket) return { error: 'URL de imagem inválida' }
     } catch {
       return { error: 'URL de imagem inválida' }
     }
