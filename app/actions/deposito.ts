@@ -244,18 +244,18 @@ export async function getMeusPagamentosPendentes() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  await limparComprovativosExpirados()
-
-  const { error: erroExpiracao } = await createAdminClient()
+  // Limpeza de rotina — não bloqueia a resposta ao utilizador, que está à
+  // espera de ver o estado do pagamento, não da arrumação da casa.
+  limparComprovativosExpirados().catch((e) => console.error('[pendentes] Falha ao limpar comprovativos:', e))
+  createAdminClient()
     .from('pagamentos')
     .update({ status: 'falhado' })
     .eq('usuario_id', user.id)
     .eq('status', 'pendente')
     .lt('created_at', new Date(Date.now() - PENDENTE_TTL_MS).toISOString())
-
-  if (erroExpiracao) {
-    console.error('[pendentes] Falha ao expirar abandonados:', erroExpiracao.code, erroExpiracao.message)
-  }
+    .then(({ error }) => {
+      if (error) console.error('[pendentes] Falha ao expirar abandonados:', error.code, error.message)
+    })
 
   const { data } = await supabase
     .from('pagamentos')

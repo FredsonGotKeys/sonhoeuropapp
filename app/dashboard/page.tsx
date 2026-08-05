@@ -903,13 +903,14 @@ function DashboardContent() {
 
     if (depositosData.data) setDepositos(depositosData.data)
 
-    // Verificar pagamentos pendentes + histórico
-    const pendentes = await getMeusPagamentosPendentes()
+    // Verificar pagamentos pendentes + histórico — em paralelo, é o caminho
+    // crítico logo a seguir a criar/confirmar um pagamento, tem de ser rápido.
+    const [pendentes, historico] = await Promise.all([
+      getMeusPagamentosPendentes(),
+      getMeuHistoricoPagamentos(),
+    ])
     setPagamentoPendente(pendentes.length > 0 ? pendentes[0] : null)
-    const historico = await getMeuHistoricoPagamentos()
     setHistoricoPagamentos(historico)
-    setConvites(await getMinhasEstatisticasConvite())
-    setRanking(await getRankingEmbaixadores())
   }
 
   useEffect(() => {
@@ -919,6 +920,11 @@ function DashboardContent() {
     }
     load()
     getActiveProvider().then(setProvider)
+
+    // Estatísticas de convite/ranking: não fazem parte do fluxo de pagamento,
+    // por isso correm à parte, sem atrasar recarregarDados().
+    Promise.all([getMinhasEstatisticasConvite(), getRankingEmbaixadores()])
+      .then(([stats, rankingData]) => { setConvites(stats); setRanking(rankingData) })
 
     const supabase = createClient()
     const channel = supabase.channel('dashboard-live')
