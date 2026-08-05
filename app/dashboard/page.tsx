@@ -345,7 +345,7 @@ function CampoComprovativo({
 
 // ─── Termos e Condições ────────────────────────────────────────────────────
 const TERMOS = [
-  { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos para um fundo colectivo. Quando o fundo atinge a meta de 200 000 MT, o sistema selecciona o vencedor de forma ponderada — quem deposita mais tem maiores chances de ganhar. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
+  { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos para um fundo colectivo. Quando o fundo atinge a meta de 200 000 MT, o vencedor e escolhido por sorteio aleatorio ponderado — nao e por ordem de inscricao ou de deposito. Quem deposita mais tem maiores chances de ganhar, mas qualquer inscrito pode ser o sorteado. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
   { t: '2. Inscricao e elegibilidade', p: 'Para participar, o utilizador deve: (a) ter pelo menos 18 anos de idade; (b) possuir um numero de telefone valido para M-Pesa ou E-Mola; (c) pagar a taxa de inscricao unica de 200 MT por ciclo. A taxa de inscricao cobre custos operacionais e nao e reembolsavel apos confirmacao do pagamento. Cada pessoa so pode ter uma conta na plataforma.' },
   { t: '3. Depositos', p: 'O valor minimo por deposito e 100 MT, sem limite maximo. Os depositos sao feitos por transferencia directa via E-Mola (876252006) para Fredson Bernardo Muianga, seguidos do envio de comprovativo (texto ou screenshot) na plataforma. O deposito so e contabilizado, e so conta para as chances no sorteio, apos confirmacao manual pelo administrador.' },
   { t: '4. Taxa de gestao e sustentabilidade', p: 'De cada deposito efectuado, 10% (dez por cento) do valor e alocado a gestao e manutencao da plataforma, cobrindo custos operacionais, suporte tecnico, alojamento do sistema, e seguranca. Os restantes 90% sao integralmente direccionados ao fundo comunitario. Exemplo: num deposito de 100 MT, 10 MT vao para gestao e 90 MT vao para o fundo. A taxa de inscricao (200 MT) e integralmente destinada a custos operacionais e nao entra no fundo do premio.' },
@@ -449,7 +449,7 @@ function TermsModal({ onAccept, onClose }: { onAccept: () => void; onClose: () =
           <div className="pt-4 border-t" style={{ borderColor: '#F5F5F0' }}>
             <p className="font-bold text-gray-800 mb-1">Objectivo do Projecto</p>
             <p>O SonhoEuropa nasceu da necessidade real de milhares de mocambicanos que sonham em imigrar para a Europa mas enfrentam barreiras financeiras significativas. Vistos, passagens aereas, alojamento inicial e documentacao podem facilmente ultrapassar 200 000 MT.</p>
-            <p className="mt-2">A plataforma cria um fundo comunitario onde cada participante contribui com depositos. Quando o fundo atinge a meta, o sistema selecciona o vencedor de forma ponderada — quanto mais depositares, maiores sao as tuas chances. O vencedor recebe o premio integral, permitindo-lhe dar o primeiro passo rumo ao sonho europeu.</p>
+            <p className="mt-2">A plataforma cria um fundo comunitario onde cada participante contribui com depositos. Quando o fundo atinge a meta, o vencedor e escolhido por sorteio aleatorio — nao e por ordem de inscricao nem de deposito. Cada participante entra no sorteio com um numero de bilhetes proporcional ao que depositou, por isso quanto mais depositares, maiores sao as tuas chances, mas qualquer inscrito pode ganhar. O vencedor recebe o premio integral, permitindo-lhe dar o primeiro passo rumo ao sonho europeu.</p>
           </div>
         </div>
         <div className="px-6 py-4 border-t flex-shrink-0 space-y-2" style={{ borderColor: '#F5F5F0' }}>
@@ -606,7 +606,7 @@ function InscricaoObrigatoria({
               { step: '1', title: 'Inscreve-te', desc: 'Paga a taxa unica de inscricao para entrar no ciclo actual.', color: '#003399' },
               { step: '2', title: 'Deposita', desc: 'A partir de 100 MT. Acompanha o fundo a crescer em tempo real.', color: '#EF9F27' },
               { step: '3', title: 'O fundo cresce', desc: 'Todos os depositos vao para o fundo comunitario. Quanto mais participantes, mais rapido.', color: '#1D9E75' },
-              { step: '4', title: 'Ganha o premio', desc: 'Quando o fundo atinge 200 000 MT, o sistema selecciona o vencedor. Quanto mais depositares, mais chances tens.', color: '#e74c3c' },
+              { step: '4', title: 'Ganha o premio', desc: 'Quando o fundo atinge 200 000 MT, faz-se um sorteio aleatorio — nao e por ordem de chegada. Quanto mais depositares, mais chances tens.', color: '#e74c3c' },
             ].map((s) => (
               <div key={s.step} className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"

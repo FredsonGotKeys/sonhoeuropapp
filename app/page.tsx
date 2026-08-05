@@ -91,8 +91,8 @@ export default function LandingPage() {
       a: 'Os depósitos não são reembolsáveis após o arranque do ciclo. Pensa nisto como uma contribuição para o fundo comunitário — estás a ajudar a construir o prémio enquanto concorres a ganhá-lo.',
     },
     {
-      q: 'Como é escolhido o vencedor?',
-      a: 'O sistema selecciona automaticamente o vencedor de forma ponderada: quanto mais depositares, maiores são as tuas chances de ganhar. Todos os participantes inscritos são elegíveis, mas quem contribui mais tem mais probabilidade.',
+      q: 'Como é escolhido o vencedor? É por ordem de chegada?',
+      a: 'Não é por ordem nem por quem se inscreveu primeiro — é um sorteio aleatório ponderado. Todos os participantes inscritos entram no sorteio, mas quanto mais depositares, mais bilhetes tens nesse sorteio e maiores são as tuas chances. O sistema escolhe o vencedor ao acaso entre todos esses bilhetes, por isso qualquer participante pode ganhar — só que quem contribui mais tem mais probabilidade.',
     },
     {
       q: 'O que é a taxa de inscrição?',
@@ -320,10 +320,10 @@ export default function LandingPage() {
                 num: '03',
                 icon: <Trophy className="w-5 h-5" />,
                 title: 'Ganha o prémio',
-                desc: 'Quando o fundo atinge o valor necessário, o sistema selecciona o vencedor. Quanto mais depositares, maiores as tuas chances.',
+                desc: 'Quando o fundo atinge o valor necessário, o sistema faz um sorteio aleatório — não é por ordem de chegada. Quanto mais depositares, mais bilhetes tens no sorteio e maiores as tuas chances.',
                 details: [
                   'Todos os participantes inscritos e com depósitos são elegíveis — qualquer um pode ser o escolhido.',
-                  'A selecção é feita automaticamente pelo sistema com base nos seus critérios internos.',
+                  'É um sorteio aleatório: o sistema escolhe ao acaso, dando mais bilhetes a quem depositou mais — não é por ordem de inscrição nem de depósito.',
                   'O vencedor recebe 200 000 MT directamente na M-Pesa ou conta bancária. Sem atrasos.',
                 ],
                 cta: 'Quero participar',
