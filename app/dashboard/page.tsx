@@ -282,6 +282,16 @@ function CampoComprovativo({
     } catch { /* clipboard denied */ }
   }
 
+  // O texto tem de ser exactamente o que o E-Mola enviou — sem espaço para
+  // digitar ou alterar à mão. Só entra por colar (botão ou gesto nativo).
+  const handlePasteTexto = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    e.preventDefault()
+    const text = e.clipboardData.getData('text')
+    if (text) setTexto(text)
+  }
+
+  const limparTexto = () => setTexto('')
+
   if (enviado) {
     return (
       <div className="p-5 rounded-2xl text-center" style={{ backgroundColor: '#1D9E7510', border: '2px solid #1D9E7530' }}>
@@ -300,18 +310,28 @@ function CampoComprovativo({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <p className="text-xs text-gray-400 flex items-center gap-1"><FileText className="w-3 h-3" /> Mensagem de confirmacao</p>
-          <button onClick={colar}
-            className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all"
-            style={{ backgroundColor: '#00339910', color: '#003399' }}>
-            <ClipboardPaste className="w-3 h-3" /> Colar
-          </button>
+          {texto ? (
+            <button onClick={limparTexto}
+              className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all"
+              style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+              <X className="w-3 h-3" /> Limpar
+            </button>
+          ) : (
+            <button onClick={colar}
+              className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all"
+              style={{ backgroundColor: '#00339910', color: '#003399' }}>
+              <ClipboardPaste className="w-3 h-3" /> Colar
+            </button>
+          )}
         </div>
         <textarea
           value={texto}
-          onChange={e => setTexto(e.target.value)}
-          placeholder="Cola aqui a mensagem SMS que recebeste apos o envio..."
+          readOnly
+          onPaste={handlePasteTexto}
+          onKeyDown={(e) => { if (!(e.ctrlKey || e.metaKey)) e.preventDefault() }}
+          placeholder="Usa o botão Colar, ou cola aqui (Ctrl+V) a mensagem SMS que recebeste — não é possível escrever ou editar, tem de ser a mensagem original"
           rows={3}
-          className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none resize-none transition-all"
+          className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none resize-none transition-all cursor-default"
           style={{ borderColor: texto ? '#003399' : '#e5e7eb', backgroundColor: texto ? 'white' : '#fafafa' }}
         />
       </div>
