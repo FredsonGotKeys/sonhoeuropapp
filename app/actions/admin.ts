@@ -288,11 +288,26 @@ export async function rejeitarPagamento(pagamentoId: string) {
   return { success: true }
 }
 
+// Extrai o caminho do ficheiro dentro do bucket a partir do URL público
+// gravado em comprovativo_imagem_url (ex: .../comprovativos/SE...123.jpg).
+function caminhoNoBucket(url: string | null): string | null {
+  if (!url) return null
+  const marcador = '/comprovativos/'
+  const i = url.indexOf(marcador)
+  return i === -1 ? null : url.slice(i + marcador.length)
+}
+
 export async function eliminarPagamento(pagamentoId: string) {
   const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
   const admin = createAdminClient()
+
+  const { data: pag } = await admin.from('pagamentos').select('comprovativo_imagem_url').eq('id', pagamentoId).maybeSingle()
   const { error } = await admin.from('pagamentos').delete().eq('id', pagamentoId)
   if (error) return { error: error.message }
+
+  const caminho = caminhoNoBucket(pag?.comprovativo_imagem_url ?? null)
+  if (caminho) await admin.storage.from('comprovativos').remove([caminho])
+
   return { success: true }
 }
 
@@ -300,8 +315,14 @@ export async function eliminarPagamentosEmMassa(ids: string[]) {
   const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
   if (!ids.length) return { success: true }
   const admin = createAdminClient()
+
+  const { data: pags } = await admin.from('pagamentos').select('comprovativo_imagem_url').in('id', ids)
   const { error } = await admin.from('pagamentos').delete().in('id', ids)
   if (error) return { error: error.message }
+
+  const caminhos = (pags ?? []).map((p) => caminhoNoBucket(p.comprovativo_imagem_url)).filter((c): c is string => !!c)
+  if (caminhos.length) await admin.storage.from('comprovativos').remove(caminhos)
+
   return { success: true, count: ids.length }
 }
 

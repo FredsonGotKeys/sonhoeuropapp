@@ -199,7 +199,7 @@ function CampoComprovativo({
   const handleImagem = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) { setErro('Imagem muito grande. Maximo 5 MB.'); return }
+    if (file.size > 2 * 1024 * 1024) { setErro('Imagem muito grande. Maximo 2 MB — um screenshot normal chega perfeitamente.'); return }
     if (!file.type.startsWith('image/')) { setErro('Ficheiro invalido. Envia uma imagem.'); return }
     setImagem(file)
     setErro('')
@@ -347,7 +347,7 @@ function CampoComprovativo({
 const TERMOS = [
   { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos para um fundo colectivo. Quando o fundo atinge a meta de 200 000 MT, o sistema selecciona o vencedor de forma ponderada — quem deposita mais tem maiores chances de ganhar. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
   { t: '2. Inscricao e elegibilidade', p: 'Para participar, o utilizador deve: (a) ter pelo menos 18 anos de idade; (b) possuir um numero de telefone valido para M-Pesa ou E-Mola; (c) pagar a taxa de inscricao unica de 200 MT por ciclo. A taxa de inscricao cobre custos operacionais e nao e reembolsavel apos confirmacao do pagamento. Cada pessoa so pode ter uma conta na plataforma.' },
-  { t: '3. Depositos', p: 'O valor minimo por deposito e 100 MT, sem limite maximo. Os depositos sao feitos por transferencia directa via M-Pesa (846283051) ou E-Mola (876252006) para Fredson Bernardo Muianga, seguidos do envio de comprovativo (texto ou screenshot) na plataforma, ou por pedido automatico (STK push) no telefone. O deposito so e contabilizado apos confirmacao.' },
+  { t: '3. Depositos', p: 'O valor minimo por deposito e 100 MT, sem limite maximo. Os depositos sao feitos por transferencia directa via E-Mola (876252006) para Fredson Bernardo Muianga, seguidos do envio de comprovativo (texto ou screenshot) na plataforma. O deposito so e contabilizado, e so conta para as chances no sorteio, apos confirmacao manual pelo administrador.' },
   { t: '4. Taxa de gestao e sustentabilidade', p: 'De cada deposito efectuado, 10% (dez por cento) do valor e alocado a gestao e manutencao da plataforma, cobrindo custos operacionais, suporte tecnico, alojamento do sistema, e seguranca. Os restantes 90% sao integralmente direccionados ao fundo comunitario. Exemplo: num deposito de 100 MT, 10 MT vao para gestao e 90 MT vao para o fundo. A taxa de inscricao (200 MT) e integralmente destinada a custos operacionais e nao entra no fundo do premio.' },
   { t: '5. Seleccao do vencedor', p: 'O sistema selecciona automaticamente o vencedor quando o fundo atinge a meta estabelecida. A seleccao e ponderada pelo total depositado: quanto mais depositares, maiores sao as tuas chances de ser seleccionado. O algoritmo utiliza geracao de numeros aleatorios criptograficamente seguros para garantir imparcialidade.' },
   { t: '6. Condicoes para a seleccao', p: 'A seleccao do vencedor so e realizada quando o fundo comunitario atinge a meta estabelecida. Enquanto a meta nao for atingida, o ciclo permanece activo e os depositos continuam a acumular.' },
@@ -388,7 +388,7 @@ function gerarPdfTermos() {
     '',
     'Principios fundamentais:',
     '- Transparencia total: fundo visivel em tempo real para todos',
-    '- Acessibilidade: qualquer mocambicano com M-Pesa ou E-Mola pode participar',
+    '- Acessibilidade: qualquer mocambicano com E-Mola pode participar',
     '- Igualdade: todos os inscritos tem a mesma chance de ganhar',
     '- Simplicidade: deposita, acompanha o fundo, o sistema faz o resto',
     '',
@@ -488,7 +488,7 @@ function InscricaoObrigatoria({
   error: string
   pagamentoPendente: PagamentoPendente | null
   onComprovativoEnviado: () => void
-  provider: 'paysuite' | 'zumbopay'
+  provider: 'paysuite' | 'zumbopay' | 'manual'
 }) {
   const [method, setMethod] = useState<PayMethod>('mpesa')
   const [showTerms, setShowTerms] = useState(false)
@@ -687,48 +687,58 @@ function InscricaoObrigatoria({
 
               <div className="h-px" style={{ backgroundColor: 'var(--background)' }} />
 
-              {/* Método de pagamento */}
-              <div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Metodo de pagamento</p>
-                <div className="flex gap-3 justify-center">
-                  {[
-                    { id: 'mpesa' as PayMethod, label: 'M-Pesa', sub: 'Vodacom', icon: <Smartphone className="w-5 h-5" /> },
-                    { id: 'emola' as PayMethod, label: 'E-Mola', sub: 'Movitel', icon: <Banknote className="w-5 h-5" /> },
-                  ].map((m) => {
-                    const sel = method === m.id
-                    return (
-                      <button key={m.id} onClick={() => setMethod(m.id)}
-                        className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all"
-                        style={{
-                          borderColor: sel ? '#003399' : '#e5e7eb',
-                          backgroundColor: sel ? '#003399' : 'white',
-                          color: sel ? 'white' : '#555',
-                          boxShadow: sel ? '0 4px 14px rgba(0,51,153,0.2)' : 'none',
-                        }}>
-                        <span className={sel ? 'text-white' : 'text-gray-400'}>{m.icon}</span>
-                        <span className="font-black text-sm">{m.label}</span>
-                        <span className="text-xs opacity-60">{m.sub}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+              {provider === 'zumbopay' && (
+                <>
+                  {/* Método de pagamento */}
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Metodo de pagamento</p>
+                    <div className="flex gap-3 justify-center">
+                      {[
+                        { id: 'mpesa' as PayMethod, label: 'M-Pesa', sub: 'Vodacom', icon: <Smartphone className="w-5 h-5" /> },
+                        { id: 'emola' as PayMethod, label: 'E-Mola', sub: 'Movitel', icon: <Banknote className="w-5 h-5" /> },
+                      ].map((m) => {
+                        const sel = method === m.id
+                        return (
+                          <button key={m.id} onClick={() => setMethod(m.id)}
+                            className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all"
+                            style={{
+                              borderColor: sel ? '#003399' : '#e5e7eb',
+                              backgroundColor: sel ? '#003399' : 'white',
+                              color: sel ? 'white' : '#555',
+                              boxShadow: sel ? '0 4px 14px rgba(0,51,153,0.2)' : 'none',
+                            }}>
+                            <span className={sel ? 'text-white' : 'text-gray-400'}>{m.icon}</span>
+                            <span className="font-black text-sm">{m.label}</span>
+                            <span className="text-xs opacity-60">{m.sub}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
 
-              {provider === 'zumbopay' ? (
-                <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Número de telefone (opcional)</label>
-                  <input
-                    type="tel" placeholder="84/85/86... para pagamento automático"
-                    value={tel} onChange={(e) => setTel(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all"
-                    style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
-                    onFocus={(e) => { e.target.style.borderColor = '#003399'; e.target.style.backgroundColor = 'white' }}
-                    onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa' }}
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Recebes o pedido directo no telefone via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Número de telefone (opcional)</label>
+                    <input
+                      type="tel" placeholder="84/85/86... para pagamento automático"
+                      value={tel} onChange={(e) => setTel(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all"
+                      style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
+                      onFocus={(e) => { e.target.style.borderColor = '#003399'; e.target.style.backgroundColor = 'white' }}
+                      onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa' }}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Recebes o pedido directo no telefone via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
+                  </div>
+                </>
+              )}
+
+              {provider === 'manual' && (
+                <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
+                  Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
                 </div>
-              ) : (
-                <p className="text-xs text-gray-400 -mt-1">Vais ser redireccionado para introduzires o número via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
+              )}
+
+              {provider === 'paysuite' && (
+                <p className="text-xs text-gray-400 -mt-1">Vais ser redireccionado para introduzires o número via E-Mola</p>
               )}
 
               {error && (
@@ -800,7 +810,7 @@ function DashboardContent() {
   const [pagamentoPendente, setPagamentoPendente] = useState<PagamentoPendente | null>(null)
   const [pedidoCriado, setPedidoCriado] = useState<{ referencia: string; method: PayMethod; valor: number } | null>(null)
   const [historicoPagamentos, setHistoricoPagamentos] = useState<PagamentoHistorico[]>([])
-  const [provider, setProvider] = useState<'paysuite' | 'zumbopay'>('paysuite')
+  const [provider, setProvider] = useState<'paysuite' | 'zumbopay' | 'manual'>('manual')
   const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
 
   const router = useRouter()
@@ -1147,32 +1157,33 @@ function DashboardContent() {
                 </div>
 
                 <div className="p-5 space-y-5">
-                  {/* Method */}
-                  <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Metodo de pagamento</p>
-                    <div className="flex gap-3 justify-center">
-                      {[
-                        { id: 'mpesa' as PayMethod, label: 'M-Pesa', sub: 'Vodacom', icon: <Smartphone className="w-5 h-5" /> },
-                        { id: 'emola' as PayMethod, label: 'E-Mola', sub: 'Movitel', icon: <Banknote className="w-5 h-5" /> },
-                      ].map((m) => {
-                        const sel = method === m.id
-                        return (
-                          <button key={m.id} onClick={() => setMethod(m.id)}
-                            className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all"
-                            style={{
-                              borderColor: sel ? '#003399' : '#e5e7eb',
-                              backgroundColor: sel ? '#003399' : 'white',
-                              color: sel ? 'white' : '#555',
-                              boxShadow: sel ? '0 4px 14px rgba(0,51,153,0.2)' : 'none',
-                            }}>
-                            <span className={sel ? 'text-white' : 'text-gray-400'}>{m.icon}</span>
-                            <span className="font-black text-sm">{m.label}</span>
-                            <span className="text-xs opacity-60">{m.sub}</span>
-                          </button>
-                        )
-                      })}
+                  {provider === 'zumbopay' && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Metodo de pagamento</p>
+                      <div className="flex gap-3 justify-center">
+                        {[
+                          { id: 'mpesa' as PayMethod, label: 'M-Pesa', sub: 'Vodacom', icon: <Smartphone className="w-5 h-5" /> },
+                          { id: 'emola' as PayMethod, label: 'E-Mola', sub: 'Movitel', icon: <Banknote className="w-5 h-5" /> },
+                        ].map((m) => {
+                          const sel = method === m.id
+                          return (
+                            <button key={m.id} onClick={() => setMethod(m.id)}
+                              className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all"
+                              style={{
+                                borderColor: sel ? '#003399' : '#e5e7eb',
+                                backgroundColor: sel ? '#003399' : 'white',
+                                color: sel ? 'white' : '#555',
+                                boxShadow: sel ? '0 4px 14px rgba(0,51,153,0.2)' : 'none',
+                              }}>
+                              <span className={sel ? 'text-white' : 'text-gray-400'}>{m.icon}</span>
+                              <span className="font-black text-sm">{m.label}</span>
+                              <span className="text-xs opacity-60">{m.sub}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Amount */}
                   <div>
@@ -1211,7 +1222,7 @@ function DashboardContent() {
                     )}
                   </div>
 
-                  {provider === 'zumbopay' ? (
+                  {provider === 'zumbopay' && (
                     <div>
                       <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Número de telefone (opcional)</label>
                       <input
@@ -1224,8 +1235,16 @@ function DashboardContent() {
                       />
                       <p className="text-xs text-gray-400 mt-1">Se preencheres, recebes o pedido directo no telefone via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
                     </div>
-                  ) : (
-                    <p className="text-xs text-gray-400">Vais ser redireccionado para introduzires o número via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
+                  )}
+
+                  {provider === 'manual' && (
+                    <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
+                      Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
+                    </div>
+                  )}
+
+                  {provider === 'paysuite' && (
+                    <p className="text-xs text-gray-400">Vais ser redireccionado para introduzires o número via E-Mola</p>
                   )}
 
                   {stkEnviado && (

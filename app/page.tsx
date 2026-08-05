@@ -83,8 +83,8 @@ export default function LandingPage() {
 
   const faqs = [
     {
-      q: 'É seguro? Como sei que o prémio será pago?',
-      a: 'O fundo acumulado é visível para todos em tempo real. Quando atinge o valor necessário, o sistema selecciona automaticamente o vencedor, que recebe o prémio directamente via M-Pesa ou conta bancária.',
+      q: 'É seguro? Quem fica com o dinheiro até ao sorteio?',
+      a: 'A plataforma é gerida por Fredson Bernardo Muianga, residente em Maputo, que recebe directamente todas as contribuições via E-Mola. O fundo acumulado é visível para todos em tempo real. Quando atinge o valor necessário, o sistema selecciona automaticamente o vencedor, que recebe o prémio directamente via M-Pesa ou conta bancária.',
     },
     {
       q: 'Posso perder o dinheiro que depositei?',
@@ -100,7 +100,7 @@ export default function LandingPage() {
     },
     {
       q: 'Quais métodos de pagamento?',
-      a: 'M-Pesa ou E-Mola. Fazes a transferência e envias o comprovativo, ou recebes o pedido directamente no telefone.',
+      a: 'Só por E-Mola, para o número 876 252 006 (Fredson Bernardo Muianga). Fazes a transferência e envias o comprovativo na plataforma — a contribuição só é contabilizada, e só aumenta as tuas chances no sorteio, depois de confirmada manualmente pelo administrador.',
     },
   ]
 
@@ -309,7 +309,7 @@ export default function LandingPage() {
                 desc: 'Cada depósito teu ajuda o fundo a crescer. Acompanha o progresso em tempo real.',
                 details: [
                   'A partir de 100 MT por dia — menos do que um café. Deposita o que puderes, quando puderes.',
-                  'Paga via M-Pesa ou E-Mola directamente do telemóvel. Rápido, simples e seguro.',
+                  'Paga via E-Mola directamente do telemóvel. Rápido, simples e seguro.',
                   'O fundo é visível para todos. Vês exactamente quanto falta para o prémio ser atribuído.',
                 ],
                 cta: 'Começar a depositar',

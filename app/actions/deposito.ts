@@ -5,8 +5,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createCharge, WALLETS } from '@/lib/zumbopay'
 import { createPayment as createPaysuitePayment } from '@/lib/paysuite'
 
-function activeProvider(): 'paysuite' | 'zumbopay' {
-  return (process.env.PAYMENT_PROVIDER ?? 'paysuite').trim().toLowerCase() === 'zumbopay' ? 'zumbopay' : 'paysuite'
+function activeProvider(): 'paysuite' | 'zumbopay' | 'manual' {
+  const v = (process.env.PAYMENT_PROVIDER ?? 'manual').trim().toLowerCase()
+  if (v === 'zumbopay') return 'zumbopay'
+  if (v === 'paysuite') return 'paysuite'
+  return 'manual'
 }
 
 export async function getActiveProvider() {
@@ -67,11 +70,16 @@ export async function criarPedidoPagamento(params: {
   const nome = userData?.nome ?? 'Participante'
 
   const provider = activeProvider()
+  // Único método disponível enquanto os pagamentos automáticos estão desligados.
+  const metodo: 'mpesa' | 'emola' = provider === 'manual' ? 'emola' : params.method
   let stkStatus: 'sent' | 'failed' | 'skipped' = 'skipped'
   let stkError = ''
   let checkoutUrl: string | undefined
 
-  if (provider === 'paysuite') {
+  if (provider === 'manual') {
+    // Nenhuma chamada externa — o pedido fica logo pronto para transferência
+    // manual e envio de comprovativo.
+  } else if (provider === 'paysuite') {
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
     const res = await createPaysuitePayment({
       amount: valor,
@@ -118,7 +126,7 @@ export async function criarPedidoPagamento(params: {
     referencia: reference,
     status: stkStatus === 'sent' ? 'pendente' : 'aguardando_comprovativo',
     valor,
-    metodo: params.method,
+    metodo,
   })
 
   if (error) return { error: error.message }
