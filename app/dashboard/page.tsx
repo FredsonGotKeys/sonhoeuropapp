@@ -196,9 +196,7 @@ function CampoComprovativo({
   const [erro, setErro] = useState('')
   const [enviado, setEnviado] = useState(false)
 
-  const handleImagem = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const processarImagem = (file: File) => {
     if (file.size > 2 * 1024 * 1024) { setErro('Imagem muito grande. Maximo 2 MB — um screenshot normal chega perfeitamente.'); return }
     if (!file.type.startsWith('image/')) { setErro('Ficheiro invalido. Envia uma imagem.'); return }
     setImagem(file)
@@ -206,6 +204,36 @@ function CampoComprovativo({
     const reader = new FileReader()
     reader.onload = (ev) => setImagemPreview(ev.target?.result as string)
     reader.readAsDataURL(file)
+  }
+
+  const handleImagem = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) processarImagem(file)
+  }
+
+  // Colar directamente do telemóvel: tira-se o screenshot, faz-se
+  // "colar" (Ctrl+V ou o toque de colar do teclado), sem passar pela
+  // galeria de ficheiros.
+  const handlePasteImagem = (e: React.ClipboardEvent) => {
+    const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith('image/'))
+    const file = item?.getAsFile()
+    if (file) { e.preventDefault(); processarImagem(file) }
+  }
+
+  const colarImagemDaAreaTransferencia = async () => {
+    try {
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
+        const tipo = item.types.find((t) => t.startsWith('image/'))
+        if (!tipo) continue
+        const blob = await item.getType(tipo)
+        processarImagem(new File([blob], `comprovativo.${tipo.split('/')[1] ?? 'png'}`, { type: tipo }))
+        return
+      }
+      setErro('Não há nenhuma imagem copiada. Tira o screenshot e copia-o primeiro.')
+    } catch {
+      setErro('Não foi possível aceder à área de transferência. Cola com Ctrl+V ou escolhe o ficheiro.')
+    }
   }
 
   const removerImagem = () => {
@@ -265,7 +293,7 @@ function CampoComprovativo({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onPaste={handlePasteImagem}>
       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Comprovativo de pagamento</p>
 
       {/* Texto */}
@@ -297,7 +325,16 @@ function CampoComprovativo({
 
       {/* Upload imagem */}
       <div>
-        <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5"><ImagePlus className="w-3 h-3" /> Screenshot / Foto do comprovativo</p>
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-xs text-gray-400 flex items-center gap-1"><ImagePlus className="w-3 h-3" /> Screenshot / Foto do comprovativo</p>
+          {!imagemPreview && (
+            <button onClick={colarImagemDaAreaTransferencia}
+              className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all"
+              style={{ backgroundColor: '#00339910', color: '#003399' }}>
+              <ClipboardPaste className="w-3 h-3" /> Colar
+            </button>
+          )}
+        </div>
         {imagemPreview ? (
           <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: '#003399' }}>
             <img src={imagemPreview} alt="Comprovativo" className="w-full max-h-48 object-contain bg-gray-50" />
