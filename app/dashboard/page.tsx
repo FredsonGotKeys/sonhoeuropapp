@@ -400,135 +400,6 @@ function CampoComprovativo({
   )
 }
 
-// ─── Termos e Condições ────────────────────────────────────────────────────
-const TERMOS = [
-  { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos para um fundo colectivo. Quando o fundo atinge a meta de 200 000 MT, o vencedor e escolhido por sorteio aleatorio ponderado — nao e por ordem de inscricao ou de deposito. Quem deposita mais tem maiores chances de ganhar, mas qualquer inscrito pode ser o sorteado. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
-  { t: '2. Inscricao e elegibilidade', p: 'Para participar, o utilizador deve: (a) ter pelo menos 18 anos de idade; (b) possuir um numero de telefone valido para M-Pesa ou E-Mola; (c) pagar a taxa de inscricao unica de 200 MT por ciclo. A taxa de inscricao cobre custos operacionais e nao e reembolsavel apos confirmacao do pagamento. Cada pessoa so pode ter uma conta na plataforma.' },
-  { t: '3. Depositos', p: 'O valor minimo por deposito e 100 MT, sem limite maximo. Os depositos sao feitos por transferencia directa via E-Mola (876252006) para Fredson Bernardo Muianga, seguidos do envio de comprovativo (texto ou screenshot) na plataforma. O deposito so e contabilizado, e so conta para as chances no sorteio, apos confirmacao manual pelo administrador.' },
-  { t: '4. Taxa de gestao e sustentabilidade', p: 'De cada deposito efectuado, 10% (dez por cento) do valor e alocado a gestao e manutencao da plataforma, cobrindo custos operacionais, suporte tecnico, alojamento do sistema, e seguranca. Os restantes 90% sao integralmente direccionados ao fundo comunitario. Exemplo: num deposito de 100 MT, 10 MT vao para gestao e 90 MT vao para o fundo. A taxa de inscricao (200 MT) e integralmente destinada a custos operacionais e nao entra no fundo do premio.' },
-  { t: '5. Seleccao do vencedor', p: 'O sistema selecciona automaticamente o vencedor quando o fundo atinge a meta estabelecida. A seleccao e ponderada pelo total depositado: quanto mais depositares, maiores sao as tuas chances de ser seleccionado. O algoritmo utiliza geracao de numeros aleatorios criptograficamente seguros para garantir imparcialidade.' },
-  { t: '6. Condicoes para a seleccao', p: 'A seleccao do vencedor so e realizada quando o fundo comunitario atinge a meta estabelecida. Enquanto a meta nao for atingida, o ciclo permanece activo e os depositos continuam a acumular.' },
-  { t: '7. Premio', p: 'O vencedor recebe 200 000 MT em dinheiro, entregue directamente via M-Pesa ou transferencia bancaria no prazo de 48 horas apos a seleccao. O premio nao esta sujeito a condicoes adicionais.' },
-  { t: '8. Politica de reembolso', p: 'Os depositos efectuados apos confirmacao nao sao reembolsaveis. A taxa de inscricao nao e reembolsavel apos confirmacao. Em caso de cancelamento de um ciclo por motivo de forca maior, os valores serao tratados caso a caso pelo administrador.' },
-  { t: '9. Privacidade e dados', p: 'Os dados recolhidos (nome, email, numero de telefone) sao utilizados exclusivamente para o funcionamento da plataforma. Nao partilhamos dados com terceiros. Os comprovativos de pagamento sao armazenados de forma segura e acessiveis apenas ao administrador para fins de verificacao.' },
-  { t: '10. Responsabilidade', p: 'A participacao no SonhoEuropa e inteiramente voluntaria. Nao existe garantia de retorno financeiro. O participante reconhece que os depositos sao contribuicoes para um fundo comunitario com seleccao automatica de vencedor. A plataforma nao constitui investimento financeiro, jogo de azar regulamentado, ou esquema de rendimento garantido.' },
-  { t: '11. Alteracoes aos termos', p: 'O SonhoEuropa reserva-se o direito de alterar estes termos e condicoes a qualquer momento. As alteracoes serao comunicadas na plataforma e entram em vigor imediatamente apos publicacao. A continuacao do uso da plataforma apos alteracoes constitui aceitacao dos novos termos.' },
-  { t: '12. Contacto', p: 'Para duvidas, reclamacoes ou sugestoes, contacta-nos pelo WhatsApp, redes sociais @SonhoEuropa, ou email suporte@sonhoeuropa.co.mz. Resposta em ate 48 horas uteis.' },
-]
-
-function gerarPdfTermos() {
-  const content = [
-    'SONHOEUROPA — TERMOS E CONDICOES DE UTILIZACAO',
-    '══════════════════════════════════════════════',
-    '',
-    'Data de vigencia: Junho 2026',
-    'Responsavel: Fredson Bernardo Muianga',
-    'Plataforma: sonhoeuropa.co.mz',
-    '',
-    '────────────────────────────────────────────',
-    '',
-    ...TERMOS.flatMap(s => [s.t.toUpperCase(), '', s.p, '', '']),
-    '────────────────────────────────────────────',
-    '',
-    'OBJECTIVO DO PROJECTO',
-    '',
-    'O SonhoEuropa nasceu da necessidade real de milhares de mocambicanos que',
-    'sonham em imigrar para a Europa mas enfrentam barreiras financeiras',
-    'significativas. Vistos, passagens aereas, alojamento inicial e documentacao',
-    'podem facilmente ultrapassar 200 000 MT — um valor inacessivel para a',
-    'maioria das familias.',
-    '',
-    'A plataforma cria um fundo comunitario onde cada participante contribui com',
-    'pequenos valores (a partir de 100 MT). Quando o fundo atinge 200 000 MT,',
-    'o sistema selecciona o vencedor de forma ponderada — quem deposita mais tem mais chances de ganhar,',
-    'permitindo-lhe dar o primeiro passo rumo ao sonho europeu.',
-    '',
-    'Principios fundamentais:',
-    '- Transparencia total: fundo visivel em tempo real para todos',
-    '- Acessibilidade: qualquer mocambicano com E-Mola pode participar',
-    '- Igualdade: todos os inscritos tem a mesma chance de ganhar',
-    '- Simplicidade: deposita, acompanha o fundo, o sistema faz o resto',
-    '',
-    '────────────────────────────────────────────',
-    '',
-    'Ao inscrever-se na plataforma, o utilizador declara que leu, compreendeu',
-    'e aceita integralmente estes Termos e Condicoes.',
-    '',
-    '(c) 2026 SonhoEuropa. Todos os direitos reservados.',
-    'Maputo, Mocambique',
-  ].join('\n')
-
-  const blob = new Blob(['﻿' + content], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'SonhoEuropa_Termos_e_Condicoes.txt'
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function TermsModal({ onAccept, onClose }: { onAccept: () => void; onClose: () => void }) {
-  const [scrolled, setScrolled] = useState(false)
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-      <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl">
-        <div className="px-6 pt-5 pb-3 border-b flex-shrink-0" style={{ borderColor: '#F5F5F0' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#00339910' }}>
-                <ShieldCheck className="w-5 h-5" style={{ color: '#003399' }} />
-              </div>
-              <div>
-                <h2 className="font-black" style={{ color: '#003399' }}>Termos e Condicoes</h2>
-                <p className="text-xs text-gray-400">Le antes de prosseguir</p>
-              </div>
-            </div>
-            <button onClick={gerarPdfTermos}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:bg-blue-50"
-              style={{ color: '#003399', border: '1.5px solid #00339930' }}>
-              <FileText className="w-3.5 h-3.5" /> Baixar
-            </button>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 text-sm text-gray-600 leading-relaxed"
-          onScroll={(e) => {
-            const el = e.currentTarget
-            if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setScrolled(true)
-          }}>
-          {TERMOS.map(s => (
-            <div key={s.t}>
-              <p className="font-bold text-gray-800 mb-1">{s.t}</p>
-              <p>{s.p}</p>
-            </div>
-          ))}
-
-          <div className="pt-4 border-t" style={{ borderColor: '#F5F5F0' }}>
-            <p className="font-bold text-gray-800 mb-1">Objectivo do Projecto</p>
-            <p>O SonhoEuropa nasceu da necessidade real de milhares de mocambicanos que sonham em imigrar para a Europa mas enfrentam barreiras financeiras significativas. Vistos, passagens aereas, alojamento inicial e documentacao podem facilmente ultrapassar 200 000 MT.</p>
-            <p className="mt-2">A plataforma cria um fundo comunitario onde cada participante contribui com depositos. Quando o fundo atinge a meta, o vencedor e escolhido por sorteio aleatorio — nao e por ordem de inscricao nem de deposito. Cada participante entra no sorteio com um numero de bilhetes proporcional ao que depositou, por isso quanto mais depositares, maiores sao as tuas chances, mas qualquer inscrito pode ganhar. O vencedor recebe o premio integral, permitindo-lhe dar o primeiro passo rumo ao sonho europeu.</p>
-          </div>
-        </div>
-        <div className="px-6 py-4 border-t flex-shrink-0 space-y-2" style={{ borderColor: '#F5F5F0' }}>
-          {!scrolled && (
-            <p className="text-xs text-center text-gray-400 flex items-center justify-center gap-1">
-              <AlertCircle className="w-3 h-3" /> Rola para baixo para ler tudo
-            </p>
-          )}
-          <button onClick={onAccept} disabled={!scrolled}
-            className="w-full py-3.5 rounded-xl font-black text-white transition-all active:scale-95 disabled:opacity-40"
-            style={{ backgroundColor: '#003399' }}>
-            {scrolled ? 'Aceito os Termos — Pagar Inscricao (200 MT)' : 'Le os termos primeiro'}
-          </button>
-          <button onClick={onClose} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Ecrã de inscrição obrigatória ────────────────────────────────────────
 function InscricaoObrigatoria({
   ciclo,
@@ -548,7 +419,7 @@ function InscricaoObrigatoria({
   provider: 'paysuite' | 'zumbopay' | 'manual'
 }) {
   const [method, setMethod] = useState<PayMethod>('mpesa')
-  const [showTerms, setShowTerms] = useState(false)
+  const [aceitaTermos, setAceitaTermos] = useState(false)
   const [tel, setTel] = useState('')
 
   const metaReal = 300000
@@ -804,9 +675,26 @@ function InscricaoObrigatoria({
                 </div>
               )}
 
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={aceitaTermos}
+                  onChange={(e) => setAceitaTermos(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded flex-shrink-0"
+                  style={{ accentColor: '#003399' }}
+                />
+                <span className="text-xs leading-relaxed text-gray-500">
+                  Li e aceito os{' '}
+                  <a href="/termos" target="_blank" className="font-bold underline" style={{ color: '#003399' }}>
+                    Termos e Condições
+                  </a>{' '}
+                  do SonhoEuropa
+                </span>
+              </label>
+
               <button
-                onClick={() => setShowTerms(true)}
-                disabled={loading}
+                onClick={() => onIniciar(method, tel || undefined)}
+                disabled={loading || !aceitaTermos}
                 className="w-full py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60 shadow-lg"
                 style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 20px rgba(0,51,153,0.35)' }}>
                 {loading
@@ -815,7 +703,7 @@ function InscricaoObrigatoria({
               </button>
 
               <p className="text-xs text-center text-gray-300">
-                Taxa unica por ciclo · Ao prosseguir aceitas os Termos e Condicoes
+                Taxa unica por ciclo
               </p>
             </div>
           </div>
@@ -834,13 +722,6 @@ function InscricaoObrigatoria({
           </p>
         </div>
       </div>
-
-      {showTerms && (
-        <TermsModal
-          onAccept={() => { setShowTerms(false); onIniciar(method, tel || undefined) }}
-          onClose={() => setShowTerms(false)}
-        />
-      )}
     </>
   )
 }

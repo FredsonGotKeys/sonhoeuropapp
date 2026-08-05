@@ -226,7 +226,7 @@ export default function RegisterForm() {
               />
               <span className="text-xs leading-relaxed" style={{ color: 'var(--fg-muted)' }}>
                 Li e aceito os{' '}
-                <Link href="/dashboard#termos" target="_blank" className="font-bold underline" style={{ color: 'var(--cobalt)' }}>
+                <Link href="/termos" target="_blank" className="font-bold underline" style={{ color: 'var(--cobalt)' }}>
                   Termos e Condições
                 </Link>{' '}
                 do SonhoEuropa
