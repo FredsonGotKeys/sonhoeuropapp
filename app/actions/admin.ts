@@ -3,6 +3,8 @@
 import crypto from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cookies } from 'next/headers'
+import { caminhoNoBucket } from '@/lib/comprovativos'
+import { limparComprovativosExpirados } from '@/app/actions/deposito'
 
 // Valor real (interno) que o fundo precisa de atingir para ser considerado completo.
 // Independente da "meta" configurada por ciclo, que é o valor/prémio mostrado ao utilizador.
@@ -215,6 +217,7 @@ export async function getParticipanteDetalhes(userId: string) {
 
 export async function getPagamentos(filtroStatus?: string) {
   const auth = await requireAdmin(); if (auth.error) return []
+  await limparComprovativosExpirados()
   const admin = createAdminClient()
   let query = admin
     .from('pagamentos')
@@ -286,15 +289,6 @@ export async function rejeitarPagamento(pagamentoId: string) {
   const { error } = await admin.from('pagamentos').update({ status: 'falhado' }).eq('id', pagamentoId)
   if (error) return { error: error.message }
   return { success: true }
-}
-
-// Extrai o caminho do ficheiro dentro do bucket a partir do URL público
-// gravado em comprovativo_imagem_url (ex: .../comprovativos/SE...123.jpg).
-function caminhoNoBucket(url: string | null): string | null {
-  if (!url) return null
-  const marcador = '/comprovativos/'
-  const i = url.indexOf(marcador)
-  return i === -1 ? null : url.slice(i + marcador.length)
 }
 
 export async function eliminarPagamento(pagamentoId: string) {

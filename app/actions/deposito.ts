@@ -4,6 +4,31 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createCharge, WALLETS } from '@/lib/zumbopay'
 import { createPayment as createPaysuitePayment } from '@/lib/paysuite'
+import { caminhoNoBucket } from '@/lib/comprovativos'
+
+// Tempo de vida do FICHEIRO de comprovativo (não do registo do pagamento).
+// Passado este prazo, a imagem é apagada do armazenamento para não encher
+// o plano gratuito do Supabase — data, valor, texto e estado do pagamento
+// continuam guardados normalmente, só a imagem desaparece.
+const COMPROVATIVO_IMG_TTL_MS = 24 * 60 * 60 * 1000
+
+export async function limparComprovativosExpirados() {
+  const admin = createAdminClient()
+  const limite = new Date(Date.now() - COMPROVATIVO_IMG_TTL_MS).toISOString()
+
+  const { data: expirados } = await admin
+    .from('pagamentos')
+    .select('id, comprovativo_imagem_url')
+    .not('comprovativo_imagem_url', 'is', null)
+    .lt('comprovativo_enviado_at', limite)
+
+  if (!expirados?.length) return
+
+  const caminhos = expirados.map((p) => caminhoNoBucket(p.comprovativo_imagem_url)).filter((c): c is string => !!c)
+  if (caminhos.length) await admin.storage.from('comprovativos').remove(caminhos)
+
+  await admin.from('pagamentos').update({ comprovativo_imagem_url: null }).in('id', expirados.map((p) => p.id))
+}
 
 function activeProvider(): 'paysuite' | 'zumbopay' | 'manual' {
   const v = (process.env.PAYMENT_PROVIDER ?? 'manual').trim().toLowerCase()
@@ -200,6 +225,8 @@ export async function getMeusPagamentosPendentes() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
+
+  await limparComprovativosExpirados()
 
   const { error: erroExpiracao } = await createAdminClient()
     .from('pagamentos')

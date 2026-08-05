@@ -570,7 +570,9 @@ function TabPagamentos() {
               <tbody>
                 {pagamentos.map(p => {
                   const sel = selecionados.has(p.id)
-                  const temComprovativo = !!p.comprovativo || !!p.comprovativo_imagem_url
+                  // Inclui comprovativo_enviado_at: a imagem pode ter expirado (24h)
+                  // sem que isso deva bloquear a confirmação de um comprovativo que existiu.
+                  const temComprovativo = !!p.comprovativo || !!p.comprovativo_imagem_url || !!p.comprovativo_enviado_at
                   const podeConfirmar = p.status === 'pendente' || p.status === 'pendente_confirmacao' || p.status === 'aguardando_comprovativo'
                   return (
                     <React.Fragment key={p.id}>
@@ -627,7 +629,7 @@ function TabPagamentos() {
                         </td>
                       </tr>
                       {/* Comprovativo expandido */}
-                      {(temComprovativo || p.comprovativo_imagem_url) && (
+                      {(temComprovativo || p.comprovativo_imagem_url || p.comprovativo_enviado_at) && (
                         <tr style={{ borderColor: '#F5F5F0' }}>
                           <td colSpan={8} className="px-4 pb-3">
                             <div className="ml-8 p-3 rounded-xl text-xs" style={{ backgroundColor: '#F5F5F0', border: '1px solid #e5e7eb' }}>
@@ -635,12 +637,14 @@ function TabPagamentos() {
                               {p.comprovativo && (
                                 <p className="text-gray-600 whitespace-pre-wrap leading-relaxed mb-2">{p.comprovativo}</p>
                               )}
-                              {p.comprovativo_imagem_url && (
+                              {p.comprovativo_imagem_url ? (
                                 <a href={p.comprovativo_imagem_url} target="_blank" rel="noopener noreferrer"
                                   className="block rounded-lg overflow-hidden border mb-2 hover:opacity-90 transition-opacity"
                                   style={{ borderColor: '#e5e7eb', maxWidth: '320px' }}>
                                   <img src={p.comprovativo_imagem_url} alt="Comprovativo" className="w-full max-h-64 object-contain bg-white" />
                                 </a>
+                              ) : p.comprovativo_enviado_at && (
+                                <p className="italic text-gray-400 mb-2">Imagem já expirou (removida 24h após o envio) — verifica pelo texto acima ou pelo teu telemóvel.</p>
                               )}
                               {p.comprovativo_enviado_at && (
                                 <p className="text-gray-300" style={{ fontSize: '10px' }}>
