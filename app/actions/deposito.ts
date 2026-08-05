@@ -84,6 +84,22 @@ export async function criarPedidoPagamento(params: {
     if (jaInscrito) return { error: 'Já estás inscrito neste ciclo' }
   }
 
+  // Evita duplicados de um clique a mais (ligação lenta, dois toques): se já
+  // existe um pedido do mesmo tipo por confirmar, devolve-o em vez de criar outro.
+  const { data: pedidoExistente } = await supabase
+    .from('pagamentos')
+    .select('referencia, status')
+    .eq('usuario_id', user.id)
+    .eq('tipo', params.tipo)
+    .in('status', ['pendente', 'aguardando_comprovativo', 'pendente_confirmacao'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (pedidoExistente) {
+    return { success: true, reference: pedidoExistente.referencia, stkStatus: 'skipped' as const }
+  }
+
   const uid8 = user.id.replace(/-/g, '').slice(0, 8).toUpperCase()
   const tipoCode = params.tipo === 'inscricao' ? 'INS' : 'DEP'
   const reference = `SE${uid8}${tipoCode}${Date.now()}`
