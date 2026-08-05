@@ -2,9 +2,18 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createCharge, WALLETS } from '@/lib/zumbopay'
-import { createPayment as createPaysuitePayment } from '@/lib/paysuite'
 import { caminhoNoBucket } from '@/lib/comprovativos'
+
+// ─── PaySuite e ZumboPay estão INACTIVOS ────────────────────────────────────
+// Ambos tiveram problemas de fiabilidade (PaySuite exige conta empresarial;
+// ZumboPay teve falhas na base de dados deles). Em vez de tentar um fornecedor
+// automático e cair para transferência manual em caso de erro — o que criava
+// ramificações, atrasos e confusão — o fluxo é agora sempre e só manual:
+// a pessoa transfere directamente por E-Mola e envia o comprovativo.
+//
+// O código de lib/paysuite.ts, lib/zumbopay.ts e os webhooks respectivos
+// continuam no repositório, prontos a religar (não foram apagados), mas
+// nada nesta acção os chama.
 
 // Tempo de vida do FICHEIRO de comprovativo (não do registo do pagamento).
 // Passado este prazo, a imagem é apagada do armazenamento para não encher
@@ -30,40 +39,26 @@ export async function limparComprovativosExpirados() {
   await admin.from('pagamentos').update({ comprovativo_imagem_url: null }).in('id', expirados.map((p) => p.id))
 }
 
-function activeProvider(): 'paysuite' | 'zumbopay' | 'manual' {
-  const v = (process.env.PAYMENT_PROVIDER ?? 'manual').trim().toLowerCase()
-  if (v === 'zumbopay') return 'zumbopay'
-  if (v === 'paysuite') return 'paysuite'
-  return 'manual'
-}
-
+// Mantido só para o dashboard saber que está em modo manual (esconde campos
+// de telefone/escolha de método que já não se aplicam a nada).
 export async function getActiveProvider() {
-  return activeProvider()
+  return 'manual' as const
 }
 
 export async function criarPedidoPagamento(params: {
   valor: number
   tipo: 'inscricao' | 'deposito'
-  method: 'mpesa' | 'emola'
-  telefone?: string
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado' }
 
-  // Input validation
   if (!['inscricao', 'deposito'].includes(params.tipo)) return { error: 'Tipo inválido' }
-  if (!['mpesa', 'emola'].includes(params.method)) return { error: 'Método inválido' }
 
   const valorNum = Math.floor(Number(params.valor))
   if (!Number.isFinite(valorNum) || valorNum <= 0) return { error: 'Valor inválido' }
   if (valorNum > 100000) return { error: 'Valor excede o limite permitido' }
   if (params.tipo === 'deposito' && valorNum < 100) return { error: 'Valor mínimo é 100 MT' }
-
-  if (params.telefone) {
-    const telClean = params.telefone.replace(/[\s\-+]/g, '')
-    if (!/^\d{9,15}$/.test(telClean)) return { error: 'Número de telefone inválido' }
-  }
 
   const valor = params.tipo === 'inscricao' ? 200 : valorNum
 
@@ -88,16 +83,16 @@ export async function criarPedidoPagamento(params: {
   // existe um pedido do mesmo tipo por confirmar, devolve-o em vez de criar outro.
   const { data: pedidoExistente } = await supabase
     .from('pagamentos')
-    .select('referencia, status')
+    .select('referencia')
     .eq('usuario_id', user.id)
     .eq('tipo', params.tipo)
-    .in('status', ['pendente', 'aguardando_comprovativo', 'pendente_confirmacao'])
+    .in('status', ['aguardando_comprovativo', 'pendente_confirmacao'])
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
   if (pedidoExistente) {
-    return { success: true, reference: pedidoExistente.referencia, stkStatus: 'skipped' as const }
+    return { success: true, reference: pedidoExistente.referencia }
   }
 
   const uid8 = user.id.replace(/-/g, '').slice(0, 8).toUpperCase()
@@ -106,79 +101,21 @@ export async function criarPedidoPagamento(params: {
 
   const admin = createAdminClient()
 
-  // Buscar nome do utilizador
-  const { data: userData } = await admin.from('usuarios').select('nome').eq('id', user.id).single()
-  const nome = userData?.nome ?? 'Participante'
-
-  const provider = activeProvider()
-  // Único método disponível enquanto os pagamentos automáticos estão desligados.
-  const metodo: 'mpesa' | 'emola' = provider === 'manual' ? 'emola' : params.method
-  let stkStatus: 'sent' | 'failed' | 'skipped' = 'skipped'
-  let stkError = ''
-  let checkoutUrl: string | undefined
-
-  if (provider === 'manual') {
-    // Nenhuma chamada externa — o pedido fica logo pronto para transferência
-    // manual e envio de comprovativo.
-  } else if (provider === 'paysuite') {
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
-    const res = await createPaysuitePayment({
-      amount: valor,
-      reference,
-      method: params.method,
-      description: params.tipo === 'inscricao' ? 'Inscrição SonhoEuropa' : 'Depósito SonhoEuropa',
-      ...(siteUrl && { return_url: `${siteUrl}/dashboard`, callback_url: `${siteUrl}/api/webhooks/paysuite` }),
-    })
-
-    if (res.status >= 200 && res.status < 300 && res.data?.data?.checkout_url) {
-      checkoutUrl = res.data.data.checkout_url
-      stkStatus = 'sent'
-    } else {
-      stkStatus = 'failed'
-      stkError = res.data?.message ?? 'Erro ao iniciar pagamento'
-      console.error('[PaySuite] Payment creation failed:', params.method, res.status, JSON.stringify(res.data))
-    }
-  } else if (params.telefone) {
-    // Tentar STK push via ZumboPay
-    const msisdn = params.telefone.replace(/\s+/g, '').replace(/^(\+?258)/, '')
-    const walletId = params.method === 'mpesa' ? WALLETS.mpesa : WALLETS.emola
-
-    const res = await createCharge({
-      wallet_id: walletId,
-      amount: valor,
-      msisdn,
-      customer_name: nome,
-      source_id: reference,
-    })
-
-    if (res.status >= 200 && res.status < 300 && res.data?.data?.reference) {
-      stkStatus = 'sent'
-    } else {
-      stkStatus = 'failed'
-      stkError = res.data?.error ?? res.data?.message ?? 'Erro ao enviar STK push'
-      console.error('[ZumboPay] STK push failed:', params.method, res.status, JSON.stringify(res.data))
-    }
-  }
-
+  // Sempre manual, sempre E-Mola — sem chamada a nenhum fornecedor externo,
+  // o pedido fica logo pronto para transferência e envio de comprovativo.
   const { error } = await admin.from('pagamentos').insert({
     usuario_id: user.id,
     ciclo_id: ciclo.id,
     tipo: params.tipo,
     referencia: reference,
-    status: stkStatus === 'sent' ? 'pendente' : 'aguardando_comprovativo',
+    status: 'aguardando_comprovativo',
     valor,
-    metodo,
+    metodo: 'emola',
   })
 
   if (error) return { error: error.message }
 
-  return {
-    success: true,
-    reference,
-    stkStatus,
-    stkError: stkStatus === 'failed' ? stkError : undefined,
-    checkoutUrl,
-  }
+  return { success: true, reference }
 }
 
 export async function enviarComprovativo(referencia: string, comprovativo: string, imagemUrl?: string) {
@@ -234,11 +171,6 @@ export async function enviarComprovativo(referencia: string, comprovativo: strin
   return { success: true }
 }
 
-// Tempo após o qual um pedido deixado a meio no checkout do fornecedor é
-// dado como abandonado. Se o pagamento acabar por entrar mais tarde, o
-// webhook confirma-o na mesma — só ignora quem já está 'confirmado'.
-const PENDENTE_TTL_MS = 30 * 60 * 1000
-
 export async function getMeusPagamentosPendentes() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -247,21 +179,12 @@ export async function getMeusPagamentosPendentes() {
   // Limpeza de rotina — não bloqueia a resposta ao utilizador, que está à
   // espera de ver o estado do pagamento, não da arrumação da casa.
   limparComprovativosExpirados().catch((e) => console.error('[pendentes] Falha ao limpar comprovativos:', e))
-  createAdminClient()
-    .from('pagamentos')
-    .update({ status: 'falhado' })
-    .eq('usuario_id', user.id)
-    .eq('status', 'pendente')
-    .lt('created_at', new Date(Date.now() - PENDENTE_TTL_MS).toISOString())
-    .then(({ error }) => {
-      if (error) console.error('[pendentes] Falha ao expirar abandonados:', error.code, error.message)
-    })
 
   const { data } = await supabase
     .from('pagamentos')
     .select('id, referencia, tipo, valor, metodo, status, comprovativo, comprovativo_imagem_url, created_at')
     .eq('usuario_id', user.id)
-    .in('status', ['aguardando_comprovativo', 'pendente_confirmacao', 'pendente'])
+    .in('status', ['aguardando_comprovativo', 'pendente_confirmacao'])
     .order('created_at', { ascending: false })
 
   return data ?? []

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logout } from '@/app/actions/auth'
-import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos, getActiveProvider, cancelarPagamentoPendente } from '@/app/actions/deposito'
+import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos, cancelarPagamentoPendente } from '@/app/actions/deposito'
 import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
 import { Suspense } from 'react'
 
@@ -55,8 +55,6 @@ interface PagamentoPendente {
 
 type PayMethod = 'mpesa' | 'emola'
 
-const FALHA_AUTOMATICO =
-  'Pagamento automático indisponível de momento. Faz a transferência manualmente com os dados abaixo e envia o comprovativo — o teu pedido fica registado na mesma.'
 type Tab = 'home' | 'depositar' | 'convite' | 'historico' | 'pagamentos'
 
 interface PagamentoHistorico {
@@ -408,19 +406,15 @@ function InscricaoObrigatoria({
   error,
   pagamentoPendente,
   onComprovativoEnviado,
-  provider,
 }: {
   ciclo: Ciclo | null
-  onIniciar: (method: PayMethod, telefone?: string) => void
+  onIniciar: () => void
   loading: boolean
   error: string
   pagamentoPendente: PagamentoPendente | null
   onComprovativoEnviado: () => void
-  provider: 'paysuite' | 'zumbopay' | 'manual'
 }) {
-  const [method, setMethod] = useState<PayMethod>('mpesa')
   const [aceitaTermos, setAceitaTermos] = useState(false)
-  const [tel, setTel] = useState('')
 
   const metaReal = 300000
   const metaUtilizador = ciclo?.meta ?? 200000
@@ -615,59 +609,9 @@ function InscricaoObrigatoria({
 
               <div className="h-px" style={{ backgroundColor: 'var(--background)' }} />
 
-              {provider === 'zumbopay' && (
-                <>
-                  {/* Método de pagamento */}
-                  <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Metodo de pagamento</p>
-                    <div className="flex gap-3 justify-center">
-                      {[
-                        { id: 'mpesa' as PayMethod, label: 'M-Pesa', sub: 'Vodacom', icon: <Smartphone className="w-5 h-5" /> },
-                        { id: 'emola' as PayMethod, label: 'E-Mola', sub: 'Movitel', icon: <Banknote className="w-5 h-5" /> },
-                      ].map((m) => {
-                        const sel = method === m.id
-                        return (
-                          <button key={m.id} onClick={() => setMethod(m.id)}
-                            className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all"
-                            style={{
-                              borderColor: sel ? '#003399' : '#e5e7eb',
-                              backgroundColor: sel ? '#003399' : 'white',
-                              color: sel ? 'white' : '#555',
-                              boxShadow: sel ? '0 4px 14px rgba(0,51,153,0.2)' : 'none',
-                            }}>
-                            <span className={sel ? 'text-white' : 'text-gray-400'}>{m.icon}</span>
-                            <span className="font-black text-sm">{m.label}</span>
-                            <span className="text-xs opacity-60">{m.sub}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Número de telefone (opcional)</label>
-                    <input
-                      type="tel" placeholder="84/85/86... para pagamento automático"
-                      value={tel} onChange={(e) => setTel(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all"
-                      style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
-                      onFocus={(e) => { e.target.style.borderColor = '#003399'; e.target.style.backgroundColor = 'white' }}
-                      onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa' }}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Recebes o pedido directo no telefone via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
-                  </div>
-                </>
-              )}
-
-              {provider === 'manual' && (
-                <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
-                  Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
-                </div>
-              )}
-
-              {provider === 'paysuite' && (
-                <p className="text-xs text-gray-400 -mt-1">Vais ser redireccionado para introduzires o número via E-Mola</p>
-              )}
+              <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
+                Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
+              </div>
 
               {error && (
                 <div className="p-3.5 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100">
@@ -693,7 +637,7 @@ function InscricaoObrigatoria({
               </label>
 
               <button
-                onClick={() => onIniciar(method, tel || undefined)}
+                onClick={onIniciar}
                 disabled={loading || !aceitaTermos}
                 className="w-full py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60 shadow-lg"
                 style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 20px rgba(0,51,153,0.35)' }}>
@@ -737,18 +681,14 @@ function DashboardContent() {
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('home')
 
-  const [method, setMethod] = useState<PayMethod>('mpesa')
   const [valor, setValor] = useState('')
-  const [telefone, setTelefone] = useState('')
   const [payLoading, setPayLoading] = useState(false)
   const [payError, setPayError] = useState('')
-  const [stkEnviado, setStkEnviado] = useState(false)
 
   // Fluxo de pagamento manual
   const [pagamentoPendente, setPagamentoPendente] = useState<PagamentoPendente | null>(null)
   const [pedidoCriado, setPedidoCriado] = useState<{ referencia: string; method: PayMethod; valor: number } | null>(null)
   const [historicoPagamentos, setHistoricoPagamentos] = useState<PagamentoHistorico[]>([])
-  const [provider, setProvider] = useState<'paysuite' | 'zumbopay' | 'manual'>('manual')
   const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
   const [ranking, setRanking] = useState<RankingEmbaixador[]>([])
 
@@ -796,11 +736,15 @@ function DashboardContent() {
 
   useEffect(() => {
     const load = async () => {
-      await recarregarDados()
-      setLoading(false)
+      try {
+        await recarregarDados()
+      } catch (e) {
+        console.error('[dashboard] Falha ao carregar dados:', e)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
-    getActiveProvider().then(setProvider)
 
     // Estatísticas de convite/ranking: não fazem parte do fluxo de pagamento,
     // por isso correm à parte, sem atrasar recarregarDados().
@@ -813,23 +757,28 @@ function DashboardContent() {
         if (p.eventType !== 'DELETE') setCiclo(p.new as Ciclo)
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pagamentos' }, () => {
-        recarregarDados()
+        recarregarDados().catch((e) => console.error('[dashboard] Falha ao actualizar após webhook:', e))
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [router])
 
-  const handleInscrever = async (m: PayMethod, tel?: string) => {
+  // try/catch/finally: aconteça o que acontecer (erro de rede, excepção,
+  // resposta inesperada), o botão TEM de sair do estado "a carregar" e
+  // mostrar algo à pessoa — nunca ficar preso a girar para sempre.
+  const handleInscrever = async () => {
     setPayLoading(true)
     setPayError('')
-    const result = await criarPedidoPagamento({ valor: 200, tipo: 'inscricao', method: m, telefone: tel })
-    if (result.error) { setPayError(result.error); setPayLoading(false); return }
-    if (result.checkoutUrl) { window.location.href = result.checkoutUrl; return }
-    if (result.stkStatus === 'sent') setStkEnviado(true)
-    // Sem isto, uma falha do fornecedor deixava o ecrã a mudar sem explicação.
-    if (result.stkStatus === 'failed') setPayError(FALHA_AUTOMATICO)
-    await recarregarDados()
-    setPayLoading(false)
+    try {
+      const result = await criarPedidoPagamento({ valor: 200, tipo: 'inscricao' })
+      if (result.error) { setPayError(result.error); return }
+      await recarregarDados()
+    } catch (e) {
+      console.error('[handleInscrever]', e)
+      setPayError('Não foi possível processar o pedido. Verifica a tua ligação e tenta novamente.')
+    } finally {
+      setPayLoading(false)
+    }
   }
 
   const handleDepositar = async () => {
@@ -837,13 +786,17 @@ function DashboardContent() {
     const valorNum = Number(valor)
     if (valorNum < 100) { setPayError('Valor minimo e 100 MT'); return }
     setPayLoading(true)
-    const result = await criarPedidoPagamento({ valor: valorNum, tipo: 'deposito', method, telefone: telefone || undefined })
-    if (result.error) { setPayError(result.error); setPayLoading(false); return }
-    if (result.checkoutUrl) { window.location.href = result.checkoutUrl; return }
-    if (result.stkStatus === 'sent') setStkEnviado(true)
-    if (result.stkStatus === 'failed') setPayError(FALHA_AUTOMATICO)
-    setPedidoCriado({ referencia: result.reference!, method, valor: valorNum })
-    setPayLoading(false)
+    try {
+      const result = await criarPedidoPagamento({ valor: valorNum, tipo: 'deposito' })
+      if (result.error) { setPayError(result.error); return }
+      setPedidoCriado({ referencia: result.reference!, method: 'emola', valor: valorNum })
+      await recarregarDados()
+    } catch (e) {
+      console.error('[handleDepositar]', e)
+      setPayError('Não foi possível processar o pedido. Verifica a tua ligação e tenta novamente.')
+    } finally {
+      setPayLoading(false)
+    }
   }
 
   const inviteUrl =
@@ -946,7 +899,6 @@ function DashboardContent() {
             onIniciar={handleInscrever}
             loading={payLoading}
             error={payError}
-            provider={provider}
             pagamentoPendente={pagamentoPendente}
             onComprovativoEnviado={recarregarDados}
           />
@@ -1113,34 +1065,6 @@ function DashboardContent() {
                 </div>
 
                 <div className="p-5 space-y-5">
-                  {provider === 'zumbopay' && (
-                    <div>
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Metodo de pagamento</p>
-                      <div className="flex gap-3 justify-center">
-                        {[
-                          { id: 'mpesa' as PayMethod, label: 'M-Pesa', sub: 'Vodacom', icon: <Smartphone className="w-5 h-5" /> },
-                          { id: 'emola' as PayMethod, label: 'E-Mola', sub: 'Movitel', icon: <Banknote className="w-5 h-5" /> },
-                        ].map((m) => {
-                          const sel = method === m.id
-                          return (
-                            <button key={m.id} onClick={() => setMethod(m.id)}
-                              className="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all"
-                              style={{
-                                borderColor: sel ? '#003399' : '#e5e7eb',
-                                backgroundColor: sel ? '#003399' : 'white',
-                                color: sel ? 'white' : '#555',
-                                boxShadow: sel ? '0 4px 14px rgba(0,51,153,0.2)' : 'none',
-                              }}>
-                              <span className={sel ? 'text-white' : 'text-gray-400'}>{m.icon}</span>
-                              <span className="font-black text-sm">{m.label}</span>
-                              <span className="text-xs opacity-60">{m.sub}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Amount */}
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Valor (MT)</p>
@@ -1178,36 +1102,9 @@ function DashboardContent() {
                     )}
                   </div>
 
-                  {provider === 'zumbopay' && (
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Número de telefone (opcional)</label>
-                      <input
-                        type="tel" placeholder="84/85/86... para pagamento automático"
-                        value={telefone} onChange={(e) => setTelefone(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all"
-                        style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
-                        onFocus={(e) => { e.target.style.borderColor = '#003399'; e.target.style.backgroundColor = 'white' }}
-                        onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa' }}
-                      />
-                      <p className="text-xs text-gray-400 mt-1">Se preencheres, recebes o pedido directo no telefone via {method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}</p>
-                    </div>
-                  )}
-
-                  {provider === 'manual' && (
-                    <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
-                      Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
-                    </div>
-                  )}
-
-                  {provider === 'paysuite' && (
-                    <p className="text-xs text-gray-400">Vais ser redireccionado para introduzires o número via E-Mola</p>
-                  )}
-
-                  {stkEnviado && (
-                    <div className="p-3.5 rounded-xl text-sm bg-green-50 border border-green-200 text-green-700 font-medium">
-                      ✅ Pedido de pagamento enviado ao teu telefone. Confirma no teu telemóvel!
-                    </div>
-                  )}
+                  <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
+                    Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
+                  </div>
 
                   {payError && (
                     <div className="p-3.5 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100">
@@ -1222,12 +1119,10 @@ function DashboardContent() {
                     style={{ backgroundColor: '#EF9F27', color: '#001f6b', boxShadow: '0 4px 16px rgba(239,159,39,0.3)' }}>
                     {payLoading
                       ? <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      : `Depositar ${valor ? valor + ' MT' : '...'} via ${method === 'mpesa' ? 'M-Pesa' : 'E-Mola'}`}
+                      : `Depositar ${valor ? valor + ' MT' : '...'} via E-Mola`}
                   </button>
                   <p className="text-xs text-center text-gray-400">
-                    {provider === 'paysuite'
-                      ? 'Serás redireccionado para completar o pagamento'
-                      : telefone ? 'Pagamento automático via STK push' : 'Transferência directa · Confirmação manual pelo admin'}
+                    Transferência directa · Confirmação manual pelo admin
                   </p>
                 </div>
               </div>
