@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { logout } from '@/app/actions/auth'
-import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos, cancelarPagamentoPendente } from '@/app/actions/deposito'
+import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos } from '@/app/actions/deposito'
 import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
 import { Suspense } from 'react'
 
@@ -82,50 +82,6 @@ const PAYMENT_INFO = {
 }
 
 // ─── Dados de pagamento (mostrar número, nome) ───────────────────────────
-// Pedido criado no fornecedor mas ainda não pago (ex: checkout do PaySuite
-// aberto e abandonado). Sem uma saída explícita, o utilizador ficaria sem
-// nenhum botão até o pedido expirar.
-function PagamentoEmCurso({ referencia, valor, onCancelado }: {
-  referencia: string
-  valor: number
-  onCancelado: () => void
-}) {
-  const [loading, setLoading] = useState(false)
-  const [erro, setErro] = useState('')
-
-  const cancelar = async () => {
-    setLoading(true)
-    setErro('')
-    const res = await cancelarPagamentoPendente(referencia)
-    if (res.error) { setErro(res.error); setLoading(false); return }
-    onCancelado()
-  }
-
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm" style={{ border: '1.5px solid #EF9F2740' }}>
-      <div className="flex items-center gap-3">
-        <Clock className="w-5 h-5 flex-shrink-0" style={{ color: '#EF9F27' }} />
-        <div className="flex-1 min-w-0">
-          <p className="font-black text-sm" style={{ color: '#003399' }}>Pagamento de {valor} MT em curso</p>
-          <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
-            Se já pagaste, aguarda — a confirmação chega automaticamente. Se não chegaste a concluir, cancela para tentar de novo.
-          </p>
-        </div>
-      </div>
-
-      {erro && (
-        <div className="mt-3 p-3 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100">{erro}</div>
-      )}
-
-      <button onClick={cancelar} disabled={loading}
-        className="mt-4 w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50"
-        style={{ backgroundColor: '#F5F5F0', color: '#555' }}>
-        {loading ? 'A cancelar...' : 'Cancelar e tentar de novo'}
-      </button>
-    </div>
-  )
-}
-
 function DadosPagamento({ method, valor }: { method: PayMethod; valor: number }) {
   const info = PAYMENT_INFO[method]
   const [copiado, setCopiado] = useState(false)
@@ -570,14 +526,6 @@ function InscricaoObrigatoria({
           </div>
         )}
 
-        {/* Pedido aberto no fornecedor, ainda por pagar */}
-        {pagamentoPendente && pagamentoPendente.status === 'pendente' && (
-          <PagamentoEmCurso
-            referencia={pagamentoPendente.referencia}
-            valor={pagamentoPendente.valor}
-            onCancelado={onComprovativoEnviado}
-          />
-        )}
 
         {/* ── CTA de inscrição (quando não há pagamento pendente) ── */}
         {!pagamentoPendente && (
@@ -1022,13 +970,6 @@ function DashboardContent() {
               </div>
             )}
 
-            {pagamentoPendente && pagamentoPendente.status === 'pendente' && (
-              <PagamentoEmCurso
-                referencia={pagamentoPendente.referencia}
-                valor={pagamentoPendente.valor}
-                onCancelado={recarregarDados}
-              />
-            )}
 
             <button
               onClick={() => setActiveTab('depositar')}
