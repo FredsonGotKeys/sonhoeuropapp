@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sonhoeuropa-v1'
+const CACHE_NAME = 'sonhoeuropa-v2'
 const STATIC_ASSETS = ['/', '/login', '/register', '/manifest.json']
 
 self.addEventListener('install', (event) => {
