@@ -92,11 +92,7 @@ export default function LandingPage() {
     },
     {
       q: 'Como é escolhido o vencedor? É por ordem de chegada?',
-      a: 'Não é por ordem nem por quem se inscreveu primeiro — é um sorteio aleatório ponderado. Todos os participantes inscritos entram no sorteio, mas quanto mais depositares, mais bilhetes tens nesse sorteio e maiores são as tuas chances. O sistema escolhe o vencedor ao acaso entre todos esses bilhetes, por isso qualquer participante pode ganhar — só que quem contribui mais tem mais probabilidade.',
-    },
-    {
-      q: 'O que é a taxa de inscrição?',
-      a: 'É uma taxa única de 200 MT por ciclo que cobre os custos operacionais da plataforma. Não entra no fundo do prémio. Só é cobrada uma vez por ciclo.',
+      a: 'Não é por ordem nem por quem depositou primeiro — é um sorteio aleatório ponderado. Todos os que já depositaram entram no sorteio, e quanto mais depositares, mais bilhetes tens nesse sorteio e maiores são as tuas chances. O sistema escolhe o vencedor ao acaso entre todos esses bilhetes, por isso qualquer participante pode ganhar — só que quem contribui mais tem mais probabilidade.',
     },
     {
       q: 'Quais métodos de pagamento?',
@@ -295,8 +291,8 @@ export default function LandingPage() {
                 desc: 'Cria a tua conta gratuitamente em menos de 1 minuto. Só precisas de email e senha.',
                 details: [
                   'Recebeste um código de convite de um amigo? Usa-o no registo e ambos ganham vantagens.',
-                  'Paga a taxa única de inscrição de 200 MT — cobre os custos operacionais e garante o teu lugar no ciclo.',
-                  'A partir daí, estás oficialmente a concorrer ao prémio de 200 000 MT.',
+                  'Sem taxas — a conta é totalmente gratuita.',
+                  'Assim que fizeres o primeiro depósito, estás oficialmente a concorrer ao prémio de 200 000 MT.',
                 ],
                 cta: 'Criar conta agora',
                 href: '/register',
@@ -322,8 +318,8 @@ export default function LandingPage() {
                 title: 'Ganha o prémio',
                 desc: 'Quando o fundo atinge o valor necessário, o sistema faz um sorteio aleatório — não é por ordem de chegada. Quanto mais depositares, mais bilhetes tens no sorteio e maiores as tuas chances.',
                 details: [
-                  'Todos os participantes inscritos e com depósitos são elegíveis — qualquer um pode ser o escolhido.',
-                  'É um sorteio aleatório: o sistema escolhe ao acaso, dando mais bilhetes a quem depositou mais — não é por ordem de inscrição nem de depósito.',
+                  'Todos os que já depositaram são elegíveis — qualquer um pode ser o escolhido.',
+                  'É um sorteio aleatório: o sistema escolhe ao acaso, dando mais bilhetes a quem depositou mais.',
                   'O vencedor recebe 200 000 MT directamente na M-Pesa ou conta bancária. Sem atrasos.',
                 ],
                 cta: 'Quero participar',

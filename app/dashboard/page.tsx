@@ -388,278 +388,12 @@ function CampoComprovativo({
   )
 }
 
-// ─── Ecrã de inscrição obrigatória ────────────────────────────────────────
-function InscricaoObrigatoria({
-  ciclo,
-  onIniciar,
-  loading,
-  error,
-  pagamentoPendente,
-  onComprovativoEnviado,
-}: {
-  ciclo: Ciclo | null
-  onIniciar: () => void
-  loading: boolean
-  error: string
-  pagamentoPendente: PagamentoPendente | null
-  onComprovativoEnviado: () => void
-}) {
-  const [aceitaTermos, setAceitaTermos] = useState(false)
-
-  const metaReal = 300000
-  const metaUtilizador = ciclo?.meta ?? 200000
-  const progress = ciclo ? Math.min((ciclo.total_acumulado / metaReal) * 100, 100) : 0
-  const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado * ((ciclo.meta ?? 200000) / 300000)) : 0
-
-  return (
-    <>
-      <div className="space-y-4">
-
-        {/* ── Hero motivacional ── */}
-        <div className="rounded-2xl text-white relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #001f6b 0%, #003399 50%, #0044aa 100%)' }}>
-          <div className="absolute -right-12 -top-12 w-40 h-40 rounded-full opacity-10" style={{ backgroundColor: '#EF9F27' }} />
-          <div className="absolute -left-8 -bottom-8 w-28 h-28 rounded-full opacity-5" style={{ backgroundColor: '#1D9E75' }} />
-
-          <div className="relative p-6 pb-5">
-            <div className="text-center mb-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                style={{ background: 'rgba(239,159,39,0.2)', border: '2px solid rgba(239,159,39,0.3)' }}>
-                <Trophy className="w-7 h-7" style={{ color: '#EF9F27' }} />
-              </div>
-              <h2 className="text-xl font-black leading-tight">O teu sonho europeu<br/>comeca aqui</h2>
-              <p className="text-sm opacity-70 mt-2 leading-relaxed max-w-xs mx-auto">
-                Junta-te a centenas de mocambicanos que estao a construir, juntos, a oportunidade de uma vida.
-              </p>
-            </div>
-
-            {/* Fundo actual */}
-            <div className="rounded-xl p-3.5" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold opacity-60">Fundo comunitario</span>
-                <span className="text-xs font-bold" style={{ color: '#EF9F27' }}>
-                  {progress.toFixed(0)}% da meta
-                </span>
-              </div>
-              <p className="text-2xl font-black" style={{ color: '#EF9F27' }}>
-                {valorVisivel.toLocaleString('pt-PT')} MT
-              </p>
-              <div className="h-2 rounded-full overflow-hidden mt-2" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
-                <div className="h-full rounded-full transition-all" style={{ width: `${progress || 1}%`, background: 'linear-gradient(90deg, #EF9F27, #f5c056)' }} />
-              </div>
-              <p className="text-xs opacity-40 mt-1.5">Meta: {metaUtilizador.toLocaleString('pt-PT')} MT · {ciclo?.participantes_count ?? 0} participantes activos</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Proposta de valor ── */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-5">
-            <h3 className="font-black text-base mb-1" style={{ color: '#003399' }}>Porque participar?</h3>
-            <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-              Sabemos o quanto custa realizar o sonho de viajar para a Europa. Vistos, passagens, alojamento — tudo somado pode ultrapassar 200 000 MT. E se pudesses juntar forcas com outros e criar essa oportunidade?
-            </p>
-
-            <div className="space-y-3">
-              {[
-                {
-                  icon: <TrendingUp className="w-4 h-4" />,
-                  color: '#EF9F27',
-                  title: 'Fundo colectivo de 200 000 MT',
-                  desc: 'Todos contribuem com pequenos valores diarios. O fundo cresce rapidamente e o premio e entregue a um vencedor por ciclo.',
-                },
-                {
-                  icon: <Star className="w-4 h-4" />,
-                  color: '#003399',
-                  title: 'Todos têm a mesma chance',
-                  desc: 'Cada participante inscrito concorre de forma igual. O sistema selecciona o vencedor automaticamente.',
-                },
-                {
-                  icon: <Users className="w-4 h-4" />,
-                  color: '#1D9E75',
-                  title: 'Comunidade real, impacto real',
-                  desc: 'Nao estas sozinho. Centenas de pessoas com o mesmo objectivo, a construir algo juntas.',
-                },
-                {
-                  icon: <ShieldCheck className="w-4 h-4" />,
-                  color: '#7c3aed',
-                  title: 'Transparente e seguro',
-                  desc: 'Fundo visivel em tempo real. Todos os pagamentos sao verificados. O sorteio e justo e auditavel.',
-                },
-              ].map((item) => (
-                <div key={item.title} className="flex gap-3 p-3.5 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
-                    style={{ backgroundColor: item.color }}>
-                    {item.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm" style={{ color: '#1A1A2E' }}>{item.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Destaque do premio */}
-          <div className="mx-5 mb-5 p-4 rounded-xl text-center relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #EF9F27, #f5c056)', boxShadow: '0 4px 20px rgba(239,159,39,0.3)' }}>
-            <p className="text-xs font-bold text-white/70 uppercase tracking-widest">Premio por ciclo</p>
-            <p className="text-3xl font-black text-white mt-1">200 000 MT</p>
-            <p className="text-xs text-white/70 mt-1">O suficiente para cobrir visto + passagem + primeiros passos na Europa</p>
-          </div>
-        </div>
-
-        {/* ── Como funciona (passos) ── */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <h3 className="font-black text-base mb-4" style={{ color: '#003399' }}>Como funciona?</h3>
-          <div className="space-y-4">
-            {[
-              { step: '1', title: 'Inscreve-te', desc: 'Paga a taxa unica de inscricao para entrar no ciclo actual.', color: '#003399' },
-              { step: '2', title: 'Deposita', desc: 'A partir de 100 MT. Acompanha o fundo a crescer em tempo real.', color: '#EF9F27' },
-              { step: '3', title: 'O fundo cresce', desc: 'Todos os depositos vao para o fundo comunitario. Quanto mais participantes, mais rapido.', color: '#1D9E75' },
-              { step: '4', title: 'Ganha o premio', desc: 'Quando o fundo atinge 200 000 MT, faz-se um sorteio aleatorio — nao e por ordem de chegada. Quanto mais depositares, mais chances tens.', color: '#e74c3c' },
-            ].map((s) => (
-              <div key={s.step} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"
-                  style={{ backgroundColor: s.color }}>{s.step}</div>
-                <div>
-                  <p className="font-bold text-sm" style={{ color: '#1A1A2E' }}>{s.title}</p>
-                  <p className="text-xs text-gray-400 leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Se já tem um pagamento pendente de comprovativo ── */}
-        {pagamentoPendente && pagamentoPendente.status === 'aguardando_comprovativo' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: '#F5F5F0' }}>
-              <h2 className="font-black text-base" style={{ color: '#EF9F27' }}>Pagamento em curso</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Envia o dinheiro e cola o comprovativo ou screenshot abaixo</p>
-            </div>
-            <div className="p-5 space-y-4">
-              <DadosPagamento method={pagamentoPendente.metodo as PayMethod} valor={pagamentoPendente.valor} />
-              <CampoComprovativo referencia={pagamentoPendente.referencia} onSucesso={onComprovativoEnviado} />
-            </div>
-          </div>
-        )}
-
-        {/* Se já enviou comprovativo, aguardar */}
-        {pagamentoPendente && pagamentoPendente.status === 'pendente_confirmacao' && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
-            <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-              style={{ backgroundColor: '#EF9F2715' }}>
-              <Clock className="w-7 h-7" style={{ color: '#EF9F27' }} />
-            </div>
-            <h2 className="font-black" style={{ color: '#003399' }}>Comprovativo enviado</h2>
-            <p className="text-sm text-gray-400 mt-1 leading-relaxed">
-              O administrador esta a verificar o teu pagamento. Assim que for confirmado, seras inscrito automaticamente.
-            </p>
-          </div>
-        )}
-
-
-        {/* ── CTA de inscrição (quando não há pagamento pendente) ── */}
-        {!pagamentoPendente && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: '#F5F5F0' }}>
-              <h2 className="font-black text-lg" style={{ color: '#003399' }}>Pronto para comecar?</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Inscricao unica de 200 MT · Tens acesso a tudo
-              </p>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {/* O que inclui */}
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: 'Prémio 200k MT', icon: <Trophy className="w-3.5 h-3.5" /> },
-                  { label: 'Depósitos livres', icon: <Wallet className="w-3.5 h-3.5" /> },
-                  { label: 'Fundo ao vivo', icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                  { label: 'Convida amigos', icon: <Gift className="w-3.5 h-3.5" /> },
-                ].map((f) => (
-                  <div key={f.label} className="flex items-center gap-2 p-2.5 rounded-xl" style={{ backgroundColor: '#1D9E7508' }}>
-                    <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1D9E75', color: 'white' }}>
-                      {f.icon}
-                    </div>
-                    <span className="text-xs font-bold text-gray-600">{f.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="h-px" style={{ backgroundColor: 'var(--background)' }} />
-
-              <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
-                Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
-              </div>
-
-              {error && (
-                <div className="p-3.5 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100">
-                  {error}
-                </div>
-              )}
-
-              <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={aceitaTermos}
-                  onChange={(e) => setAceitaTermos(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded flex-shrink-0"
-                  style={{ accentColor: '#003399' }}
-                />
-                <span className="text-xs leading-relaxed text-gray-500">
-                  Li e aceito os{' '}
-                  <a href="/termos" target="_blank" className="font-bold underline" style={{ color: '#003399' }}>
-                    Termos e Condições
-                  </a>{' '}
-                  do SonhoEuropa
-                </span>
-              </label>
-
-              <button
-                onClick={onIniciar}
-                disabled={loading || !aceitaTermos}
-                className="w-full py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60 shadow-lg"
-                style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 20px rgba(0,51,153,0.35)' }}>
-                {loading
-                  ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  : <><ShieldCheck className="w-4 h-4" /> Inscrever-me — 200 MT</>}
-              </button>
-
-              <p className="text-xs text-center text-gray-300">
-                Taxa unica por ciclo
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Prova social */}
-        <div className="flex items-center justify-center gap-2 py-2">
-          <div className="flex -space-x-2">
-            {['#003399', '#1D9E75', '#EF9F27', '#7c3aed'].map((c, i) => (
-              <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-black"
-                style={{ backgroundColor: c }}>{['F', 'M', 'A', 'J'][i]}</div>
-            ))}
-          </div>
-          <p className="text-xs text-gray-400">
-            <strong className="text-gray-600">{ciclo?.participantes_count ?? 0}+</strong> pessoas ja participam
-          </p>
-        </div>
-      </div>
-    </>
-  )
-}
-
-
 // ─── Dashboard principal ───────────────────────────────────────────────────
 function DashboardContent() {
   const [user, setUser] = useState<Usuario | null>(null)
   const [ciclo, setCiclo] = useState<Ciclo | null>(null)
   const [depositos, setDepositos] = useState<Deposito[]>([])
   const [loading, setLoading] = useState(true)
-  const [inscrito, setInscrito] = useState(false)
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('home')
 
@@ -696,13 +430,7 @@ function DashboardContent() {
     }
     setUser(userData.data)
 
-    if (cicloData.data) {
-      setCiclo(cicloData.data)
-      const { data: insc } = await supabase
-        .from('inscricoes').select('id')
-        .eq('usuario_id', authUser.id).eq('ciclo_id', cicloData.data.id).maybeSingle()
-      setInscrito(!!insc)
-    }
+    if (cicloData.data) setCiclo(cicloData.data)
 
     if (depositosData.data) setDepositos(depositosData.data)
 
@@ -748,22 +476,6 @@ function DashboardContent() {
   // try/catch/finally: aconteça o que acontecer (erro de rede, excepção,
   // resposta inesperada), o botão TEM de sair do estado "a carregar" e
   // mostrar algo à pessoa — nunca ficar preso a girar para sempre.
-  const handleInscrever = async () => {
-    console.log('[handleInscrever] clique recebido, a iniciar pedido...')
-    setPayLoading(true)
-    setPayError('')
-    try {
-      const result = await criarPedidoPagamento({ valor: 200, tipo: 'inscricao' })
-      if (result.error) { setPayError(result.error); return }
-      await recarregarDados()
-    } catch (e) {
-      console.error('[handleInscrever]', e)
-      setPayError('Não foi possível processar o pedido. Verifica a tua ligação e tenta novamente.')
-    } finally {
-      setPayLoading(false)
-    }
-  }
-
   const handleDepositar = async () => {
     setPayError('')
     const valorNum = Number(valor)
@@ -852,43 +564,6 @@ function DashboardContent() {
     )
   }
 
-  // ── Se não está inscrito ──
-  if (!inscrito) {
-    return (
-      <div className="min-h-screen pb-6" style={{ backgroundColor: 'var(--background)' }}>
-        <header className="sticky top-0 z-40 border-b"
-          style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
-          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs"
-                style={{ background: 'linear-gradient(135deg, #003399, #0055cc)' }}>SE</div>
-              <div>
-                <p className="text-xs text-gray-400 leading-none">Ola,</p>
-                <p className="font-black text-sm leading-tight" style={{ color: '#003399' }}>
-                  {user?.nome?.split(' ')[0]}
-                </p>
-              </div>
-            </div>
-            <form action={logout}>
-              <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
-                <LogOut className="w-3.5 h-3.5" /> Sair
-              </button>
-            </form>
-          </div>
-        </header>
-        <div className="max-w-2xl mx-auto px-4 pt-4">
-          <InscricaoObrigatoria
-            ciclo={ciclo}
-            onIniciar={handleInscrever}
-            loading={payLoading}
-            error={payError}
-            pagamentoPendente={pagamentoPendente}
-            onComprovativoEnviado={recarregarDados}
-          />
-        </div>
-      </div>
-    )
-  }
 
   // ── Dashboard completo (utilizador inscrito) ──
   return (
@@ -908,10 +583,6 @@ function DashboardContent() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold"
-              style={{ backgroundColor: '#1D9E7515', color: '#1D9E75' }}>
-              <Check className="w-3 h-3" /> Inscrito
-            </span>
             <form action={logout}>
               <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
                 <LogOut className="w-3.5 h-3.5" /> Sair
@@ -973,10 +644,6 @@ function DashboardContent() {
                 <span>0 MT</span>
                 <span className="font-semibold" style={{ color: '#EF9F27' }}>{progress.toFixed(1)}%</span>
                 <span>{metaUtilizador.toLocaleString('pt-PT')} MT</span>
-              </div>
-              <div className="flex items-center gap-2 pt-3 border-t text-sm text-gray-400" style={{ borderColor: '#F5F5F0' }}>
-                <Users className="w-3.5 h-3.5" />
-                <span><strong className="text-gray-600">{ciclo?.participantes_count ?? 0}</strong> inscritos · minimo <strong className="text-gray-600">{ciclo?.minimo_participantes ?? 150}</strong></span>
               </div>
             </div>
 
