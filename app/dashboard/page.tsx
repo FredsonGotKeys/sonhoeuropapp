@@ -13,7 +13,41 @@ import { createClient } from '@/lib/supabase/client'
 import { logout } from '@/app/actions/auth'
 import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos } from '@/app/actions/deposito'
 import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
-import { Suspense } from 'react'
+import { Suspense, Component, type ReactNode } from 'react'
+
+// Se algo rebentar a desenhar o dashboard (ex: um dado inesperado vindo da
+// base de dados), mostra o erro em vez de deixar o ecrã silenciosamente
+// parado sem nenhum botão a responder.
+class DashboardErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { error: null }
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[dashboard] Erro ao desenhar a página:', error, info.componentStack)
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: 'var(--background)' }}>
+          <div className="max-w-sm w-full bg-white rounded-2xl p-6 shadow-sm text-center">
+            <p className="font-black text-lg mb-2" style={{ color: '#e74c3c' }}>Algo correu mal</p>
+            <p className="text-sm text-gray-500 mb-4">
+              Encontrámos um erro ao carregar esta página. Actualiza (F5) para tentar de novo.
+            </p>
+            <p className="text-xs font-mono text-gray-400 break-all bg-gray-50 rounded-lg p-2.5">
+              {this.state.error.message}
+            </p>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 interface Usuario {
   id: string
@@ -1332,13 +1366,15 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
-        <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
-          style={{ borderColor: '#003399', borderTopColor: 'transparent' }} />
-      </div>
-    }>
-      <DashboardContent />
-    </Suspense>
+    <DashboardErrorBoundary>
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+          <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: '#003399', borderTopColor: 'transparent' }} />
+        </div>
+      }>
+        <DashboardContent />
+      </Suspense>
+    </DashboardErrorBoundary>
   )
 }
