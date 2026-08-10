@@ -715,6 +715,7 @@ function DashboardContent() {
   // resposta inesperada), o botão TEM de sair do estado "a carregar" e
   // mostrar algo à pessoa — nunca ficar preso a girar para sempre.
   const handleInscrever = async () => {
+    console.log('[handleInscrever] clique recebido, a iniciar pedido...')
     setPayLoading(true)
     setPayError('')
     try {
