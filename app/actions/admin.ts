@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { cookies } from 'next/headers'
 import { caminhoNoBucket } from '@/lib/comprovativos'
 import { limparComprovativosExpirados } from '@/app/actions/deposito'
+import { limparVerificacoesExpiradas } from '@/app/actions/verificacao'
 
 // Valor real (interno) que o fundo precisa de atingir para ser considerado completo.
 // Independente da "meta" configurada por ciclo, que é o valor/prémio mostrado ao utilizador.
@@ -318,6 +319,76 @@ export async function eliminarPagamentosEmMassa(ids: string[]) {
   if (caminhos.length) await admin.storage.from('comprovativos').remove(caminhos)
 
   return { success: true, count: ids.length }
+}
+
+// ─── VERIFICAÇÕES DE IDENTIDADE ────────────────────────────────────────────────
+
+export async function getVerificacoesPendentes() {
+  const auth = await requireAdmin(); if (auth.error) return []
+  await limparVerificacoesExpiradas()
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('verificacoes')
+    .select('*, usuarios(nome, email, telefone)')
+    .eq('status', 'pendente')
+    .order('criado_em', { ascending: false })
+  if (error) return []
+  return data ?? []
+}
+
+export async function getHistoricoVerificacoes() {
+  const auth = await requireAdmin(); if (auth.error) return []
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('verificacoes')
+    .select('*, usuarios(nome, email, telefone)')
+    .neq('status', 'pendente')
+    .order('revisto_em', { ascending: false })
+    .limit(200)
+  return data ?? []
+}
+
+export async function getSignedUrlVerificacaoAdmin(verificacaoId: string, tipo: 'bi' | 'selfie' | 'contrato') {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+
+  const coluna = tipo === 'bi' ? 'bi_imagem_path' : tipo === 'selfie' ? 'selfie_imagem_path' : 'contrato_pdf_path'
+  const { data: v } = await admin.from('verificacoes').select(coluna).eq('id', verificacaoId).maybeSingle()
+  const path = v ? (v as any)[coluna] as string | null : null
+  if (!path) return { error: 'Ficheiro já expirou ou não existe' }
+
+  const { data, error } = await admin.storage.from('verificacoes').createSignedUrl(path, 60 * 5)
+  if (error || !data) return { error: 'Não foi possível gerar o link' }
+  return { success: true, url: data.signedUrl }
+}
+
+export async function aprovarVerificacao(verificacaoId: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+
+  const { data: v } = await admin.from('verificacoes').select('usuario_id, bi_numero, status').eq('id', verificacaoId).maybeSingle()
+  if (!v) return { error: 'Verificação não encontrada' }
+  if (v.status === 'aprovado') return { success: true }
+
+  const agora = new Date().toISOString()
+  const [{ error: e1 }, { error: e2 }] = await Promise.all([
+    admin.from('verificacoes').update({ status: 'aprovado', revisto_em: agora }).eq('id', verificacaoId),
+    admin.from('usuarios').update({ verificado: true, verificado_at: agora, bi_numero: v.bi_numero }).eq('id', v.usuario_id),
+  ])
+  if (e1 || e2) return { error: (e1 ?? e2)!.message }
+  return { success: true }
+}
+
+export async function rejeitarVerificacao(verificacaoId: string, motivo?: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+  const { error } = await admin.from('verificacoes').update({
+    status: 'rejeitado',
+    revisto_em: new Date().toISOString(),
+    motivo_rejeicao: (motivo ?? '').replace(/<[^>]*>/g, '').trim().slice(0, 500) || null,
+  }).eq('id', verificacaoId)
+  if (error) return { error: error.message }
+  return { success: true }
 }
 
 // ─── CICLOS ───────────────────────────────────────────────────────────────────

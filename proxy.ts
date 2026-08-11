@@ -123,7 +123,7 @@ export default async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // ── Protected routes ──
-  if (!user && (path.startsWith('/dashboard') || path.startsWith('/completar-perfil'))) {
+  if (!user && (path.startsWith('/dashboard') || path.startsWith('/completar-perfil') || path.startsWith('/verificacao'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

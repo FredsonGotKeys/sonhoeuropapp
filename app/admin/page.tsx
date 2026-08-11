@@ -6,7 +6,7 @@ import {
   Users, Trophy, TrendingUp, DollarSign, RefreshCw, LogOut,
   Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Search,
   CreditCard, AlertCircle, ShieldCheck, Plus, Eye, BarChart2,
-  ArrowLeft,
+  ArrowLeft, IdCard, Camera, FileDown,
 } from 'lucide-react'
 import {
   realizarSorteio, getAdminStats, logoutAdmin,
@@ -14,9 +14,11 @@ import {
   getPagamentos, confirmarPagamentoManual, rejeitarPagamento,
   eliminarPagamento, eliminarPagamentosEmMassa,
   getCiclos, alterarEstadoCiclo, criarNovoCiclo, getSorteios,
+  getVerificacoesPendentes, getSignedUrlVerificacaoAdmin,
+  aprovarVerificacao, rejeitarVerificacao,
 } from '@/app/actions/admin'
 
-type Tab = 'dashboard' | 'participantes' | 'pagamentos' | 'ciclos' | 'sorteio'
+type Tab = 'dashboard' | 'participantes' | 'pagamentos' | 'verificacoes' | 'ciclos' | 'sorteio'
 
 const BADGE: Record<string, { label: string; bg: string; color: string }> = {
   pendente:               { label: 'Pendente',        bg: '#F5F5F0',      color: '#888' },
@@ -685,6 +687,152 @@ function TabPagamentos() {
   )
 }
 
+// ─── TAB: VERIFICAÇÕES DE IDENTIDADE ────────────────────────────────────────
+function TabVerificacoes() {
+  const [pendentes, setPendentes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const [aberto, setAberto] = useState<string | null>(null)
+  const [urls, setUrls] = useState<Record<string, string>>({})
+  const [motivo, setMotivo] = useState<Record<string, string>>({})
+  const [rejeitandoId, setRejeitandoId] = useState<string | null>(null)
+
+  const carregar = useCallback(async () => {
+    setLoading(true)
+    const data = await getVerificacoesPendentes()
+    setPendentes(data)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { carregar() }, [carregar])
+
+  const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+  const abrir = async (v: any) => {
+    if (aberto === v.id) { setAberto(null); return }
+    setAberto(v.id)
+    const chaves: Array<['bi' | 'selfie' | 'contrato', string]> = [
+      ['bi', `${v.id}:bi`], ['selfie', `${v.id}:selfie`], ['contrato', `${v.id}:contrato`],
+    ]
+    for (const [tipo, chave] of chaves) {
+      if (urls[chave]) continue
+      const res = await getSignedUrlVerificacaoAdmin(v.id, tipo)
+      if (res.success && res.url) setUrls(prev => ({ ...prev, [chave]: res.url! }))
+    }
+  }
+
+  const aprovar = async (id: string) => {
+    setLoadingId(id)
+    const res = await aprovarVerificacao(id)
+    if (res.error) setMsg('Erro: ' + res.error)
+    else { setMsg('Verificação aprovada — utilizador já tem acesso ao dashboard'); carregar() }
+    setLoadingId(null)
+  }
+
+  const rejeitar = async (id: string) => {
+    setLoadingId(id)
+    const res = await rejeitarVerificacao(id, motivo[id] ?? '')
+    if (res.error) setMsg('Erro: ' + res.error)
+    else { setMsg('Verificação rejeitada'); setRejeitandoId(null); carregar() }
+    setLoadingId(null)
+  }
+
+  return (
+    <div className="space-y-4">
+      {msg && (
+        <div className="p-3 rounded-xl text-sm font-semibold flex items-center justify-between"
+          style={{ backgroundColor: msg.startsWith('Erro') ? '#fee2e2' : '#1D9E7515', color: msg.startsWith('Erro') ? '#dc2626' : '#1D9E75' }}>
+          {msg}
+          <button onClick={() => setMsg('')}><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-10"><RefreshCw className="w-5 h-5 animate-spin text-gray-300" /></div>
+        ) : pendentes.length === 0 ? (
+          <p className="text-center text-gray-400 text-sm py-10">Nenhuma verificação pendente.</p>
+        ) : (
+          <div className="divide-y" style={{ borderColor: '#F5F5F0' }}>
+            {pendentes.map(v => (
+              <div key={v.id} className="p-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="cursor-pointer flex-1 min-w-0" onClick={() => abrir(v)}>
+                    <p className="font-semibold text-sm truncate">{v.usuarios?.nome ?? '—'}</p>
+                    <p className="text-xs text-gray-400 truncate">{v.usuarios?.email ?? '—'} · BI {v.bi_numero}</p>
+                    <p className="text-xs text-gray-300">Submetido: {formatDate(v.criado_em)}</p>
+                  </div>
+                  <div className="flex gap-1.5 items-center">
+                    <button onClick={() => aprovar(v.id)} disabled={!!loadingId}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white"
+                      style={{ backgroundColor: '#1D9E75' }}>
+                      {loadingId === v.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      Aprovar
+                    </button>
+                    <button onClick={() => setRejeitandoId(rejeitandoId === v.id ? null : v.id)} disabled={!!loadingId}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-white bg-red-400 hover:bg-red-500">
+                      <X className="w-3 h-3" /> Rejeitar
+                    </button>
+                    <button onClick={() => abrir(v)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                      {aberto === v.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {rejeitandoId === v.id && (
+                  <div className="mt-3 flex gap-2">
+                    <input type="text" placeholder="Motivo da rejeição (opcional)" value={motivo[v.id] ?? ''}
+                      onChange={(e) => setMotivo(prev => ({ ...prev, [v.id]: e.target.value }))}
+                      className="flex-1 text-xs px-3 py-2 rounded-lg border" style={{ borderColor: '#e5e7eb' }} />
+                    <button onClick={() => rejeitar(v.id)} disabled={!!loadingId}
+                      className="px-3 py-2 rounded-lg text-xs font-bold text-white bg-red-500 hover:bg-red-600">
+                      Confirmar
+                    </button>
+                  </div>
+                )}
+
+                {aberto === v.id && (
+                  <div className="mt-3 ml-1 p-3 rounded-xl grid gap-3 sm:grid-cols-2" style={{ backgroundColor: '#F5F5F0', border: '1px solid #e5e7eb' }}>
+                    <div>
+                      <p className="font-bold text-gray-500 mb-2 uppercase tracking-widest flex items-center gap-1" style={{ fontSize: '10px' }}>
+                        <IdCard className="w-3 h-3" /> Foto do BI
+                      </p>
+                      {urls[`${v.id}:bi`] ? (
+                        <a href={urls[`${v.id}:bi`]} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border">
+                          <img src={urls[`${v.id}:bi`]} alt="BI" className="w-full max-h-56 object-contain bg-white" />
+                        </a>
+                      ) : <p className="text-xs italic text-gray-400">A carregar ou já expirou (72h)...</p>}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-500 mb-2 uppercase tracking-widest flex items-center gap-1" style={{ fontSize: '10px' }}>
+                        <Camera className="w-3 h-3" /> Selfie
+                      </p>
+                      {urls[`${v.id}:selfie`] ? (
+                        <a href={urls[`${v.id}:selfie`]} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border">
+                          <img src={urls[`${v.id}:selfie`]} alt="Selfie" className="w-full max-h-56 object-contain bg-white" />
+                        </a>
+                      ) : <p className="text-xs italic text-gray-400">A carregar ou já expirou (72h)...</p>}
+                    </div>
+                    <div className="sm:col-span-2">
+                      {urls[`${v.id}:contrato`] ? (
+                        <a href={urls[`${v.id}:contrato`]} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg text-white" style={{ backgroundColor: '#003399' }}>
+                          <FileDown className="w-3.5 h-3.5" /> Ver contrato PDF
+                        </a>
+                      ) : <p className="text-xs italic text-gray-400">Contrato a carregar ou já expirou.</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── TAB: CICLOS ─────────────────────────────────────────────────────────────
 function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
   const [ciclos, setCiclos] = useState<any[]>([])
@@ -940,6 +1088,7 @@ export default function AdminPage() {
     { id: 'dashboard',     label: 'Dashboard',     icon: <BarChart2 className="w-4 h-4" /> },
     { id: 'participantes', label: 'Participantes',  icon: <Users className="w-4 h-4" />, badge: stats?.totalParticipantes },
     { id: 'pagamentos',    label: 'Pagamentos',     icon: <CreditCard className="w-4 h-4" />, badge: stats?.pagamentosPendentes || undefined },
+    { id: 'verificacoes',  label: 'Verificações',   icon: <IdCard className="w-4 h-4" /> },
     { id: 'ciclos',        label: 'Ciclos',         icon: <RefreshCw className="w-4 h-4" /> },
     { id: 'sorteio',       label: 'Sorteio',        icon: <Trophy className="w-4 h-4" /> },
   ]
@@ -1002,6 +1151,7 @@ export default function AdminPage() {
             {tab === 'dashboard'     && <TabDashboard stats={stats} />}
             {tab === 'participantes' && <TabParticipantes participantes={stats?.participantes ?? []} onRefresh={loadStats} />}
             {tab === 'pagamentos'    && <TabPagamentos />}
+            {tab === 'verificacoes'  && <TabVerificacoes />}
             {tab === 'ciclos'        && <TabCiclos onRefresh={loadStats} />}
             {tab === 'sorteio'       && <TabSorteio stats={stats} onRefresh={loadStats} />}
           </>

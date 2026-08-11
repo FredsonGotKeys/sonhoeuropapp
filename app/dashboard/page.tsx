@@ -57,6 +57,7 @@ interface Usuario {
   pontos_total: number
   pontos_ciclo_actual: number
   streak_dias: number
+  verificado: boolean
 }
 
 interface Ciclo {
@@ -426,6 +427,13 @@ function DashboardContent() {
     // Entrou pelo Google mas ainda não criou o perfil (falta o telefone).
     if (!userData.data) {
       router.replace('/completar-perfil')
+      return
+    }
+
+    // Perfil criado mas ainda não passou pela verificação de identidade
+    // (BI + selfie + contrato aprovados pelo admin).
+    if (!userData.data.verificado) {
+      router.replace('/verificacao')
       return
     }
     setUser(userData.data)

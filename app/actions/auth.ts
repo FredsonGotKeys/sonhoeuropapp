@@ -84,7 +84,7 @@ export async function completarPerfil(data: { nome: string; telefone: string }) 
   const admin = createAdminClient()
 
   const { data: jaExiste } = await admin.from('usuarios').select('id').eq('id', user.id).maybeSingle()
-  if (jaExiste) redirect('/dashboard')
+  if (jaExiste) redirect('/verificacao')
 
   const cookieStore = await cookies()
   const codigo = (cookieStore.get(REF_COOKIE)?.value ?? '').trim().toUpperCase()
@@ -120,7 +120,7 @@ export async function completarPerfil(data: { nome: string; telefone: string }) 
   }
 
   cookieStore.delete(REF_COOKIE)
-  redirect('/dashboard')
+  redirect('/verificacao')
 }
 
 export async function login(formData: FormData) {
@@ -217,7 +217,7 @@ export async function register(data: {
     return { needsConfirmation: true }
   }
 
-  redirect('/dashboard')
+  redirect('/verificacao')
 }
 
 export async function logout() {
