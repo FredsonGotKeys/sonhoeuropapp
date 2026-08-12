@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { caminhoNoBucket } from '@/lib/comprovativos'
 import { limparComprovativosExpirados } from '@/app/actions/deposito'
 import { limparVerificacoesExpiradas } from '@/app/actions/verificacao'
+import { registarAuditoria } from '@/lib/auditoria'
 
 // Valor real (interno) que o fundo precisa de atingir para ser considerado completo.
 // Independente da "meta" configurada por ciclo, que é o valor/prémio mostrado ao utilizador.
@@ -442,14 +443,16 @@ export async function getVerificacoesPendentes() {
   // URLs assinadas — o bucket é privado, por isso o admin precisa de um link
   // temporário (10 min) para ver ou descarregar as fotos antes de confirmar.
   return Promise.all([...maisRecentePorUsuario.values()].map(async (v) => {
-    const [frente, verso] = await Promise.all([
+    const [frente, verso, selfie] = await Promise.all([
       v.bi_imagem_path ? admin.storage.from('verificacoes').createSignedUrl(v.bi_imagem_path, 600) : null,
       v.bi_imagem_verso_path ? admin.storage.from('verificacoes').createSignedUrl(v.bi_imagem_verso_path, 600) : null,
+      v.selfie_imagem_path ? admin.storage.from('verificacoes').createSignedUrl(v.selfie_imagem_path, 600) : null,
     ])
     return {
       ...v,
       bi_imagem_frente_url: frente?.data?.signedUrl ?? null,
       bi_imagem_verso_url: verso?.data?.signedUrl ?? null,
+      selfie_url: selfie?.data?.signedUrl ?? null,
     }
   }))
 }
@@ -467,6 +470,7 @@ export async function aprovarVerificacao(verificacaoId: string, biNumero: string
   await admin.from('verificacoes').update({ status: 'aprovado', revisto_em: agora, bi_numero: numero }).eq('id', verificacaoId)
   const { error } = await admin.from('usuarios').update({ verificado: true, verificado_at: agora, bi_numero: numero }).eq('id', v.usuario_id)
   if (error) return { error: error.message }
+  registarAuditoria({ usuarioId: v.usuario_id, evento: 'bi_aprovado', detalhes: { verificacaoId } })
   return { success: true }
 }
 
@@ -476,11 +480,14 @@ export async function rejeitarVerificacao(verificacaoId: string, motivo: string)
   const motivoLimpo = (motivo ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 300)
     || 'As fotos não estão legíveis — tenta enviar novamente com boa luz.'
 
+  const { data: v } = await admin.from('verificacoes').select('usuario_id').eq('id', verificacaoId).maybeSingle()
+
   const { error } = await admin.from('verificacoes').update({
     status: 'rejeitado',
     revisto_em: new Date().toISOString(),
     motivo_rejeicao: motivoLimpo,
   }).eq('id', verificacaoId)
   if (error) return { error: error.message }
+  if (v) registarAuditoria({ usuarioId: v.usuario_id, evento: 'bi_rejeitado', detalhes: { verificacaoId, motivo: motivoLimpo } })
   return { success: true }
 }

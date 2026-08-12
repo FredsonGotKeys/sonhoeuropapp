@@ -751,11 +751,12 @@ function TabVerificacoes() {
               <StatusBadge status={v.status} />
             </div>
 
-            {(v.bi_imagem_frente_url || v.bi_imagem_verso_url) ? (
-              <div className="grid grid-cols-2 gap-3 mb-4">
+            {(v.bi_imagem_frente_url || v.bi_imagem_verso_url || v.selfie_url) ? (
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 {[
                   { url: v.bi_imagem_frente_url, label: 'Frente' },
                   { url: v.bi_imagem_verso_url, label: 'Verso' },
+                  { url: v.selfie_url, label: 'Selfie' },
                 ].filter(f => f.url).map(f => (
                   <a key={f.label} href={f.url} target="_blank" rel="noopener noreferrer" download
                     className="block rounded-xl overflow-hidden border hover:opacity-90 transition-opacity"

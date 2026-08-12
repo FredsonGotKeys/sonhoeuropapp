@@ -406,11 +406,12 @@ function CampoComprovativo({
 }
 
 // ─── Verificação de identidade (BI) ───────────────────────────────────────
-function CampoFotoBi({ label, preview, onFile, onRemover }: {
+function CampoFotoBi({ label, preview, onFile, onRemover, capture = 'environment' }: {
   label: string
   preview: string | null
   onFile: (file: File) => void
   onRemover: () => void
+  capture?: 'environment' | 'user'
 }) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -434,7 +435,7 @@ function CampoFotoBi({ label, preview, onFile, onRemover }: {
           <ImagePlus className="w-7 h-7 text-gray-300" />
           <span className="text-sm text-gray-400 font-semibold">Toca para tirar/escolher foto</span>
           <span className="text-xs text-gray-300">JPG ou PNG · Max 5 MB</span>
-          <input type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" />
+          <input type="file" accept="image/*" capture={capture} onChange={handleChange} className="hidden" />
         </label>
       )}
     </div>
@@ -449,6 +450,8 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
   const [frentePreview, setFrentePreview] = useState<string | null>(null)
   const [versoFile, setVersoFile] = useState<File | null>(null)
   const [versoPreview, setVersoPreview] = useState<string | null>(null)
+  const [selfieFile, setSelfieFile] = useState<File | null>(null)
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -463,7 +466,7 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
   }
 
   const enviar = async () => {
-    if (!frenteFile || !versoFile) { setErro('Envia as duas fotos: frente e verso do BI.'); return }
+    if (!frenteFile || !versoFile || !selfieFile) { setErro('Envia as três fotos: frente e verso do BI, e uma selfie.'); return }
     setLoading(true)
     setErro('')
 
@@ -474,18 +477,20 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
     const ts = Date.now()
     const pathFrente = `${user.id}/bi-frente-${ts}.${frenteFile.name.split('.').pop() ?? 'jpg'}`
     const pathVerso = `${user.id}/bi-verso-${ts}.${versoFile.name.split('.').pop() ?? 'jpg'}`
+    const pathSelfie = `${user.id}/selfie-${ts}.${selfieFile.name.split('.').pop() ?? 'jpg'}`
 
-    const [upFrente, upVerso] = await Promise.all([
+    const [upFrente, upVerso, upSelfie] = await Promise.all([
       supabase.storage.from('verificacoes').upload(pathFrente, frenteFile, { contentType: frenteFile.type }),
       supabase.storage.from('verificacoes').upload(pathVerso, versoFile, { contentType: versoFile.type }),
+      supabase.storage.from('verificacoes').upload(pathSelfie, selfieFile, { contentType: selfieFile.type }),
     ])
-    if (upFrente.error || upVerso.error) {
-      setErro('Erro ao enviar imagens: ' + (upFrente.error?.message || upVerso.error?.message))
+    if (upFrente.error || upVerso.error || upSelfie.error) {
+      setErro('Erro ao enviar imagens: ' + (upFrente.error?.message || upVerso.error?.message || upSelfie.error?.message))
       setLoading(false)
       return
     }
 
-    const res = await enviarVerificacaoBi(pathFrente, pathVerso)
+    const res = await enviarVerificacaoBi(pathFrente, pathVerso, pathSelfie)
     if (res.error) { setErro(res.error); setLoading(false); return }
     setLoading(false)
     onEnviado()
@@ -512,7 +517,7 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
       </div>
       <h2 className="font-black text-base text-center" style={{ color: '#003399' }}>Confirma a tua identidade</h2>
       <p className="text-xs text-gray-400 text-center mt-1 mb-5 leading-relaxed">
-        Para tua segurança, precisamos de uma foto da frente e do verso do teu Bilhete de Identidade antes de continuares.
+        Para tua segurança, precisamos de uma foto da frente e do verso do teu Bilhete de Identidade, e de uma selfie tua, antes de continuares.
       </p>
 
       {estado?.status === 'rejeitado' && (
@@ -529,6 +534,9 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
         <CampoFotoBi label="Verso do BI" preview={versoPreview}
           onFile={(f) => processar(f, setVersoFile, setVersoPreview)}
           onRemover={() => { setVersoFile(null); setVersoPreview(null) }} />
+        <CampoFotoBi label="Selfie (tira uma foto tua agora)" preview={selfiePreview} capture="user"
+          onFile={(f) => processar(f, setSelfieFile, setSelfiePreview)}
+          onRemover={() => { setSelfieFile(null); setSelfiePreview(null) }} />
       </div>
 
       {erro && (
@@ -537,7 +545,7 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
 
       <button
         onClick={enviar}
-        disabled={loading || !frenteFile || !versoFile}
+        disabled={loading || !frenteFile || !versoFile || !selfieFile}
         className="w-full py-3.5 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md mt-4"
         style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 14px rgba(0,51,153,0.3)' }}
       >
