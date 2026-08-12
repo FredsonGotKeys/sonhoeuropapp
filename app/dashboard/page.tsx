@@ -14,6 +14,7 @@ import { logout } from '@/app/actions/auth'
 import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos, cancelarPagamentoPendente } from '@/app/actions/deposito'
 import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
 import { enviarVerificacaoBi, limparVerificacoesExpiradas } from '@/app/actions/verificacao'
+import { getMeuContrato } from '@/app/actions/contrato'
 import { Suspense } from 'react'
 
 interface Usuario {
@@ -81,6 +82,15 @@ const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> =
   pendente:                { label: 'A aguardar pagamento',   bg: '#3b82f612', color: '#3b82f6' },
   confirmado:              { label: 'Confirmado',             bg: '#1D9E7512', color: '#1D9E75' },
   falhado:                 { label: 'Recusado',               bg: '#fee2e2',   color: '#dc2626' },
+}
+
+const CONTRATO_STATUS_LABEL: Record<string, string> = {
+  pendente: 'Dados em análise pelo administrador',
+  em_analise: 'Dados em análise pelo administrador',
+  rejeitado: 'Correcção pedida — toca para ver o motivo',
+  a_aguardar_assinatura: 'Aprovado — falta a tua assinatura',
+  assinado: 'Assinado — toca para descarregar',
+  finalizado: 'Assinado — toca para descarregar',
 }
 
 const PAYMENT_INFO = {
@@ -854,6 +864,7 @@ function DashboardContent() {
   const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
   const [ranking, setRanking] = useState<RankingEmbaixador[]>([])
   const [verificacao, setVerificacao] = useState<VerificacaoEstado | null>(null)
+  const [contrato, setContrato] = useState<{ id: string; numero: string; estado: string } | null>(null)
 
   const router = useRouter()
 
@@ -899,6 +910,8 @@ function DashboardContent() {
     ])
     setPagamentoPendente(pendentes.length > 0 ? pendentes[0] : null)
     setHistoricoPagamentos(historico)
+
+    getMeuContrato().then(setContrato).catch((e) => console.error('[dashboard] Falha ao carregar contrato:', e))
   }
 
   useEffect(() => {
@@ -1132,6 +1145,22 @@ function DashboardContent() {
         {/* ── HOME ── */}
         {activeTab === 'home' && (
           <>
+            {/* Contrato de participação */}
+            <Link href="/dashboard/contrato" className="block bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#00339915' }}>
+                    <FileText className="w-4 h-4" style={{ color: '#003399' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm" style={{ color: '#003399' }}>Contrato de Participação</p>
+                    <p className="text-xs text-gray-400 truncate">{CONTRATO_STATUS_LABEL[contrato?.estado ?? ''] ?? 'Ainda não iniciado — toca para começar'}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+              </div>
+            </Link>
+
             {/* Stats */}
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">

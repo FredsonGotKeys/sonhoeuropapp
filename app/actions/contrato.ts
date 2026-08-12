@@ -48,6 +48,36 @@ export async function getMeuContrato() {
   return data
 }
 
+// Conteúdo completo para o utilizador ler antes de assinar — só acessível
+// enquanto o contrato está a aguardar assinatura e pertence ao próprio.
+export async function getContratoParaAssinatura(contratoId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const carregado = await carregarContratoDoUtilizador(contratoId, user.id)
+  if ('error' in carregado) return null
+  const { contrato } = carregado
+  if (contrato.estado !== 'a_aguardar_assinatura') return null
+
+  const admin = createAdminClient()
+  const { data: template } = await admin.from('contrato_templates')
+    .select('nome, versao, clausulas').eq('id', contrato.template_id).single()
+  if (!template) return null
+
+  return {
+    id: contrato.id,
+    numero: contrato.numero,
+    dados: contrato.dados as DadosContrato,
+    consentimentoDadosAt: contrato.consentimento_dados_at as string | null,
+    declaracaoVeracidadeAt: contrato.declaracao_veracidade_at as string | null,
+    aceitacaoTermosAt: contrato.aceitacao_termos_at as string | null,
+    templateNome: template.nome as string,
+    templateVersao: template.versao as number,
+    clausulas: template.clausulas as ClausulaTemplate[],
+  }
+}
+
 export async function submeterDadosContrato(dados: {
   nascimento: string
   nacionalidade: string
