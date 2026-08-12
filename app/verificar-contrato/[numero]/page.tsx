@@ -105,12 +105,18 @@ export default async function VerificarContratoPage({ params }: { params: Promis
                 <div className="flex justify-between"><span className="text-gray-400">Versão</span><span className="font-semibold">{resultado.versaoPdf}</span></div>
                 <div className="flex justify-between"><span className="text-gray-400">Páginas</span><span className="font-semibold">{resultado.paginas ?? '—'}</span></div>
                 {resultado.hash && (
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-400 flex-shrink-0">Integridade</span>
-                    <span className="font-semibold text-right" style={{ color: resultado.autentico ? '#1D9E75' : '#dc2626' }}>
-                      {resultado.autentico ? 'Conteúdo íntegro' : 'Não corresponde ao original'}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-gray-400 flex-shrink-0">Autenticidade</span>
+                      <span className="font-semibold text-right" style={{ color: resultado.autentico ? '#1D9E75' : '#dc2626' }}>
+                        {resultado.autentico ? 'Conteúdo íntegro' : 'Não corresponde ao original'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Hash (SHA-256)</span>
+                      <p className="font-mono text-[10px] break-all mt-0.5 text-gray-500">{resultado.hash}</p>
+                    </div>
+                  </>
                 )}
               </div>
 
