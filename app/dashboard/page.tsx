@@ -327,7 +327,7 @@ function CampoComprovativo({
           readOnly
           onPaste={handlePasteTexto}
           onKeyDown={(e) => { if (!(e.ctrlKey || e.metaKey)) e.preventDefault() }}
-          placeholder="Usa o botão Colar, ou cola aqui (Ctrl+V) a mensagem SMS que recebeste — não é possível escrever ou editar, tem de ser a mensagem original"
+          placeholder="Usa o botão Colar, ou cola aqui (Ctrl+V) a mensagem SMS que recebeste"
           rows={3}
           className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none resize-none transition-all cursor-default"
           style={{ borderColor: texto ? '#003399' : '#e5e7eb', backgroundColor: texto ? 'white' : '#fafafa' }}
