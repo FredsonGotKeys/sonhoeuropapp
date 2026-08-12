@@ -553,9 +553,6 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
           ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> A enviar...</>
           : <><Send className="w-4 h-4" /> Enviar para verificação</>}
       </button>
-      <p className="text-xs text-center text-gray-300 mt-3">
-        As fotos servem só para confirmar a tua identidade e são apagadas do nosso sistema pouco depois da verificação.
-      </p>
     </div>
   )
 }
