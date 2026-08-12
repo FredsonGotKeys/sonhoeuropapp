@@ -111,7 +111,7 @@ export async function logoutAdmin() {
 export async function getAdminStats() {
   const auth = await requireAdmin(); if (auth.error) return null
   const admin = createAdminClient()
-  const [cicloRes, usuariosCountRes, usuariosTopRes, depositosRes, inscricoesRes, sorteioRes, pagamentosRes, verificacoesRes] = await Promise.all([
+  const [cicloRes, usuariosCountRes, usuariosTopRes, depositosRes, inscricoesRes, sorteioRes, pagamentosRes, verificacoesRes, contratosRes] = await Promise.all([
     admin.from('ciclos').select('*').neq('estado', 'concluido').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('usuarios').select('id', { count: 'exact', head: true }),
     admin.from('usuarios').select('id, nome, email, telefone, codigo_convite, total_depositado, ultimo_deposito_at, created_at').order('created_at', { ascending: false }).limit(4000),
@@ -120,6 +120,7 @@ export async function getAdminStats() {
     admin.from('sorteios').select('*, vencedor:vencedor_id(nome, email)').order('realizado_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('pagamentos').select('status'),
     admin.from('verificacoes').select('status', { count: 'exact', head: true }).eq('status', 'pendente'),
+    admin.from('contratos').select('estado', { count: 'exact', head: true }).in('estado', ['pendente', 'em_analise']),
   ])
 
   const depositos = depositosRes.data ?? []
@@ -157,6 +158,7 @@ export async function getAdminStats() {
     pagamentosPendentes: pagamentos.filter(p => p.status === 'pendente' || p.status === 'pendente_confirmacao' || p.status === 'aguardando_comprovativo').length,
     pagamentosConfirmados: pagamentos.filter(p => p.status === 'confirmado').length,
     verificacoesPendentes: verificacoesRes.count ?? 0,
+    contratosPendentes: contratosRes.count ?? 0,
     financeiro: {
       depositosBruto: totalDepositosBruto,
       comissaoDepositos,

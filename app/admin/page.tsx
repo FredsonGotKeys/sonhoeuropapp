@@ -6,7 +6,7 @@ import {
   Users, Trophy, TrendingUp, DollarSign, RefreshCw, LogOut,
   Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Search,
   CreditCard, AlertCircle, ShieldCheck, Plus, Eye, BarChart2,
-  ArrowLeft,
+  ArrowLeft, FileText, Download, History,
 } from 'lucide-react'
 import {
   realizarSorteio, getAdminStats, logoutAdmin,
@@ -15,9 +15,11 @@ import {
   eliminarPagamento, eliminarPagamentosEmMassa,
   getCiclos, alterarEstadoCiclo, criarNovoCiclo, getSorteios,
   getVerificacoesPendentes, aprovarVerificacao, rejeitarVerificacao,
+  getContratosAdmin, aprovarContrato, rejeitarContrato,
+  getContratoDownloadAdmin, getAuditoriaContrato,
 } from '@/app/actions/admin'
 
-type Tab = 'dashboard' | 'participantes' | 'pagamentos' | 'verificacoes' | 'ciclos' | 'sorteio'
+type Tab = 'dashboard' | 'participantes' | 'pagamentos' | 'verificacoes' | 'contratos' | 'ciclos' | 'sorteio'
 
 const BADGE: Record<string, { label: string; bg: string; color: string }> = {
   pendente:               { label: 'Pendente',        bg: '#F5F5F0',      color: '#888' },
@@ -30,6 +32,10 @@ const BADGE: Record<string, { label: string; bg: string; color: string }> = {
   concluido:              { label: 'Concluído',        bg: '#F5F5F0',      color: '#888' },
   aprovado:               { label: 'Aprovado',         bg: '#1D9E7515',    color: '#1D9E75' },
   rejeitado:              { label: 'Rejeitado',        bg: '#fee2e2',      color: '#dc2626' },
+  em_analise:             { label: 'Em análise',       bg: '#EF9F2715',    color: '#EF9F27' },
+  a_aguardar_assinatura:  { label: 'Aguarda assinatura', bg: '#7c3aed15',  color: '#7c3aed' },
+  assinado:               { label: 'Assinado',         bg: '#1D9E7515',    color: '#1D9E75' },
+  finalizado:             { label: 'Finalizado',       bg: '#1D9E7515',    color: '#1D9E75' },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -824,6 +830,172 @@ function TabVerificacoes() {
   )
 }
 
+// ─── TAB: CONTRATOS ───────────────────────────────────────────────────────────
+function TabContratos() {
+  const [lista, setLista] = useState<any[]>([])
+  const [filtro, setFiltro] = useState('pendente')
+  const [loading, setLoading] = useState(true)
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const [motivoRejeicao, setMotivoRejeicao] = useState<Record<string, string>>({})
+  const [rejeitando, setRejeitando] = useState<string | null>(null)
+  const [auditoriaId, setAuditoriaId] = useState<string | null>(null)
+  const [auditoria, setAuditoria] = useState<any[]>([])
+
+  const carregar = useCallback(async () => {
+    setLoading(true)
+    const data = await getContratosAdmin(filtro)
+    setLista(data)
+    setLoading(false)
+  }, [filtro])
+
+  useEffect(() => { carregar() }, [carregar])
+
+  const aprovar = async (id: string) => {
+    setLoadingId(id)
+    const res = await aprovarContrato(id)
+    if (res.error) setMsg('Erro: ' + res.error)
+    else { setMsg('Contrato aprovado — o participante já pode assinar'); carregar() }
+    setLoadingId(null)
+  }
+
+  const rejeitar = async (id: string) => {
+    setLoadingId(id)
+    const res = await rejeitarContrato(id, motivoRejeicao[id] ?? '')
+    if (res.error) setMsg('Erro: ' + res.error)
+    else { setMsg('Correcção pedida ao participante'); setRejeitando(null); carregar() }
+    setLoadingId(null)
+  }
+
+  const descarregar = async (id: string) => {
+    setLoadingId(id)
+    const res = await getContratoDownloadAdmin(id)
+    if (res.error) setMsg('Erro: ' + res.error)
+    else if (res.url) window.open(res.url, '_blank')
+    setLoadingId(null)
+  }
+
+  const verAuditoria = async (id: string) => {
+    if (auditoriaId === id) { setAuditoriaId(null); return }
+    setAuditoriaId(id)
+    setAuditoria(await getAuditoriaContrato(id))
+  }
+
+  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+  const filtros = ['pendente', 'em_analise', 'a_aguardar_assinatura', 'assinado', 'rejeitado', 'todos']
+
+  return (
+    <div className="space-y-4">
+      {msg && (
+        <div className="p-3 rounded-xl text-sm font-semibold flex items-center justify-between"
+          style={{ backgroundColor: msg.startsWith('Erro') ? '#fee2e2' : '#1D9E7515', color: msg.startsWith('Erro') ? '#dc2626' : '#1D9E75' }}>
+          {msg}
+          <button onClick={() => setMsg('')}><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-wrap gap-2 items-center">
+        {filtros.map(f => (
+          <button key={f} onClick={() => setFiltro(f)}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all"
+            style={{
+              borderColor: filtro === f ? '#003399' : '#e5e7eb',
+              backgroundColor: filtro === f ? '#003399' : 'white',
+              color: filtro === f ? 'white' : '#666',
+            }}>
+            {f === 'todos' ? 'Todos' : BADGE[f]?.label ?? f}
+          </button>
+        ))}
+        <button onClick={carregar} className="ml-auto p-1.5 rounded-lg hover:bg-gray-100">
+          <RefreshCw className={`w-4 h-4 text-gray-400 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-10 bg-white rounded-2xl shadow-sm"><RefreshCw className="w-5 h-5 animate-spin text-gray-300" /></div>
+      ) : lista.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-10 bg-white rounded-2xl shadow-sm">Nenhum contrato neste estado.</p>
+      ) : (
+        lista.map((c) => (
+          <div key={c.id} className="bg-white rounded-2xl shadow-sm p-5"
+            style={{ border: c.estado === 'pendente' ? '2px solid #EF9F2730' : undefined }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="font-bold flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-gray-400" /> {c.numero}</p>
+                <p className="text-xs text-gray-400">{c.usuarios?.nome ?? '—'} · {c.usuarios?.email}</p>
+              </div>
+              <StatusBadge status={c.estado} />
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs mb-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
+              <div><p className="text-gray-400">Nascimento</p><p className="font-semibold">{c.dados?.nascimento ?? '—'}</p></div>
+              <div><p className="text-gray-400">Nacionalidade</p><p className="font-semibold">{c.dados?.nacionalidade ?? '—'}</p></div>
+              <div><p className="text-gray-400">BI</p><p className="font-semibold">{c.dados?.biNumero ?? '—'} · vál. {c.dados?.biValidade ?? '—'}</p></div>
+              <div><p className="text-gray-400">NUIT</p><p className="font-semibold">{c.dados?.nuit ?? '—'}</p></div>
+              <div><p className="text-gray-400">Telefone</p><p className="font-semibold">{c.dados?.telefone ?? '—'}</p></div>
+              <div className="col-span-2 sm:col-span-1"><p className="text-gray-400">Morada</p><p className="font-semibold truncate">{c.dados?.morada ?? '—'}</p></div>
+            </div>
+
+            {c.estado === 'rejeitado' && c.rejeitado_motivo && (
+              <p className="text-xs text-red-500 mb-3">Motivo enviado: {c.rejeitado_motivo}</p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              {['pendente', 'em_analise'].includes(c.estado) && (
+                rejeitando === c.id ? (
+                  <>
+                    <input type="text" placeholder="Motivo da correcção"
+                      value={motivoRejeicao[c.id] ?? ''}
+                      onChange={(e) => setMotivoRejeicao(m => ({ ...m, [c.id]: e.target.value }))}
+                      className="flex-1 min-w-[140px] border rounded-lg px-3 py-2 text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
+                    <button onClick={() => rejeitar(c.id)} disabled={!!loadingId}
+                      className="px-3 py-2 rounded-lg text-xs font-bold text-white bg-red-500 hover:bg-red-600">Confirmar</button>
+                    <button onClick={() => setRejeitando(null)} className="px-3 py-2 rounded-lg text-xs font-bold text-gray-500 bg-gray-100">Cancelar</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => aprovar(c.id)} disabled={!!loadingId}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white" style={{ backgroundColor: '#1D9E75' }}>
+                      {loadingId === c.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Aprovar
+                    </button>
+                    <button onClick={() => setRejeitando(c.id)} disabled={!!loadingId}
+                      className="px-3 py-2 rounded-lg text-xs font-bold text-red-400 hover:bg-red-50">Pedir correcção</button>
+                  </>
+                )
+              )}
+
+              {['assinado', 'finalizado'].includes(c.estado) && (
+                <button onClick={() => descarregar(c.id)} disabled={!!loadingId}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white" style={{ backgroundColor: '#003399' }}>
+                  <Download className="w-3.5 h-3.5" /> Descarregar PDF · {c.pdf_paginas ?? '?'} pág.
+                </button>
+              )}
+
+              <button onClick={() => verAuditoria(c.id)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-gray-400 hover:bg-gray-100">
+                <History className="w-3.5 h-3.5" /> Histórico
+              </button>
+            </div>
+
+            {auditoriaId === c.id && (
+              <div className="mt-3 pt-3 border-t space-y-1.5" style={{ borderColor: '#F5F5F0' }}>
+                {auditoria.length === 0 ? (
+                  <p className="text-xs text-gray-300">Sem registos.</p>
+                ) : auditoria.map((a) => (
+                  <div key={a.id} className="flex justify-between text-xs">
+                    <span className="text-gray-500">{a.evento}</span>
+                    <span className="text-gray-300">{formatDate(a.criado_em)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
 // ─── TAB: CICLOS ─────────────────────────────────────────────────────────────
 function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
   const [ciclos, setCiclos] = useState<any[]>([])
@@ -1080,6 +1252,7 @@ export default function AdminPage() {
     { id: 'participantes', label: 'Participantes',  icon: <Users className="w-4 h-4" />, badge: stats?.totalParticipantes },
     { id: 'pagamentos',    label: 'Pagamentos',     icon: <CreditCard className="w-4 h-4" />, badge: stats?.pagamentosPendentes || undefined },
     { id: 'verificacoes',  label: 'Verificação BI', icon: <ShieldCheck className="w-4 h-4" />, badge: stats?.verificacoesPendentes || undefined },
+    { id: 'contratos',     label: 'Contratos',      icon: <FileText className="w-4 h-4" />, badge: stats?.contratosPendentes || undefined },
     { id: 'ciclos',        label: 'Ciclos',         icon: <RefreshCw className="w-4 h-4" /> },
     { id: 'sorteio',       label: 'Sorteio',        icon: <Trophy className="w-4 h-4" /> },
   ]
@@ -1122,7 +1295,7 @@ export default function AdminPage() {
               {t.label}
               {!!t.badge && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full text-white text-xs font-black"
-                  style={{ backgroundColor: t.id === 'pagamentos' || t.id === 'verificacoes' ? '#EF9F27' : '#003399', fontSize: '10px' }}>
+                  style={{ backgroundColor: t.id === 'pagamentos' || t.id === 'verificacoes' || t.id === 'contratos' ? '#EF9F27' : '#003399', fontSize: '10px' }}>
                   {t.badge}
                 </span>
               )}
@@ -1143,6 +1316,7 @@ export default function AdminPage() {
             {tab === 'participantes' && <TabParticipantes participantes={stats?.participantes ?? []} onRefresh={loadStats} />}
             {tab === 'pagamentos'    && <TabPagamentos />}
             {tab === 'verificacoes'  && <TabVerificacoes />}
+            {tab === 'contratos'     && <TabContratos />}
             {tab === 'ciclos'        && <TabCiclos onRefresh={loadStats} />}
             {tab === 'sorteio'       && <TabSorteio stats={stats} onRefresh={loadStats} />}
           </>
