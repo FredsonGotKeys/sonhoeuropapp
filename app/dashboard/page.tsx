@@ -878,12 +878,9 @@ function DashboardContent() {
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
-              <div>
-                <p className="text-xs text-gray-400 leading-none">Ola,</p>
-                <p className="font-black text-sm leading-tight" style={{ color: '#003399' }}>
-                  {user?.nome?.split(' ')[0]}
-                </p>
-              </div>
+              <p className="font-black text-sm" style={{ color: '#003399' }}>
+                Olá, {primeiroNome}
+              </p>
             </div>
             <form action={logout}>
               <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
@@ -915,12 +912,9 @@ function DashboardContent() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
-            <div>
-              <p className="text-xs text-gray-400 leading-none">Ola,</p>
-              <p className="font-black text-sm leading-tight" style={{ color: '#003399' }}>
-                {user?.nome?.split(' ')[0]}
-              </p>
-            </div>
+            <p className="font-black text-sm" style={{ color: '#003399' }}>
+              Olá, {primeiroNome}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold"
