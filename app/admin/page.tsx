@@ -754,14 +754,14 @@ function TabVerificacoes() {
             {(v.bi_imagem_frente_url || v.bi_imagem_verso_url || v.selfie_url) ? (
               <div className="grid grid-cols-3 gap-3 mb-4">
                 {[
-                  { url: v.bi_imagem_frente_url, label: 'Frente' },
-                  { url: v.bi_imagem_verso_url, label: 'Verso' },
-                  { url: v.selfie_url, label: 'Selfie' },
+                  { url: v.bi_imagem_frente_url, label: 'Frente', alt: 'Frente do BI' },
+                  { url: v.bi_imagem_verso_url, label: 'Verso', alt: 'Verso do BI' },
+                  { url: v.selfie_url, label: 'Selfie', alt: 'Selfie do titular' },
                 ].filter(f => f.url).map(f => (
                   <a key={f.label} href={f.url} target="_blank" rel="noopener noreferrer" download
                     className="block rounded-xl overflow-hidden border hover:opacity-90 transition-opacity"
                     style={{ borderColor: '#e5e7eb' }}>
-                    <img src={f.url} alt={`${f.label} do BI`} className="w-full h-32 object-cover bg-gray-50" />
+                    <img src={f.url} alt={f.alt} className="w-full h-32 object-cover bg-gray-50" />
                     <p className="text-xs text-center py-1 text-gray-400">{f.label} · tocar para descarregar</p>
                   </a>
                 ))}
