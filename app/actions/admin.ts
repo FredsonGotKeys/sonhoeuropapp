@@ -491,3 +491,84 @@ export async function rejeitarVerificacao(verificacaoId: string, motivo: string)
   if (v) registarAuditoria({ usuarioId: v.usuario_id, evento: 'bi_rejeitado', detalhes: { verificacaoId, motivo: motivoLimpo } })
   return { success: true }
 }
+
+// ─── CONTRATOS ──────────────────────────────────────────────────────────────
+
+export async function getContratosAdmin(filtroEstado?: string) {
+  const auth = await requireAdmin(); if (auth.error) return []
+  const admin = createAdminClient()
+
+  let query = admin.from('contratos')
+    .select('id, numero, estado, dados, pdf_paginas, pdf_versao, rejeitado_motivo, created_at, aprovado_at, assinado_at, usuarios(nome, email, telefone)')
+    .order('created_at', { ascending: false })
+    .limit(300)
+
+  if (filtroEstado && filtroEstado !== 'todos') query = query.eq('estado', filtroEstado)
+
+  const { data } = await query
+  return data ?? []
+}
+
+export async function aprovarContrato(contratoId: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+
+  const { data: c } = await admin.from('contratos').select('usuario_id, estado').eq('id', contratoId).maybeSingle()
+  if (!c) return { error: 'Contrato não encontrado' }
+  if (!['pendente', 'em_analise'].includes(c.estado)) return { error: 'Este contrato já foi revisto' }
+
+  const agora = new Date().toISOString()
+  const { error } = await admin.from('contratos').update({
+    estado: 'a_aguardar_assinatura',
+    aprovado_at: agora,
+    updated_at: agora,
+  }).eq('id', contratoId)
+  if (error) return { error: error.message }
+
+  registarAuditoria({ usuarioId: c.usuario_id, contratoId, evento: 'contrato_aprovado' })
+  return { success: true }
+}
+
+export async function rejeitarContrato(contratoId: string, motivo: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+  const motivoLimpo = (motivo ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 300)
+    || 'Dados incorrectos — verifica e reenvia.'
+
+  const { data: c } = await admin.from('contratos').select('usuario_id, estado').eq('id', contratoId).maybeSingle()
+  if (!c) return { error: 'Contrato não encontrado' }
+  if (!['pendente', 'em_analise'].includes(c.estado)) return { error: 'Este contrato já foi revisto' }
+
+  const { error } = await admin.from('contratos').update({
+    estado: 'rejeitado',
+    rejeitado_motivo: motivoLimpo,
+    updated_at: new Date().toISOString(),
+  }).eq('id', contratoId)
+  if (error) return { error: error.message }
+
+  registarAuditoria({ usuarioId: c.usuario_id, contratoId, evento: 'contrato_rejeitado', detalhes: { motivo: motivoLimpo } })
+  return { success: true }
+}
+
+export async function getContratoDownloadAdmin(contratoId: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+
+  const { data: c } = await admin.from('contratos').select('pdf_path, estado, usuario_id').eq('id', contratoId).maybeSingle()
+  if (!c?.pdf_path || !['assinado', 'finalizado'].includes(c.estado)) {
+    return { error: 'O contrato ainda não tem PDF disponível' }
+  }
+
+  const { data, error } = await admin.storage.from('contratos').createSignedUrl(c.pdf_path, 300, { download: true })
+  if (error || !data) return { error: 'Não foi possível gerar o link de download' }
+
+  registarAuditoria({ usuarioId: c.usuario_id, contratoId, evento: 'pdf_descarregado', detalhes: { por: 'admin' } })
+  return { success: true, url: data.signedUrl }
+}
+
+export async function getAuditoriaContrato(contratoId: string) {
+  const auth = await requireAdmin(); if (auth.error) return []
+  const admin = createAdminClient()
+  const { data } = await admin.from('auditoria').select('*').eq('contrato_id', contratoId).order('criado_em', { ascending: false })
+  return data ?? []
+}
