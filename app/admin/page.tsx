@@ -14,9 +14,10 @@ import {
   getPagamentos, confirmarPagamentoManual, rejeitarPagamento,
   eliminarPagamento, eliminarPagamentosEmMassa,
   getCiclos, alterarEstadoCiclo, criarNovoCiclo, getSorteios,
+  getVerificacoesPendentes, aprovarVerificacao, rejeitarVerificacao,
 } from '@/app/actions/admin'
 
-type Tab = 'dashboard' | 'participantes' | 'pagamentos' | 'ciclos' | 'sorteio'
+type Tab = 'dashboard' | 'participantes' | 'pagamentos' | 'verificacoes' | 'ciclos' | 'sorteio'
 
 const BADGE: Record<string, { label: string; bg: string; color: string }> = {
   pendente:               { label: 'Pendente',        bg: '#F5F5F0',      color: '#888' },
@@ -27,6 +28,8 @@ const BADGE: Record<string, { label: string; bg: string; color: string }> = {
   aguardando_minimo:      { label: 'Aguardando',       bg: '#EF9F2715',    color: '#EF9F27' },
   activo:                 { label: 'Activo',           bg: '#1D9E7515',    color: '#1D9E75' },
   concluido:              { label: 'Concluído',        bg: '#F5F5F0',      color: '#888' },
+  aprovado:               { label: 'Aprovado',         bg: '#1D9E7515',    color: '#1D9E75' },
+  rejeitado:              { label: 'Rejeitado',        bg: '#fee2e2',      color: '#dc2626' },
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -685,6 +688,141 @@ function TabPagamentos() {
   )
 }
 
+// ─── TAB: VERIFICAÇÕES DE BI ─────────────────────────────────────────────────
+function TabVerificacoes() {
+  const [lista, setLista] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const [numeroBi, setNumeroBi] = useState<Record<string, string>>({})
+  const [motivoRejeicao, setMotivoRejeicao] = useState<Record<string, string>>({})
+  const [rejeitando, setRejeitando] = useState<string | null>(null)
+
+  const carregar = useCallback(async () => {
+    setLoading(true)
+    const data = await getVerificacoesPendentes()
+    setLista(data)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { carregar() }, [carregar])
+
+  const aprovar = async (id: string) => {
+    const numero = (numeroBi[id] ?? '').trim()
+    if (numero.length < 5) { setMsg('Erro: introduz o número do BI antes de aprovar'); return }
+    setLoadingId(id)
+    const res = await aprovarVerificacao(id, numero)
+    if (res.error) setMsg('Erro: ' + res.error)
+    else { setMsg('BI verificado com sucesso'); carregar() }
+    setLoadingId(null)
+  }
+
+  const rejeitar = async (id: string) => {
+    setLoadingId(id)
+    const res = await rejeitarVerificacao(id, motivoRejeicao[id] ?? '')
+    if (res.error) setMsg('Erro: ' + res.error)
+    else { setMsg('Verificação rejeitada'); setRejeitando(null); carregar() }
+    setLoadingId(null)
+  }
+
+  return (
+    <div className="space-y-4">
+      {msg && (
+        <div className="p-3 rounded-xl text-sm font-semibold flex items-center justify-between"
+          style={{ backgroundColor: msg.startsWith('Erro') ? '#fee2e2' : '#1D9E7515', color: msg.startsWith('Erro') ? '#dc2626' : '#1D9E75' }}>
+          {msg}
+          <button onClick={() => setMsg('')}><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-10 bg-white rounded-2xl shadow-sm"><RefreshCw className="w-5 h-5 animate-spin text-gray-300" /></div>
+      ) : lista.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-10 bg-white rounded-2xl shadow-sm">Nenhuma verificação de BI enviada ainda.</p>
+      ) : (
+        lista.map((v) => (
+          <div key={v.id} className="bg-white rounded-2xl shadow-sm p-5"
+            style={{ border: v.status === 'pendente' ? '2px solid #EF9F2730' : undefined }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="font-bold">{v.usuarios?.nome ?? '—'}</p>
+                <p className="text-xs text-gray-400">{v.usuarios?.email} · {v.usuarios?.telefone ?? 'sem telefone'}</p>
+              </div>
+              <StatusBadge status={v.status} />
+            </div>
+
+            {(v.bi_imagem_frente_url || v.bi_imagem_verso_url) ? (
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[
+                  { url: v.bi_imagem_frente_url, label: 'Frente' },
+                  { url: v.bi_imagem_verso_url, label: 'Verso' },
+                ].filter(f => f.url).map(f => (
+                  <a key={f.label} href={f.url} target="_blank" rel="noopener noreferrer" download
+                    className="block rounded-xl overflow-hidden border hover:opacity-90 transition-opacity"
+                    style={{ borderColor: '#e5e7eb' }}>
+                    <img src={f.url} alt={`${f.label} do BI`} className="w-full h-32 object-cover bg-gray-50" />
+                    <p className="text-xs text-center py-1 text-gray-400">{f.label} · tocar para descarregar</p>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs italic text-gray-400 mb-4">Fotos já expiraram (removidas 24h após o envio).</p>
+            )}
+
+            {v.status === 'pendente' && (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text" placeholder="Número do BI (para confirmar)"
+                    value={numeroBi[v.id] ?? ''}
+                    onChange={(e) => setNumeroBi(m => ({ ...m, [v.id]: e.target.value }))}
+                    className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{ borderColor: '#e5e7eb' }}
+                  />
+                  <button onClick={() => aprovar(v.id)} disabled={!!loadingId}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: '#1D9E75' }}>
+                    {loadingId === v.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    Aprovar
+                  </button>
+                </div>
+                {rejeitando === v.id ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text" placeholder="Motivo da rejeição (opcional)"
+                      value={motivoRejeicao[v.id] ?? ''}
+                      onChange={(e) => setMotivoRejeicao(m => ({ ...m, [v.id]: e.target.value }))}
+                      className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
+                      style={{ borderColor: '#e5e7eb' }}
+                    />
+                    <button onClick={() => rejeitar(v.id)} disabled={!!loadingId}
+                      className="px-3 py-2 rounded-lg text-xs font-bold text-white bg-red-500 hover:bg-red-600 flex-shrink-0">
+                      Confirmar
+                    </button>
+                    <button onClick={() => setRejeitando(null)}
+                      className="px-3 py-2 rounded-lg text-xs font-bold text-gray-500 bg-gray-100 flex-shrink-0">
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setRejeitando(v.id)} disabled={!!loadingId}
+                    className="text-xs font-bold text-red-400 hover:text-red-600">
+                    Rejeitar
+                  </button>
+                )}
+              </div>
+            )}
+
+            {v.status === 'rejeitado' && v.motivo_rejeicao && (
+              <p className="text-xs text-red-500 mt-1">Motivo: {v.motivo_rejeicao}</p>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
 // ─── TAB: CICLOS ─────────────────────────────────────────────────────────────
 function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
   const [ciclos, setCiclos] = useState<any[]>([])
@@ -940,6 +1078,7 @@ export default function AdminPage() {
     { id: 'dashboard',     label: 'Dashboard',     icon: <BarChart2 className="w-4 h-4" /> },
     { id: 'participantes', label: 'Participantes',  icon: <Users className="w-4 h-4" />, badge: stats?.totalParticipantes },
     { id: 'pagamentos',    label: 'Pagamentos',     icon: <CreditCard className="w-4 h-4" />, badge: stats?.pagamentosPendentes || undefined },
+    { id: 'verificacoes',  label: 'Verificação BI', icon: <ShieldCheck className="w-4 h-4" />, badge: stats?.verificacoesPendentes || undefined },
     { id: 'ciclos',        label: 'Ciclos',         icon: <RefreshCw className="w-4 h-4" /> },
     { id: 'sorteio',       label: 'Sorteio',        icon: <Trophy className="w-4 h-4" /> },
   ]
@@ -982,7 +1121,7 @@ export default function AdminPage() {
               {t.label}
               {!!t.badge && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full text-white text-xs font-black"
-                  style={{ backgroundColor: t.id === 'pagamentos' ? '#EF9F27' : '#003399', fontSize: '10px' }}>
+                  style={{ backgroundColor: t.id === 'pagamentos' || t.id === 'verificacoes' ? '#EF9F27' : '#003399', fontSize: '10px' }}>
                   {t.badge}
                 </span>
               )}
@@ -1002,6 +1141,7 @@ export default function AdminPage() {
             {tab === 'dashboard'     && <TabDashboard stats={stats} />}
             {tab === 'participantes' && <TabParticipantes participantes={stats?.participantes ?? []} onRefresh={loadStats} />}
             {tab === 'pagamentos'    && <TabPagamentos />}
+            {tab === 'verificacoes'  && <TabVerificacoes />}
             {tab === 'ciclos'        && <TabCiclos onRefresh={loadStats} />}
             {tab === 'sorteio'       && <TabSorteio stats={stats} onRefresh={loadStats} />}
           </>

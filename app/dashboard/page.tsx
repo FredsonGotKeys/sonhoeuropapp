@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { logout } from '@/app/actions/auth'
 import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos, cancelarPagamentoPendente } from '@/app/actions/deposito'
 import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
+import { enviarVerificacaoBi, limparVerificacoesExpiradas } from '@/app/actions/verificacao'
 import { Suspense } from 'react'
 
 interface Usuario {
@@ -23,6 +24,12 @@ interface Usuario {
   pontos_total: number
   pontos_ciclo_actual: number
   streak_dias: number
+  verificado: boolean
+}
+
+interface VerificacaoEstado {
+  status: 'pendente' | 'aprovado' | 'rejeitado'
+  motivo_rejeicao: string | null
 }
 
 interface Ciclo {
@@ -398,6 +405,153 @@ function CampoComprovativo({
   )
 }
 
+// ─── Verificação de identidade (BI) ───────────────────────────────────────
+function CampoFotoBi({ label, preview, onFile, onRemover }: {
+  label: string
+  preview: string | null
+  onFile: (file: File) => void
+  onRemover: () => void
+}) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) onFile(file)
+  }
+
+  return (
+    <div>
+      <p className="text-xs text-gray-400 mb-1.5 flex items-center gap-1"><ImagePlus className="w-3 h-3" /> {label}</p>
+      {preview ? (
+        <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: '#003399' }}>
+          <img src={preview} alt={label} className="w-full max-h-40 object-contain bg-gray-50" />
+          <button type="button" onClick={onRemover}
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <label className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50/30"
+          style={{ borderColor: '#d1d5db' }}>
+          <ImagePlus className="w-7 h-7 text-gray-300" />
+          <span className="text-sm text-gray-400 font-semibold">Toca para tirar/escolher foto</span>
+          <span className="text-xs text-gray-300">JPG ou PNG · Max 5 MB</span>
+          <input type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" />
+        </label>
+      )}
+    </div>
+  )
+}
+
+function VerificacaoBiObrigatoria({ estado, onEnviado }: {
+  estado: VerificacaoEstado | null
+  onEnviado: () => void
+}) {
+  const [frenteFile, setFrenteFile] = useState<File | null>(null)
+  const [frentePreview, setFrentePreview] = useState<string | null>(null)
+  const [versoFile, setVersoFile] = useState<File | null>(null)
+  const [versoPreview, setVersoPreview] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [erro, setErro] = useState('')
+
+  const processar = (file: File, setFile: (f: File) => void, setPreview: (p: string) => void) => {
+    if (file.size > 5 * 1024 * 1024) { setErro('Imagem muito grande. Máximo 5 MB.'); return }
+    if (!file.type.startsWith('image/')) { setErro('Ficheiro inválido. Envia uma imagem.'); return }
+    setErro('')
+    setFile(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const enviar = async () => {
+    if (!frenteFile || !versoFile) { setErro('Envia as duas fotos: frente e verso do BI.'); return }
+    setLoading(true)
+    setErro('')
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setErro('Sessão expirada. Recarrega a página.'); setLoading(false); return }
+
+    const ts = Date.now()
+    const pathFrente = `${user.id}/bi-frente-${ts}.${frenteFile.name.split('.').pop() ?? 'jpg'}`
+    const pathVerso = `${user.id}/bi-verso-${ts}.${versoFile.name.split('.').pop() ?? 'jpg'}`
+
+    const [upFrente, upVerso] = await Promise.all([
+      supabase.storage.from('verificacoes').upload(pathFrente, frenteFile, { contentType: frenteFile.type }),
+      supabase.storage.from('verificacoes').upload(pathVerso, versoFile, { contentType: versoFile.type }),
+    ])
+    if (upFrente.error || upVerso.error) {
+      setErro('Erro ao enviar imagens: ' + (upFrente.error?.message || upVerso.error?.message))
+      setLoading(false)
+      return
+    }
+
+    const res = await enviarVerificacaoBi(pathFrente, pathVerso)
+    if (res.error) { setErro(res.error); setLoading(false); return }
+    setLoading(false)
+    onEnviado()
+  }
+
+  if (estado?.status === 'pendente') {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm text-center">
+        <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: '#EF9F2715' }}>
+          <Clock className="w-7 h-7" style={{ color: '#EF9F27' }} />
+        </div>
+        <h2 className="font-black" style={{ color: '#003399' }}>BI em análise</h2>
+        <p className="text-sm text-gray-400 mt-1 leading-relaxed">
+          Recebemos as tuas fotos. Assim que confirmarmos a tua identidade, vais ter acesso completo ao app.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm p-5">
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: '#00339915' }}>
+        <ShieldCheck className="w-7 h-7" style={{ color: '#003399' }} />
+      </div>
+      <h2 className="font-black text-base text-center" style={{ color: '#003399' }}>Confirma a tua identidade</h2>
+      <p className="text-xs text-gray-400 text-center mt-1 mb-5 leading-relaxed">
+        Para tua segurança, precisamos de uma foto da frente e do verso do teu Bilhete de Identidade antes de continuares.
+      </p>
+
+      {estado?.status === 'rejeitado' && (
+        <div className="p-3 rounded-xl text-sm mb-4" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+          <p className="font-bold mb-0.5">O envio anterior não foi aceite</p>
+          <p>{estado.motivo_rejeicao || 'Tenta enviar fotos mais nítidas.'}</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <CampoFotoBi label="Frente do BI" preview={frentePreview}
+          onFile={(f) => processar(f, setFrenteFile, setFrentePreview)}
+          onRemover={() => { setFrenteFile(null); setFrentePreview(null) }} />
+        <CampoFotoBi label="Verso do BI" preview={versoPreview}
+          onFile={(f) => processar(f, setVersoFile, setVersoPreview)}
+          onRemover={() => { setVersoFile(null); setVersoPreview(null) }} />
+      </div>
+
+      {erro && (
+        <div className="p-3 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100 mt-4">{erro}</div>
+      )}
+
+      <button
+        onClick={enviar}
+        disabled={loading || !frenteFile || !versoFile}
+        className="w-full py-3.5 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md mt-4"
+        style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 14px rgba(0,51,153,0.3)' }}
+      >
+        {loading
+          ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> A enviar...</>
+          : <><Send className="w-4 h-4" /> Enviar para verificação</>}
+      </button>
+      <p className="text-xs text-center text-gray-300 mt-3">
+        As fotos servem só para confirmar a tua identidade e são apagadas do nosso sistema pouco depois da verificação.
+      </p>
+    </div>
+  )
+}
+
 // ─── Ecrã de inscrição obrigatória ────────────────────────────────────────
 function InscricaoObrigatoria({
   ciclo,
@@ -691,6 +845,7 @@ function DashboardContent() {
   const [historicoPagamentos, setHistoricoPagamentos] = useState<PagamentoHistorico[]>([])
   const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
   const [ranking, setRanking] = useState<RankingEmbaixador[]>([])
+  const [verificacao, setVerificacao] = useState<VerificacaoEstado | null>(null)
 
   const router = useRouter()
 
@@ -699,12 +854,14 @@ function DashboardContent() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser) return
 
-    const [userData, cicloData, depositosData] = await Promise.all([
+    const [userData, cicloData, depositosData, verificacaoData] = await Promise.all([
       supabase.from('usuarios').select('*').eq('id', authUser.id).single(),
       supabase.from('ciclos').select('*').neq('estado', 'concluido')
         .order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('depositos').select('*').eq('usuario_id', authUser.id)
         .order('data_deposito', { ascending: false }).limit(20),
+      supabase.from('verificacoes').select('status, motivo_rejeicao').eq('usuario_id', authUser.id)
+        .order('criado_em', { ascending: false }).limit(1).maybeSingle(),
     ])
 
     // Entrou pelo Google mas ainda não criou o perfil (falta o telefone).
@@ -713,6 +870,8 @@ function DashboardContent() {
       return
     }
     setUser(userData.data)
+    setVerificacao(verificacaoData.data)
+    limparVerificacoesExpiradas().catch((e) => console.error('[dashboard] Falha ao limpar verificações:', e))
 
     if (cicloData.data) {
       setCiclo(cicloData.data)
@@ -758,6 +917,9 @@ function DashboardContent() {
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pagamentos' }, () => {
         recarregarDados().catch((e) => console.error('[dashboard] Falha ao actualizar após webhook:', e))
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'verificacoes' }, () => {
+        recarregarDados().catch((e) => console.error('[dashboard] Falha ao actualizar verificação:', e))
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -864,6 +1026,33 @@ function DashboardContent() {
           <div className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mx-auto mb-3"
             style={{ borderColor: '#003399', borderTopColor: 'transparent' }} />
           <p className="text-sm text-gray-400">A carregar...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Se ainda não confirmámos a identidade (BI) ──
+  if (!user?.verificado) {
+    return (
+      <div className="min-h-screen pb-6" style={{ backgroundColor: 'var(--background)' }}>
+        <header className="sticky top-0 z-40 border-b"
+          style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
+              <p className="font-black text-sm" style={{ color: '#003399' }}>
+                Olá, {primeiroNome}
+              </p>
+            </div>
+            <form action={logout}>
+              <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+                <LogOut className="w-3.5 h-3.5" /> Sair
+              </button>
+            </form>
+          </div>
+        </header>
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <VerificacaoBiObrigatoria estado={verificacao} onEnviado={recarregarDados} />
         </div>
       </div>
     )

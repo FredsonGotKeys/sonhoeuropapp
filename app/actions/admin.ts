@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { cookies } from 'next/headers'
 import { caminhoNoBucket } from '@/lib/comprovativos'
 import { limparComprovativosExpirados } from '@/app/actions/deposito'
+import { limparVerificacoesExpiradas } from '@/app/actions/verificacao'
 
 // Valor real (interno) que o fundo precisa de atingir para ser considerado completo.
 // Independente da "meta" configurada por ciclo, que é o valor/prémio mostrado ao utilizador.
@@ -109,7 +110,7 @@ export async function logoutAdmin() {
 export async function getAdminStats() {
   const auth = await requireAdmin(); if (auth.error) return null
   const admin = createAdminClient()
-  const [cicloRes, usuariosCountRes, usuariosTopRes, depositosRes, inscricoesRes, sorteioRes, pagamentosRes] = await Promise.all([
+  const [cicloRes, usuariosCountRes, usuariosTopRes, depositosRes, inscricoesRes, sorteioRes, pagamentosRes, verificacoesRes] = await Promise.all([
     admin.from('ciclos').select('*').neq('estado', 'concluido').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('usuarios').select('id', { count: 'exact', head: true }),
     admin.from('usuarios').select('id, nome, email, telefone, codigo_convite, total_depositado, ultimo_deposito_at, created_at').order('created_at', { ascending: false }).limit(4000),
@@ -117,6 +118,7 @@ export async function getAdminStats() {
     admin.from('inscricoes').select('taxa_paga'),
     admin.from('sorteios').select('*, vencedor:vencedor_id(nome, email)').order('realizado_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('pagamentos').select('status'),
+    admin.from('verificacoes').select('status', { count: 'exact', head: true }).eq('status', 'pendente'),
   ])
 
   const depositos = depositosRes.data ?? []
@@ -153,6 +155,7 @@ export async function getAdminStats() {
     ultimoSorteio: sorteioRes.data,
     pagamentosPendentes: pagamentos.filter(p => p.status === 'pendente' || p.status === 'pendente_confirmacao' || p.status === 'aguardando_comprovativo').length,
     pagamentosConfirmados: pagamentos.filter(p => p.status === 'confirmado').length,
+    verificacoesPendentes: verificacoesRes.count ?? 0,
     financeiro: {
       depositosBruto: totalDepositosBruto,
       comissaoDepositos,
@@ -414,4 +417,70 @@ export async function getSorteios() {
     .select('*, vencedor:vencedor_id(nome, email), ciclo:ciclo_id(total_acumulado)')
     .order('realizado_at', { ascending: false })
   return data ?? []
+}
+
+// ─── VERIFICAÇÃO DE BI ─────────────────────────────────────────────────────
+
+export async function getVerificacoesPendentes() {
+  const auth = await requireAdmin(); if (auth.error) return []
+  await limparVerificacoesExpiradas()
+  const admin = createAdminClient()
+
+  const { data } = await admin
+    .from('verificacoes')
+    .select('*, usuarios(nome, email, telefone)')
+    .order('criado_em', { ascending: false })
+    .limit(300)
+  if (!data) return []
+
+  // Só o envio mais recente de cada utilizador interessa para a revisão.
+  const maisRecentePorUsuario = new Map<string, (typeof data)[number]>()
+  for (const v of data) {
+    if (!maisRecentePorUsuario.has(v.usuario_id)) maisRecentePorUsuario.set(v.usuario_id, v)
+  }
+
+  // URLs assinadas — o bucket é privado, por isso o admin precisa de um link
+  // temporário (10 min) para ver ou descarregar as fotos antes de confirmar.
+  return Promise.all([...maisRecentePorUsuario.values()].map(async (v) => {
+    const [frente, verso] = await Promise.all([
+      v.bi_imagem_path ? admin.storage.from('verificacoes').createSignedUrl(v.bi_imagem_path, 600) : null,
+      v.bi_imagem_verso_path ? admin.storage.from('verificacoes').createSignedUrl(v.bi_imagem_verso_path, 600) : null,
+    ])
+    return {
+      ...v,
+      bi_imagem_frente_url: frente?.data?.signedUrl ?? null,
+      bi_imagem_verso_url: verso?.data?.signedUrl ?? null,
+    }
+  }))
+}
+
+export async function aprovarVerificacao(verificacaoId: string, biNumero: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const numero = (biNumero ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 30)
+  if (numero.length < 5) return { error: 'Número de BI inválido' }
+
+  const admin = createAdminClient()
+  const { data: v } = await admin.from('verificacoes').select('usuario_id').eq('id', verificacaoId).maybeSingle()
+  if (!v) return { error: 'Verificação não encontrada' }
+
+  const agora = new Date().toISOString()
+  await admin.from('verificacoes').update({ status: 'aprovado', revisto_em: agora, bi_numero: numero }).eq('id', verificacaoId)
+  const { error } = await admin.from('usuarios').update({ verificado: true, verificado_at: agora, bi_numero: numero }).eq('id', v.usuario_id)
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+export async function rejeitarVerificacao(verificacaoId: string, motivo: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+  const motivoLimpo = (motivo ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 300)
+    || 'As fotos não estão legíveis — tenta enviar novamente com boa luz.'
+
+  const { error } = await admin.from('verificacoes').update({
+    status: 'rejeitado',
+    revisto_em: new Date().toISOString(),
+    motivo_rejeicao: motivoLimpo,
+  }).eq('id', verificacaoId)
+  if (error) return { error: error.message }
+  return { success: true }
 }
