@@ -349,8 +349,9 @@ export async function criarNovoCiclo() {
   // Fechar ciclos activos primeiro
   await admin.from('ciclos').update({ estado: 'concluido', concluido_at: new Date().toISOString() })
     .in('estado', ['activo', 'aguardando_minimo'])
-  // Criar novo ciclo
-  const { data, error } = await admin.from('ciclos').insert({ estado: 'aguardando_minimo', meta: 200000, minimo_participantes: 150 }).select().single()
+  // Criar novo ciclo já activo — sem inscrições, não há "mínimo de
+  // participantes inscritos" para aguardar antes de aceitar depósitos.
+  const { data, error } = await admin.from('ciclos').insert({ estado: 'activo', meta: 200000, minimo_participantes: 150 }).select().single()
   if (error) return { error: error.message }
   return { success: true, ciclo: data }
 }
@@ -366,32 +367,30 @@ export async function realizarSorteio() {
     return { error: `Cobertura ainda não atingida (${Math.round(Number(ciclo.total_acumulado ?? 0))} / ${ALVO_REAL} MT)` }
   }
 
-  const { data: inscricoes } = await admin.from('inscricoes')
-    .select('usuario_id, usuarios!inner(nome, email, telefone)')
-    .eq('ciclo_id', ciclo.id)
-
-  if (!inscricoes?.length) return { error: 'Sem participantes inscritos' }
-
-  // Buscar total depositado por cada participante neste ciclo
+  // Sem inscrição separada: quem depositou pelo menos uma vez neste ciclo é
+  // elegível, com peso = total depositado. Quem nunca depositou não entra.
   const { data: depositos } = await admin.from('depositos')
-    .select('usuario_id, valor')
+    .select('usuario_id, valor, usuarios!inner(nome, email, telefone)')
     .eq('ciclo_id', ciclo.id)
+
+  if (!depositos?.length) return { error: 'Sem participantes com depósitos' }
 
   const depositosPorUser = new Map<string, number>()
-  for (const d of depositos ?? []) {
+  const dadosPorUser = new Map<string, { nome: string; email: string; telefone: string | null }>()
+  for (const d of depositos as any[]) {
     depositosPorUser.set(d.usuario_id, (depositosPorUser.get(d.usuario_id) ?? 0) + Number(d.valor))
+    if (!dadosPorUser.has(d.usuario_id)) {
+      dadosPorUser.set(d.usuario_id, { nome: d.usuarios.nome, email: d.usuarios.email, telefone: d.usuarios.telefone })
+    }
   }
 
-  // Cada inscrito tem peso = total depositado (min 1 para quem só se inscreveu)
-  const participants = inscricoes.map((i: any) => ({
-    userId: i.usuario_id,
-    nome: i.usuarios.nome,
-    email: i.usuarios.email,
-    telefone: i.usuarios.telefone,
-    totalDepositado: depositosPorUser.get(i.usuario_id) ?? 0,
+  const participants = [...depositosPorUser.entries()].map(([userId, totalDepositado]) => ({
+    userId,
+    ...dadosPorUser.get(userId)!,
+    totalDepositado,
   }))
 
-  const pesoTotal = participants.reduce((s, p) => s + Math.max(p.totalDepositado, 1), 0)
+  const pesoTotal = participants.reduce((s, p) => s + p.totalDepositado, 0)
 
   // Selecção ponderada: quem deposita mais tem mais chances
   const buf = new Uint32Array(1)
@@ -399,7 +398,7 @@ export async function realizarSorteio() {
   let rand = buf[0] % pesoTotal
   let winner = participants[0]
   for (const p of participants) {
-    rand -= Math.max(p.totalDepositado, 1)
+    rand -= p.totalDepositado
     // `< 0` (não `<= 0`): rand começa em [0, pesoTotal-1], por isso `<= 0`
     // daria ao primeiro participante uma hipótese a mais e ao último uma a menos.
     if (rand < 0) { winner = p; break }

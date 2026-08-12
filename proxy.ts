@@ -30,16 +30,21 @@ function isRateLimited(ip: string, max: number): boolean {
 }
 
 // ─── Allowed origins for CORS ───────────────────────────────────────────────
-const ALLOWED_ORIGINS = new Set([
-  'https://sonhoeuropapp.vercel.app',
+// Domínio(s) próprio(s), fora do vercel.app — a Vercel já garante que só o
+// dono do projecto pode servir conteúdo a partir de *.vercel.app, por isso
+// qualquer pedido do mesmo host que respondeu ao pedido é sempre de confiança
+// (evita ter de listar cada URL de preview/deployment gerada automaticamente,
+// o que já bloqueou pedidos legítimos por engano).
+const CUSTOM_DOMAINS = new Set([
   'https://sonhoeuropa.co.mz',
   'https://www.sonhoeuropa.co.mz',
 ])
 
-function isAllowedOrigin(origin: string | null): boolean {
+function isAllowedOrigin(origin: string | null, requestOrigin: string): boolean {
   if (!origin) return true
   if (process.env.NODE_ENV !== 'production') return true
-  return ALLOWED_ORIGINS.has(origin)
+  if (origin === requestOrigin) return true
+  return CUSTOM_DOMAINS.has(origin)
 }
 
 export default async function proxy(request: NextRequest) {
@@ -48,6 +53,7 @@ export default async function proxy(request: NextRequest) {
     ?? request.headers.get('x-real-ip')
     ?? '127.0.0.1'
   const origin = request.headers.get('origin')
+  const requestOrigin = request.nextUrl.origin
 
   // ── Block source map access in production ──
   if (path.endsWith('.map') && process.env.NODE_ENV === 'production') {
@@ -60,7 +66,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── CORS: reject disallowed origins ──
-  if (!isAllowedOrigin(origin)) {
+  if (!isAllowedOrigin(origin, requestOrigin)) {
     return new NextResponse(null, { status: 403, headers: { 'Content-Type': 'text/plain' } })
   }
 
@@ -117,7 +123,7 @@ export default async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // ── Protected routes ──
-  if (!user && (path.startsWith('/dashboard') || path.startsWith('/completar-perfil'))) {
+  if (!user && (path.startsWith('/dashboard') || path.startsWith('/completar-perfil') || path.startsWith('/verificacao'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -144,7 +150,7 @@ export default async function proxy(request: NextRequest) {
   supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
   // CORS headers
-  if (origin && isAllowedOrigin(origin)) {
+  if (origin && isAllowedOrigin(origin, requestOrigin)) {
     supabaseResponse.headers.set('Access-Control-Allow-Origin', origin)
     supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true')
     supabaseResponse.headers.set('Vary', 'Origin')

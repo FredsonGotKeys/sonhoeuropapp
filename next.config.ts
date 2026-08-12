@@ -11,7 +11,7 @@ const csp = [
   `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''}`.trim(),
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${SUPABASE_URL}`,
-  `connect-src 'self' ${SUPABASE_URL} wss://${SUPABASE_DOMAIN} https://zumbopay.com`,
+  `connect-src 'self' ${SUPABASE_URL} wss://${SUPABASE_DOMAIN}`,
   "font-src 'self' data:",
   "frame-src 'none'",
   "frame-ancestors 'none'",
