@@ -877,8 +877,7 @@ function DashboardContent() {
           style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs"
-                style={{ background: 'linear-gradient(135deg, #003399, #0055cc)' }}>SE</div>
+              <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
               <div>
                 <p className="text-xs text-gray-400 leading-none">Ola,</p>
                 <p className="font-black text-sm leading-tight" style={{ color: '#003399' }}>
@@ -915,8 +914,7 @@ function DashboardContent() {
         style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs"
-              style={{ background: 'linear-gradient(135deg, #003399, #0055cc)' }}>SE</div>
+            <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
             <div>
               <p className="text-xs text-gray-400 leading-none">Ola,</p>
               <p className="font-black text-sm leading-tight" style={{ color: '#003399' }}>
