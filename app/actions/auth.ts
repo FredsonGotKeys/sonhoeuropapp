@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { REF_COOKIE } from '@/lib/auth-cookies'
+import { registarAuditoria } from '@/lib/auditoria'
 
 /**
  * Arranca o login com Google no servidor: o cliente do browser guarda o
@@ -84,7 +85,7 @@ export async function completarPerfil(data: { nome: string; telefone: string }) 
   const admin = createAdminClient()
 
   const { data: jaExiste } = await admin.from('usuarios').select('id').eq('id', user.id).maybeSingle()
-  if (jaExiste) redirect('/verificacao')
+  if (jaExiste) redirect('/dashboard')
 
   const cookieStore = await cookies()
   const codigo = (cookieStore.get(REF_COOKIE)?.value ?? '').trim().toUpperCase()
@@ -119,8 +120,10 @@ export async function completarPerfil(data: { nome: string; telefone: string }) 
     return { error: 'Erro ao criar perfil. Tenta novamente.' }
   }
 
+  registarAuditoria({ usuarioId: user.id, evento: 'conta_criada', detalhes: { via: 'google' } })
+
   cookieStore.delete(REF_COOKIE)
-  redirect('/verificacao')
+  redirect('/dashboard')
 }
 
 export async function login(formData: FormData) {
@@ -213,11 +216,13 @@ export async function register(data: {
     return { error: 'Erro ao criar conta. Tenta novamente.' }
   }
 
+  registarAuditoria({ usuarioId: authData.user.id, evento: 'conta_criada', detalhes: { via: 'email' } })
+
   if (!authData.session) {
     return { needsConfirmation: true }
   }
 
-  redirect('/verificacao')
+  redirect('/dashboard')
 }
 
 export async function logout() {

@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { caminhoNoBucket } from '@/lib/comprovativos'
 import { limparComprovativosExpirados } from '@/app/actions/deposito'
 import { limparVerificacoesExpiradas } from '@/app/actions/verificacao'
+import { registarAuditoria } from '@/lib/auditoria'
 
 // Valor real (interno) que o fundo precisa de atingir para ser considerado completo.
 // Independente da "meta" configurada por ciclo, que é o valor/prémio mostrado ao utilizador.
@@ -110,7 +111,7 @@ export async function logoutAdmin() {
 export async function getAdminStats() {
   const auth = await requireAdmin(); if (auth.error) return null
   const admin = createAdminClient()
-  const [cicloRes, usuariosCountRes, usuariosTopRes, depositosRes, inscricoesRes, sorteioRes, pagamentosRes] = await Promise.all([
+  const [cicloRes, usuariosCountRes, usuariosTopRes, depositosRes, inscricoesRes, sorteioRes, pagamentosRes, verificacoesRes, contratosRes] = await Promise.all([
     admin.from('ciclos').select('*').neq('estado', 'concluido').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('usuarios').select('id', { count: 'exact', head: true }),
     admin.from('usuarios').select('id, nome, email, telefone, codigo_convite, total_depositado, ultimo_deposito_at, created_at').order('created_at', { ascending: false }).limit(4000),
@@ -118,6 +119,8 @@ export async function getAdminStats() {
     admin.from('inscricoes').select('taxa_paga'),
     admin.from('sorteios').select('*, vencedor:vencedor_id(nome, email)').order('realizado_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('pagamentos').select('status'),
+    admin.from('verificacoes').select('status', { count: 'exact', head: true }).eq('status', 'pendente'),
+    admin.from('contratos').select('estado', { count: 'exact', head: true }).in('estado', ['pendente', 'em_analise']),
   ])
 
   const depositos = depositosRes.data ?? []
@@ -154,6 +157,8 @@ export async function getAdminStats() {
     ultimoSorteio: sorteioRes.data,
     pagamentosPendentes: pagamentos.filter(p => p.status === 'pendente' || p.status === 'pendente_confirmacao' || p.status === 'aguardando_comprovativo').length,
     pagamentosConfirmados: pagamentos.filter(p => p.status === 'confirmado').length,
+    verificacoesPendentes: verificacoesRes.count ?? 0,
+    contratosPendentes: contratosRes.count ?? 0,
     financeiro: {
       depositosBruto: totalDepositosBruto,
       comissaoDepositos,
@@ -321,76 +326,6 @@ export async function eliminarPagamentosEmMassa(ids: string[]) {
   return { success: true, count: ids.length }
 }
 
-// ─── VERIFICAÇÕES DE IDENTIDADE ────────────────────────────────────────────────
-
-export async function getVerificacoesPendentes() {
-  const auth = await requireAdmin(); if (auth.error) return []
-  await limparVerificacoesExpiradas()
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('verificacoes')
-    .select('*, usuarios(nome, email, telefone)')
-    .eq('status', 'pendente')
-    .order('criado_em', { ascending: false })
-  if (error) return []
-  return data ?? []
-}
-
-export async function getHistoricoVerificacoes() {
-  const auth = await requireAdmin(); if (auth.error) return []
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('verificacoes')
-    .select('*, usuarios(nome, email, telefone)')
-    .neq('status', 'pendente')
-    .order('revisto_em', { ascending: false })
-    .limit(200)
-  return data ?? []
-}
-
-export async function getSignedUrlVerificacaoAdmin(verificacaoId: string, tipo: 'bi' | 'selfie' | 'contrato') {
-  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
-  const admin = createAdminClient()
-
-  const coluna = tipo === 'bi' ? 'bi_imagem_path' : tipo === 'selfie' ? 'selfie_imagem_path' : 'contrato_pdf_path'
-  const { data: v } = await admin.from('verificacoes').select(coluna).eq('id', verificacaoId).maybeSingle()
-  const path = v ? (v as any)[coluna] as string | null : null
-  if (!path) return { error: 'Ficheiro já expirou ou não existe' }
-
-  const { data, error } = await admin.storage.from('verificacoes').createSignedUrl(path, 60 * 5)
-  if (error || !data) return { error: 'Não foi possível gerar o link' }
-  return { success: true, url: data.signedUrl }
-}
-
-export async function aprovarVerificacao(verificacaoId: string) {
-  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
-  const admin = createAdminClient()
-
-  const { data: v } = await admin.from('verificacoes').select('usuario_id, bi_numero, status').eq('id', verificacaoId).maybeSingle()
-  if (!v) return { error: 'Verificação não encontrada' }
-  if (v.status === 'aprovado') return { success: true }
-
-  const agora = new Date().toISOString()
-  const [{ error: e1 }, { error: e2 }] = await Promise.all([
-    admin.from('verificacoes').update({ status: 'aprovado', revisto_em: agora }).eq('id', verificacaoId),
-    admin.from('usuarios').update({ verificado: true, verificado_at: agora, bi_numero: v.bi_numero }).eq('id', v.usuario_id),
-  ])
-  if (e1 || e2) return { error: (e1 ?? e2)!.message }
-  return { success: true }
-}
-
-export async function rejeitarVerificacao(verificacaoId: string, motivo?: string) {
-  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
-  const admin = createAdminClient()
-  const { error } = await admin.from('verificacoes').update({
-    status: 'rejeitado',
-    revisto_em: new Date().toISOString(),
-    motivo_rejeicao: (motivo ?? '').replace(/<[^>]*>/g, '').trim().slice(0, 500) || null,
-  }).eq('id', verificacaoId)
-  if (error) return { error: error.message }
-  return { success: true }
-}
-
 // ─── CICLOS ───────────────────────────────────────────────────────────────────
 
 export async function getCiclos() {
@@ -483,5 +418,158 @@ export async function getSorteios() {
   const { data } = await admin.from('sorteios')
     .select('*, vencedor:vencedor_id(nome, email), ciclo:ciclo_id(total_acumulado)')
     .order('realizado_at', { ascending: false })
+  return data ?? []
+}
+
+// ─── VERIFICAÇÃO DE BI ─────────────────────────────────────────────────────
+
+export async function getVerificacoesPendentes() {
+  const auth = await requireAdmin(); if (auth.error) return []
+  await limparVerificacoesExpiradas()
+  const admin = createAdminClient()
+
+  const { data } = await admin
+    .from('verificacoes')
+    .select('*, usuarios(nome, email, telefone)')
+    .order('criado_em', { ascending: false })
+    .limit(300)
+  if (!data) return []
+
+  // Só o envio mais recente de cada utilizador interessa para a revisão.
+  const maisRecentePorUsuario = new Map<string, (typeof data)[number]>()
+  for (const v of data) {
+    if (!maisRecentePorUsuario.has(v.usuario_id)) maisRecentePorUsuario.set(v.usuario_id, v)
+  }
+
+  // URLs assinadas — o bucket é privado, por isso o admin precisa de um link
+  // temporário (10 min) para ver ou descarregar as fotos antes de confirmar.
+  return Promise.all([...maisRecentePorUsuario.values()].map(async (v) => {
+    const [frente, verso, selfie] = await Promise.all([
+      v.bi_imagem_path ? admin.storage.from('verificacoes').createSignedUrl(v.bi_imagem_path, 600) : null,
+      v.bi_imagem_verso_path ? admin.storage.from('verificacoes').createSignedUrl(v.bi_imagem_verso_path, 600) : null,
+      v.selfie_imagem_path ? admin.storage.from('verificacoes').createSignedUrl(v.selfie_imagem_path, 600) : null,
+    ])
+    return {
+      ...v,
+      bi_imagem_frente_url: frente?.data?.signedUrl ?? null,
+      bi_imagem_verso_url: verso?.data?.signedUrl ?? null,
+      selfie_url: selfie?.data?.signedUrl ?? null,
+    }
+  }))
+}
+
+export async function aprovarVerificacao(verificacaoId: string, biNumero: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const numero = (biNumero ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 30)
+  if (numero.length < 5) return { error: 'Número de BI inválido' }
+
+  const admin = createAdminClient()
+  const { data: v } = await admin.from('verificacoes').select('usuario_id').eq('id', verificacaoId).maybeSingle()
+  if (!v) return { error: 'Verificação não encontrada' }
+
+  const agora = new Date().toISOString()
+  await admin.from('verificacoes').update({ status: 'aprovado', revisto_em: agora, bi_numero: numero }).eq('id', verificacaoId)
+  const { error } = await admin.from('usuarios').update({ verificado: true, verificado_at: agora, bi_numero: numero }).eq('id', v.usuario_id)
+  if (error) return { error: error.message }
+  registarAuditoria({ usuarioId: v.usuario_id, evento: 'bi_aprovado', detalhes: { verificacaoId } })
+  return { success: true }
+}
+
+export async function rejeitarVerificacao(verificacaoId: string, motivo: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+  const motivoLimpo = (motivo ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 300)
+    || 'As fotos não estão legíveis — tenta enviar novamente com boa luz.'
+
+  const { data: v } = await admin.from('verificacoes').select('usuario_id').eq('id', verificacaoId).maybeSingle()
+
+  const { error } = await admin.from('verificacoes').update({
+    status: 'rejeitado',
+    revisto_em: new Date().toISOString(),
+    motivo_rejeicao: motivoLimpo,
+  }).eq('id', verificacaoId)
+  if (error) return { error: error.message }
+  if (v) registarAuditoria({ usuarioId: v.usuario_id, evento: 'bi_rejeitado', detalhes: { verificacaoId, motivo: motivoLimpo } })
+  return { success: true }
+}
+
+// ─── CONTRATOS ──────────────────────────────────────────────────────────────
+
+export async function getContratosAdmin(filtroEstado?: string) {
+  const auth = await requireAdmin(); if (auth.error) return []
+  const admin = createAdminClient()
+
+  let query = admin.from('contratos')
+    .select('id, numero, estado, dados, pdf_paginas, pdf_versao, rejeitado_motivo, created_at, aprovado_at, assinado_at, usuarios(nome, email, telefone)')
+    .order('created_at', { ascending: false })
+    .limit(300)
+
+  if (filtroEstado && filtroEstado !== 'todos') query = query.eq('estado', filtroEstado)
+
+  const { data } = await query
+  return data ?? []
+}
+
+export async function aprovarContrato(contratoId: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+
+  const { data: c } = await admin.from('contratos').select('usuario_id, estado').eq('id', contratoId).maybeSingle()
+  if (!c) return { error: 'Contrato não encontrado' }
+  if (!['pendente', 'em_analise'].includes(c.estado)) return { error: 'Este contrato já foi revisto' }
+
+  const agora = new Date().toISOString()
+  const { error } = await admin.from('contratos').update({
+    estado: 'a_aguardar_assinatura',
+    aprovado_at: agora,
+    updated_at: agora,
+  }).eq('id', contratoId)
+  if (error) return { error: error.message }
+
+  registarAuditoria({ usuarioId: c.usuario_id, contratoId, evento: 'contrato_aprovado' })
+  return { success: true }
+}
+
+export async function rejeitarContrato(contratoId: string, motivo: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+  const motivoLimpo = (motivo ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 300)
+    || 'Dados incorrectos — verifica e reenvia.'
+
+  const { data: c } = await admin.from('contratos').select('usuario_id, estado').eq('id', contratoId).maybeSingle()
+  if (!c) return { error: 'Contrato não encontrado' }
+  if (!['pendente', 'em_analise'].includes(c.estado)) return { error: 'Este contrato já foi revisto' }
+
+  const { error } = await admin.from('contratos').update({
+    estado: 'rejeitado',
+    rejeitado_motivo: motivoLimpo,
+    updated_at: new Date().toISOString(),
+  }).eq('id', contratoId)
+  if (error) return { error: error.message }
+
+  registarAuditoria({ usuarioId: c.usuario_id, contratoId, evento: 'contrato_rejeitado', detalhes: { motivo: motivoLimpo } })
+  return { success: true }
+}
+
+export async function getContratoDownloadAdmin(contratoId: string) {
+  const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
+  const admin = createAdminClient()
+
+  const { data: c } = await admin.from('contratos').select('pdf_path, estado, usuario_id').eq('id', contratoId).maybeSingle()
+  if (!c?.pdf_path || !['assinado', 'finalizado'].includes(c.estado)) {
+    return { error: 'O contrato ainda não tem PDF disponível' }
+  }
+
+  const { data, error } = await admin.storage.from('contratos').createSignedUrl(c.pdf_path, 300, { download: true })
+  if (error || !data) return { error: 'Não foi possível gerar o link de download' }
+
+  registarAuditoria({ usuarioId: c.usuario_id, contratoId, evento: 'pdf_descarregado', detalhes: { por: 'admin' } })
+  return { success: true, url: data.signedUrl }
+}
+
+export async function getAuditoriaContrato(contratoId: string) {
+  const auth = await requireAdmin(); if (auth.error) return []
+  const admin = createAdminClient()
+  const { data } = await admin.from('auditoria').select('*').eq('contrato_id', contratoId).order('criado_em', { ascending: false })
   return data ?? []
 }
