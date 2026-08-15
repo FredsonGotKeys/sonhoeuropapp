@@ -11,7 +11,6 @@ export interface ClausulaTemplate {
   id: string
   titulo: string
   corpo: string
-  requires_legal_review: boolean
 }
 
 export interface DadosContrato {
@@ -56,7 +55,6 @@ const AZUL_CLARO = rgb(0.91, 0.94, 0.98)
 const CINZA = rgb(0.4, 0.4, 0.42)
 const CINZA_CLARO = rgb(0.58, 0.58, 0.6)
 const CINZA_LINHA = rgb(0.82, 0.82, 0.84)
-const VERMELHO = rgb(0.72, 0.14, 0.1)
 const VERDE = rgb(0.11, 0.5, 0.35)
 const PRETO = rgb(0.09, 0.09, 0.11)
 const BRANCO = rgb(1, 1, 1)
@@ -331,28 +329,19 @@ export async function gerarContratoPdf(params: GerarContratoParams): Promise<{ b
   const emitido = `Emitido em ${formatarDataHora(params.criadoEm)}`
   const emitidoW = largura(serif, emitido, 8.5)
   fluxo.page.drawText(emitido, { x: (PAGE_W - emitidoW) / 2, y: fluxo.y - 8.5, size: 8.5, font: serifItalico, color: CINZA })
-  fluxo.y -= 22
-
-  // ── Aviso de revisão jurídica ──
-  fluxo.garantirEspaco(26)
-  fluxo.page.drawRectangle({ x: MARGIN, y: fluxo.y - 22, width: CONTENT_W, height: 22, color: rgb(0.99, 0.95, 0.9), borderColor: rgb(0.85, 0.6, 0.2), borderWidth: 0.75 })
-  fluxo.page.drawText('AVISO', { x: MARGIN + 8, y: fluxo.y - 14.5, size: 7.5, font: serifNegrito, color: VERMELHO })
-  fluxo.linha('Este documento contém cláusulas geradas a partir de uma minuta genérica que aguardam validação por advogado licenciado em Moçambique. As cláusulas assinaladas estão sujeitas a revisão jurídica.', {
-    tamanho: 7.8, cor: VERMELHO, x: MARGIN + 42, larguraMax: CONTENT_W - 50, espacoDepois: 0,
-  })
-  fluxo.y -= 18
+  fluxo.y -= 26
 
   // ── Identificação das partes ──
   fluxo.tituloSeccao('Identificação das Partes')
 
   // Primeiro outorgante
-  fluxo.linha('PRIMEIRO OUTORGANTE  ·  O GESTOR DO FUNDO', { tamanho: 8.3, negrito: true, cor: AZUL, espacoDepois: 3 })
-  fluxo.corpo('Fredson Bernardo Muianga, responsável pela gestão da plataforma SonhoEuropa. [REQUIRES LEGAL REVIEW: confirmar a forma jurídica exacta do GESTOR — pessoa singular ou entidade colectiva a constituir — e os respectivos dados de identificação fiscal.]', {
+  fluxo.linha('O GESTOR DO FUNDO', { tamanho: 8.3, negrito: true, cor: AZUL, espacoDepois: 3 })
+  fluxo.corpo('Fredson Bernardo Muianga, responsável pela gestão da plataforma SonhoEuropa.', {
     tamanho: 9, cor: CINZA, espacoDepois: 10,
   })
 
   // Segundo outorgante — grelha de dois campos por linha
-  fluxo.linha('SEGUNDO OUTORGANTE  ·  O PARTICIPANTE', { tamanho: 8.3, negrito: true, cor: AZUL, espacoDepois: 6 })
+  fluxo.linha('O PARTICIPANTE', { tamanho: 8.3, negrito: true, cor: AZUL, espacoDepois: 6 })
 
   const campos: [string, string][] = [
     ['Nome completo', d.nome],
@@ -412,12 +401,6 @@ export async function gerarContratoPdf(params: GerarContratoParams): Promise<{ b
 
     const cabecalho = `CLÁUSULA ${ordinalClausula(numero)}`
     fluxo.page.drawText(cabecalho, { x: MARGIN, y: fluxo.y - 12, size: 11.5, font: serifNegrito, color: AZUL })
-    if (clausula.requires_legal_review) {
-      const tagTxt = 'REQUER REVISÃO JURÍDICA'
-      const tagW = largura(serifNegrito, tagTxt, 7)
-      fluxo.page.drawRectangle({ x: PAGE_W - MARGIN - tagW - 10, y: fluxo.y - 14.5, width: tagW + 10, height: 13, color: rgb(0.99, 0.93, 0.92), borderColor: VERMELHO, borderWidth: 0.6 })
-      fluxo.page.drawText(tagTxt, { x: PAGE_W - MARGIN - tagW - 5, y: fluxo.y - 11.5, size: 7, font: serifNegrito, color: VERMELHO })
-    }
     fluxo.y -= 16
     if (clausula.titulo) {
       fluxo.page.drawText(`(${clausula.titulo})`, { x: MARGIN, y: fluxo.y - 10.5, size: 9.7, font: serifItalico, color: CINZA })
@@ -435,7 +418,7 @@ export async function gerarContratoPdf(params: GerarContratoParams): Promise<{ b
   fluxo.checklistItem('Aceitação integral dos termos e cláusulas deste contrato', !!params.aceitacaoTermosEm, params.aceitacaoTermosEm)
   fluxo.checklistItem('Assinatura electrónica, com autenticação forte por código único enviado por email', !!params.assinadoEm, params.assinadoEm)
   fluxo.espaco(4)
-  fluxo.corpo('A assinatura acima constitui uma assinatura electrónica com autenticação forte (código de uso único enviado ao email registado do PARTICIPANTE). Não se trata de uma assinatura digital certificada por entidade certificadora reconhecida em Moçambique, nomeadamente pelo INTIC. [REQUIRES LEGAL REVIEW]', {
+  fluxo.corpo('A assinatura acima é uma assinatura electrónica: introduzir correctamente o código único enviado por email confirma, de forma clara e verificável, que o PARTICIPANTE leu e aceitou este contrato.', {
     tamanho: 8.3, cor: CINZA, espacoDepois: 14,
   })
 
