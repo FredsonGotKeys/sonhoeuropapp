@@ -471,7 +471,8 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
     setErro('')
 
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) { setErro('Sessão expirada. Recarrega a página.'); setLoading(false); return }
 
     const ts = Date.now()
