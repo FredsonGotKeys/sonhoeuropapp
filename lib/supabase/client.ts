@@ -6,29 +6,15 @@ export const createClient = () =>
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookieOptions: {
-        // Session cookie (no maxAge/expires) — cleared when browser closes
+        // 30 dias — mantém a sessão entre visitas até a pessoa carregar em "Sair"
         name: 'sb-session',
         path: '/',
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 30,
       },
       auth: {
         flowType: 'pkce',
-        storage: {
-          // Use sessionStorage instead of localStorage — dies with tab
-          getItem: (key: string) => {
-            if (typeof window === 'undefined') return null
-            return window.sessionStorage.getItem(key)
-          },
-          setItem: (key: string, value: string) => {
-            if (typeof window === 'undefined') return
-            window.sessionStorage.setItem(key, value)
-          },
-          removeItem: (key: string) => {
-            if (typeof window === 'undefined') return
-            window.sessionStorage.removeItem(key)
-          },
-        },
       },
     }
   )
