@@ -60,7 +60,7 @@ export async function criarPedidoPagamento(params: {
   if (valorNum > 100000) return { error: 'Valor excede o limite permitido' }
   if (params.tipo === 'deposito' && valorNum < 100) return { error: 'Valor mínimo é 100 MT' }
 
-  const valor = params.tipo === 'inscricao' ? 200 : valorNum
+  const valor = params.tipo === 'inscricao' ? 149 : valorNum
 
   const { data: ciclo } = await supabase
     .from('ciclos')
