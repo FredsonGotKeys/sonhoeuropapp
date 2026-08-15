@@ -130,7 +130,7 @@ export async function getAdminStats() {
   const totalDepositosBruto = depositos.reduce((s, d) => s + Number(d.valor), 0)
   const totalInscricoes = inscricoes.reduce((s, i) => s + Number(i.taxa_paga), 0)
 
-  const participantesComDepositos = (usuariosTopRes.data ?? []).map((u: any) => ({
+  const participantesComDepositos = (usuariosTopRes.data ?? []).map((u) => ({
     ...u,
     total_depositado: Number(u.total_depositado ?? 0),
   }))
@@ -377,10 +377,11 @@ export async function realizarSorteio() {
 
   const depositosPorUser = new Map<string, number>()
   const dadosPorUser = new Map<string, { nome: string; email: string; telefone: string | null }>()
-  for (const d of depositos as any[]) {
+  for (const d of depositos) {
+    const usuario = Array.isArray(d.usuarios) ? d.usuarios[0] : d.usuarios
     depositosPorUser.set(d.usuario_id, (depositosPorUser.get(d.usuario_id) ?? 0) + Number(d.valor))
-    if (!dadosPorUser.has(d.usuario_id)) {
-      dadosPorUser.set(d.usuario_id, { nome: d.usuarios.nome, email: d.usuarios.email, telefone: d.usuarios.telefone })
+    if (!dadosPorUser.has(d.usuario_id) && usuario) {
+      dadosPorUser.set(d.usuario_id, { nome: usuario.nome, email: usuario.email, telefone: usuario.telefone })
     }
   }
 
@@ -507,7 +508,10 @@ export async function getContratosAdmin(filtroEstado?: string) {
   if (filtroEstado && filtroEstado !== 'todos') query = query.eq('estado', filtroEstado)
 
   const { data } = await query
-  return data ?? []
+  return (data ?? []).map((c) => ({
+    ...c,
+    usuarios: Array.isArray(c.usuarios) ? c.usuarios[0] ?? null : c.usuarios,
+  }))
 }
 
 export async function aprovarContrato(contratoId: string) {

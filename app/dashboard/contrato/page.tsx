@@ -130,7 +130,16 @@ function FluxoAssinatura({ contratoId, onAssinado }: { contratoId: string; onAss
     setLoading(false)
   }
 
-  useEffect(() => { carregar() }, [contratoId])
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await carregar()
+      } catch (e) {
+        console.error('[contrato] Falha ao carregar dados de assinatura:', e)
+      }
+    }
+    load()
+  }, [contratoId])
 
   const confirmar = async (tipo: 'dados' | 'veracidade' | 'termos') => {
     setAcao(tipo)
@@ -300,7 +309,16 @@ export default function ContratoPage() {
     setLoading(false)
   }
 
-  useEffect(() => { carregar() }, [])
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await carregar()
+      } catch (e) {
+        console.error('[contrato] Falha ao carregar contrato:', e)
+      }
+    }
+    load()
+  }, [])
 
   return (
     <div className="min-h-screen pb-10" style={{ backgroundColor: 'var(--background)' }}>
