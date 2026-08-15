@@ -557,6 +557,69 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
   )
 }
 
+// ─── Inscrição no programa comunitário ────────────────────────────────────
+// Camada extra depois da verificação de BI: uma inscrição única de 149 MT,
+// paga da mesma forma manual (E-Mola + comprovativo) que os depósitos.
+function InscricaoComunitaria({
+  pendente,
+  onIniciar,
+  loading,
+  error,
+  onComprovativoEnviado,
+}: {
+  pendente: PagamentoPendente | null
+  onIniciar: () => void
+  loading: boolean
+  error: string
+  onComprovativoEnviado: () => void
+}) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: '#F5F5F0' }}>
+        <h2 className="font-black text-lg" style={{ color: '#003399' }}>Inscrição no programa</h2>
+        <p className="text-xs text-gray-400 mt-0.5">Último passo para desbloqueares o dashboard</p>
+      </div>
+      <div className="p-5 space-y-4">
+        {pendente?.status === 'aguardando_comprovativo' ? (
+          <>
+            <DadosPagamento method="emola" valor={pendente.valor} />
+            <CampoComprovativo referencia={pendente.referencia} onSucesso={onComprovativoEnviado} />
+          </>
+        ) : pendente?.status === 'pendente_confirmacao' ? (
+          <div className="p-4 rounded-xl flex items-center gap-3" style={{ backgroundColor: '#EF9F2710', border: '1.5px solid #EF9F2730' }}>
+            <Clock className="w-5 h-5 flex-shrink-0" style={{ color: '#EF9F27' }} />
+            <div>
+              <p className="font-bold text-sm" style={{ color: '#003399' }}>Comprovativo enviado</p>
+              <p className="text-xs text-gray-400">A aguardar confirmação do administrador.</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Para acederes ao programa comunitário é preciso uma inscrição única de <strong style={{ color: '#003399' }}>149 MT</strong>.
+            </p>
+            {error && (
+              <div className="p-3 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                {error}
+              </div>
+            )}
+            <button
+              onClick={onIniciar}
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md"
+              style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 14px rgba(0,51,153,0.3)' }}
+            >
+              {loading
+                ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> A processar...</>
+                : <><ShieldCheck className="w-4 h-4" /> Inscrever-me — 149 MT</>}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Dashboard principal ───────────────────────────────────────────────────
 function DashboardContent() {
   const [user, setUser] = useState<Usuario | null>(null)
@@ -578,6 +641,9 @@ function DashboardContent() {
   const [ranking, setRanking] = useState<RankingEmbaixador[]>([])
   const [verificacao, setVerificacao] = useState<VerificacaoEstado | null>(null)
   const [contrato, setContrato] = useState<{ id: string; numero: string; estado: string } | null>(null)
+  const [inscrito, setInscrito] = useState(false)
+  const [inscricaoLoading, setInscricaoLoading] = useState(false)
+  const [inscricaoError, setInscricaoError] = useState('')
 
   const router = useRouter()
 
@@ -586,7 +652,7 @@ function DashboardContent() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser) return
 
-    const [userData, cicloData, depositosData, verificacaoData] = await Promise.all([
+    const [userData, cicloData, depositosData, verificacaoData, inscricaoData] = await Promise.all([
       supabase.from('usuarios').select('*').eq('id', authUser.id).single(),
       supabase.from('ciclos').select('*').neq('estado', 'concluido')
         .order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -594,6 +660,7 @@ function DashboardContent() {
         .order('data_deposito', { ascending: false }).limit(20),
       supabase.from('verificacoes').select('status, motivo_rejeicao').eq('usuario_id', authUser.id)
         .order('criado_em', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('inscricoes').select('id').eq('usuario_id', authUser.id).limit(1).maybeSingle(),
     ])
 
     // Entrou pelo Google mas ainda não criou o perfil (falta o telefone).
@@ -604,6 +671,7 @@ function DashboardContent() {
 
     setUser(userData.data)
     setVerificacao(verificacaoData.data)
+    setInscrito(!!inscricaoData.data)
     limparVerificacoesExpiradas().catch((e) => console.error('[dashboard] Falha ao limpar verificações:', e))
 
     if (cicloData.data) setCiclo(cicloData.data)
@@ -653,6 +721,24 @@ function DashboardContent() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [router])
+
+  // try/catch/finally: aconteça o que acontecer (erro de rede, excepção,
+  // resposta inesperada), o botão TEM de sair do estado "a carregar" e
+  // mostrar algo à pessoa — nunca ficar preso a girar para sempre.
+  const handleInscrever = async () => {
+    setInscricaoError('')
+    setInscricaoLoading(true)
+    try {
+      const result = await criarPedidoPagamento({ valor: 149, tipo: 'inscricao' })
+      if (result.error) { setInscricaoError(result.error); return }
+      await recarregarDados()
+    } catch (e) {
+      console.error('[handleInscrever]', e)
+      setInscricaoError('Não foi possível processar o pedido. Verifica a tua ligação e tenta novamente.')
+    } finally {
+      setInscricaoLoading(false)
+    }
+  }
 
   // try/catch/finally: aconteça o que acontecer (erro de rede, excepção,
   // resposta inesperada), o botão TEM de sair do estado "a carregar" e
@@ -767,6 +853,39 @@ function DashboardContent() {
         </header>
         <div className="max-w-2xl mx-auto px-4 pt-4">
           <VerificacaoBiObrigatoria estado={verificacao} onEnviado={recarregarDados} />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Se ainda não está inscrito no programa comunitário ──
+  if (!inscrito) {
+    return (
+      <div className="min-h-screen pb-6" style={{ backgroundColor: 'var(--background)' }}>
+        <header className="sticky top-0 z-40 border-b"
+          style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
+              <p className="font-black text-sm" style={{ color: '#003399' }}>
+                Olá, {primeiroNome}
+              </p>
+            </div>
+            <form action={logout}>
+              <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+                <LogOut className="w-3.5 h-3.5" /> Sair
+              </button>
+            </form>
+          </div>
+        </header>
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <InscricaoComunitaria
+            pendente={pagamentoPendente?.tipo === 'inscricao' ? pagamentoPendente : null}
+            onIniciar={handleInscrever}
+            loading={inscricaoLoading}
+            error={inscricaoError}
+            onComprovativoEnviado={recarregarDados}
+          />
         </div>
       </div>
     )
