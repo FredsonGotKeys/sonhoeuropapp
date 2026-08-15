@@ -202,7 +202,7 @@ function CampoComprovativo({
   const [enviado, setEnviado] = useState(false)
 
   const processarImagem = (file: File) => {
-    if (file.size > 2 * 1024 * 1024) { setErro('Imagem muito grande. Maximo 2 MB — um screenshot normal chega perfeitamente.'); return }
+    if (file.size > 10 * 1024 * 1024) { setErro('Imagem muito grande. Máximo 10 MB.'); return }
     if (!file.type.startsWith('image/')) { setErro('Ficheiro invalido. Envia uma imagem.'); return }
     setImagem(file)
     setErro('')
@@ -377,7 +377,7 @@ function CampoComprovativo({
             style={{ borderColor: '#d1d5db' }}>
             <ImagePlus className="w-8 h-8 text-gray-300" />
             <span className="text-sm text-gray-400 font-semibold">Toca para escolher imagem</span>
-            <span className="text-xs text-gray-300">JPG, PNG ou GIF · Max 5 MB</span>
+            <span className="text-xs text-gray-300">JPG, PNG ou GIF · Max 10 MB</span>
             <input type="file" accept="image/*" capture="environment" onChange={handleImagem} className="hidden" />
           </label>
         )}
