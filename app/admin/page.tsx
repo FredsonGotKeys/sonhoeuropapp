@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Users, Trophy, TrendingUp, DollarSign, RefreshCw, LogOut,
   Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Search,
@@ -20,6 +21,15 @@ import {
 } from '@/app/actions/admin'
 
 type Tab = 'dashboard' | 'participantes' | 'pagamentos' | 'verificacoes' | 'contratos' | 'ciclos' | 'sorteio'
+
+type AdminStats = Awaited<ReturnType<typeof getAdminStats>>
+type ParticipanteRow = NonNullable<AdminStats>['participantes'][number]
+type ParticipanteDetalhes = Awaited<ReturnType<typeof getParticipanteDetalhes>>
+type PagamentoRow = Awaited<ReturnType<typeof getPagamentos>>[number]
+type VerificacaoRow = Awaited<ReturnType<typeof getVerificacoesPendentes>>[number]
+type ContratoRow = Awaited<ReturnType<typeof getContratosAdmin>>[number]
+type AuditoriaRow = Awaited<ReturnType<typeof getAuditoriaContrato>>[number]
+type CicloRow = Awaited<ReturnType<typeof getCiclos>>[number]
 
 const BADGE: Record<string, { label: string; bg: string; color: string }> = {
   pendente:               { label: 'Pendente',        bg: '#F5F5F0',      color: '#888' },
@@ -66,10 +76,10 @@ function ConfirmModal({ msg, onConfirm, onCancel }: { msg: string; onConfirm: ()
 }
 
 // ─── TAB: DASHBOARD ──────────────────────────────────────────────────────────
-function TabDashboard({ stats }: { stats: any }) {
+function TabDashboard({ stats }: { stats: AdminStats }) {
   const formatMT = (v: number) => `${(v ?? 0).toLocaleString('pt-PT')} MT`
   const ciclo = stats?.cicloActivo
-  const fin = stats?.financeiro ?? {}
+  const fin: Partial<NonNullable<AdminStats>['financeiro']> = stats?.financeiro ?? {}
 
   return (
     <div className="space-y-4">
@@ -197,12 +207,12 @@ function TabDashboard({ stats }: { stats: any }) {
 }
 
 // ─── TAB: PARTICIPANTES ──────────────────────────────────────────────────────
-function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; onRefresh: () => void }) {
+function TabParticipantes({ participantes, onRefresh }: { participantes: ParticipanteRow[]; onRefresh: () => void }) {
   const [search, setSearch] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ nome: '' })
   const [detalheId, setDetalheId] = useState<string | null>(null)
-  const [detalhes, setDetalhes] = useState<any>(null)
+  const [detalhes, setDetalhes] = useState<ParticipanteDetalhes>(null)
   const [confirm, setConfirm] = useState<{ id: string; nome: string } | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
@@ -220,7 +230,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
 
   const [sortBy, setSortBy] = useState<'registro' | 'depositos'>('depositos')
 
-  const iniciarEdicao = (u: any) => {
+  const iniciarEdicao = (u: ParticipanteRow) => {
     setEditId(u.id)
     setEditForm({ nome: u.nome })
   }
@@ -374,7 +384,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                           <div className="grid sm:grid-cols-3 gap-3 pt-2">
                             <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
                               <p className="text-xs font-bold text-gray-500 mb-2">Depósitos ({detalhes.depositos.length})</p>
-                              {detalhes.depositos.slice(0, 5).map((d: any) => (
+                              {detalhes.depositos.slice(0, 5).map((d) => (
                                 <div key={d.id} className="flex justify-between text-xs py-1 border-b" style={{ borderColor: '#e5e7eb' }}>
                                   <span>{formatMT(d.valor)}</span>
                                   <span className="text-gray-400">{formatDate(d.data_deposito)}</span>
@@ -384,7 +394,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                             </div>
                             <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
                               <p className="text-xs font-bold text-gray-500 mb-2">Inscrições ({detalhes.inscricoes.length})</p>
-                              {detalhes.inscricoes.map((ins: any) => (
+                              {detalhes.inscricoes.map((ins) => (
                                 <div key={ins.ciclo_id} className="text-xs py-1">
                                   <StatusBadge status={ins.ciclos?.estado ?? '—'} />
                                   <span className="ml-2 text-gray-400">{formatMT(ins.taxa_paga)}</span>
@@ -394,7 +404,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
                             </div>
                             <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--background)' }}>
                               <p className="text-xs font-bold text-gray-500 mb-2">Pagamentos ({detalhes.pagamentos.length})</p>
-                              {detalhes.pagamentos.slice(0, 4).map((pg: any) => (
+                              {detalhes.pagamentos.slice(0, 4).map((pg) => (
                                 <div key={pg.id} className="flex justify-between items-center text-xs py-1">
                                   <span>{formatMT(pg.valor)} · {pg.tipo}</span>
                                   <StatusBadge status={pg.status} />
@@ -422,7 +432,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: any[]; 
 
 // ─── TAB: PAGAMENTOS ─────────────────────────────────────────────────────────
 function TabPagamentos() {
-  const [pagamentos, setPagamentos] = useState<any[]>([])
+  const [pagamentos, setPagamentos] = useState<PagamentoRow[]>([])
   const [filtro, setFiltro] = useState('todos')
   const [loading, setLoading] = useState(true)
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -438,7 +448,16 @@ function TabPagamentos() {
     setLoading(false)
   }, [filtro])
 
-  useEffect(() => { carregar() }, [carregar])
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await carregar()
+      } catch (e) {
+        console.error('[admin] Falha ao carregar pagamentos:', e)
+      }
+    }
+    load()
+  }, [carregar])
 
   const confirmar = async (id: string) => {
     setLoadingId(id)
@@ -696,7 +715,7 @@ function TabPagamentos() {
 
 // ─── TAB: VERIFICAÇÕES DE BI ─────────────────────────────────────────────────
 function TabVerificacoes() {
-  const [lista, setLista] = useState<any[]>([])
+  const [lista, setLista] = useState<VerificacaoRow[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
@@ -711,7 +730,16 @@ function TabVerificacoes() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { carregar() }, [carregar])
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await carregar()
+      } catch (e) {
+        console.error('[admin] Falha ao carregar verificações:', e)
+      }
+    }
+    load()
+  }, [carregar])
 
   const aprovar = async (id: string) => {
     const numero = (numeroBi[id] ?? '').trim()
@@ -832,7 +860,7 @@ function TabVerificacoes() {
 
 // ─── TAB: CONTRATOS ───────────────────────────────────────────────────────────
 function TabContratos() {
-  const [lista, setLista] = useState<any[]>([])
+  const [lista, setLista] = useState<ContratoRow[]>([])
   const [filtro, setFiltro] = useState('pendente')
   const [loading, setLoading] = useState(true)
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -840,7 +868,7 @@ function TabContratos() {
   const [motivoRejeicao, setMotivoRejeicao] = useState<Record<string, string>>({})
   const [rejeitando, setRejeitando] = useState<string | null>(null)
   const [auditoriaId, setAuditoriaId] = useState<string | null>(null)
-  const [auditoria, setAuditoria] = useState<any[]>([])
+  const [auditoria, setAuditoria] = useState<AuditoriaRow[]>([])
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -849,7 +877,16 @@ function TabContratos() {
     setLoading(false)
   }, [filtro])
 
-  useEffect(() => { carregar() }, [carregar])
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await carregar()
+      } catch (e) {
+        console.error('[admin] Falha ao carregar contratos:', e)
+      }
+    }
+    load()
+  }, [carregar])
 
   const aprovar = async (id: string) => {
     setLoadingId(id)
@@ -998,7 +1035,7 @@ function TabContratos() {
 
 // ─── TAB: CICLOS ─────────────────────────────────────────────────────────────
 function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
-  const [ciclos, setCiclos] = useState<any[]>([])
+  const [ciclos, setCiclos] = useState<CicloRow[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
@@ -1095,11 +1132,11 @@ function TabCiclos({ onRefresh }: { onRefresh: () => void }) {
 }
 
 // ─── TAB: SORTEIO ────────────────────────────────────────────────────────────
-function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void }) {
+function TabSorteio({ stats, onRefresh }: { stats: AdminStats; onRefresh: () => void }) {
   const [realizando, setRealizando] = useState(false)
   const [resultado, setResultado] = useState<{ nome: string; email: string; telefone?: string } | null>(null)
   const [erro, setErro] = useState('')
-  const [historico, setHistorico] = useState<any[]>([])
+  const [historico, setHistorico] = useState<Awaited<ReturnType<typeof getSorteios>>>([])
   const [confirm, setConfirm] = useState(false)
   const formatMT = (v: number) => `${(v ?? 0).toLocaleString('pt-PT')} MT`
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -1228,7 +1265,7 @@ function TabSorteio({ stats, onRefresh }: { stats: any; onRefresh: () => void })
 
 // ─── PÁGINA PRINCIPAL ────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<AdminStats>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('dashboard')
   const router = useRouter()
@@ -1240,7 +1277,16 @@ export default function AdminPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { loadStats() }, [loadStats])
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await loadStats()
+      } catch (e) {
+        console.error('[admin] Falha ao carregar estatísticas:', e)
+      }
+    }
+    load()
+  }, [loadStats])
 
   const handleLogout = async () => {
     await logoutAdmin()
@@ -1263,9 +1309,9 @@ export default function AdminPage() {
       <header className="bg-white sticky top-0 z-40" style={{ borderBottom: '3px solid #003399' }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="/" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+            <Link href="/" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
               <ArrowLeft className="w-4 h-4" />
-            </a>
+            </Link>
             <div>
               <p className="font-black text-base" style={{ color: '#003399' }}>SonhoEuropa · Admin</p>
               <p className="text-xs text-gray-400">Painel de Gestão</p>

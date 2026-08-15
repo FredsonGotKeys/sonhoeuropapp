@@ -15,10 +15,15 @@ interface CicloData {
   minimo_participantes: number
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 export default function LandingPage() {
   const [ciclo, setCiclo] = useState<CicloData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstall, setShowInstall] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [authUser, setAuthUser] = useState<{ nome?: string } | null>(null)
@@ -29,7 +34,7 @@ export default function LandingPage() {
     }
     const handler = (e: Event) => {
       e.preventDefault()
-      setDeferredPrompt(e)
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowInstall(true)
     }
     window.addEventListener('beforeinstallprompt', handler)

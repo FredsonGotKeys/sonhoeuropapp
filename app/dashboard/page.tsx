@@ -844,11 +844,16 @@ function DashboardContent() {
                 Olá, {primeiroNome}
               </p>
             </div>
-            <form action={logout}>
-              <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
-                <LogOut className="w-3.5 h-3.5" /> Sair
-              </button>
-            </form>
+            <div className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
+                <Home className="w-3.5 h-3.5" /> Página inicial
+              </Link>
+              <form action={logout}>
+                <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+                  <LogOut className="w-3.5 h-3.5" /> Sair
+                </button>
+              </form>
+            </div>
           </div>
         </header>
         <div className="max-w-2xl mx-auto px-4 pt-4">
@@ -871,11 +876,16 @@ function DashboardContent() {
                 Olá, {primeiroNome}
               </p>
             </div>
-            <form action={logout}>
-              <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
-                <LogOut className="w-3.5 h-3.5" /> Sair
-              </button>
-            </form>
+            <div className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
+                <Home className="w-3.5 h-3.5" /> Página inicial
+              </Link>
+              <form action={logout}>
+                <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+                  <LogOut className="w-3.5 h-3.5" /> Sair
+                </button>
+              </form>
+            </div>
           </div>
         </header>
         <div className="max-w-2xl mx-auto px-4 pt-4">
@@ -905,6 +915,9 @@ function DashboardContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
+              <Home className="w-3.5 h-3.5" /> Página inicial
+            </Link>
             <form action={logout}>
               <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
                 <LogOut className="w-3.5 h-3.5" /> Sair
