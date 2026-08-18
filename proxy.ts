@@ -6,23 +6,23 @@ import { NextResponse, type NextRequest } from 'next/server'
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_WINDOW = 60_000 // 1 minute
 const RATE_LIMIT_MAX = 60 // requests per window
-const RATE_LIMIT_AUTH_MAX = 10 // login/register attempts per window
+const RATE_LIMIT_AUTH_MAX = 30 // requests per window, per auth route (not shared across routes)
 
 let lastCleanup = Date.now()
 
-function isRateLimited(ip: string, max: number): boolean {
+function isRateLimited(key: string, max: number): boolean {
   const now = Date.now()
 
   if (now - lastCleanup > 300_000) {
     lastCleanup = now
-    for (const [key, val] of rateLimitMap) {
-      if (now > val.resetAt) rateLimitMap.delete(key)
+    for (const [mapKey, val] of rateLimitMap) {
+      if (now > val.resetAt) rateLimitMap.delete(mapKey)
     }
   }
 
-  const entry = rateLimitMap.get(ip)
+  const entry = rateLimitMap.get(key)
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
     return false
   }
   entry.count++
@@ -84,10 +84,15 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── Rate limiting ──
+  // Auth routes get their own counter per path (not shared with each other),
+  // so testing /register doesn't burn through the budget for /admin/login —
+  // people on the same carrier-shared IP (common on mobile in Mozambique)
+  // no longer trip each other's limit just by using different pages.
   const isAuthRoute = path === '/login' || path === '/register' || path === '/admin/login'
   const limit = isAuthRoute ? RATE_LIMIT_AUTH_MAX : RATE_LIMIT_MAX
+  const rateLimitKey = isAuthRoute ? `${ip}:${path}` : ip
 
-  if (isRateLimited(ip, limit)) {
+  if (isRateLimited(rateLimitKey, limit)) {
     return NextResponse.json(
       { error: 'Demasiados pedidos. Tenta novamente em breve.' },
       {
