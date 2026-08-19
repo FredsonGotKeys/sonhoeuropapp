@@ -216,6 +216,7 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: Partici
   const [confirm, setConfirm] = useState<{ id: string; nome: string } | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
+  const [sortBy, setSortBy] = useState<'registro' | 'depositos'>('depositos')
 
   const filtered = participantes.filter(u =>
     u.nome?.toLowerCase().includes(search.toLowerCase()) ||
@@ -227,8 +228,6 @@ function TabParticipantes({ participantes, onRefresh }: { participantes: Partici
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
   const formatMT = (v: number) => `${(v ?? 0).toLocaleString('pt-PT')} MT`
-
-  const [sortBy, setSortBy] = useState<'registro' | 'depositos'>('depositos')
 
   const iniciarEdicao = (u: ParticipanteRow) => {
     setEditId(u.id)
