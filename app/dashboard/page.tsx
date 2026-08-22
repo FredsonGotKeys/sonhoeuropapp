@@ -8,7 +8,16 @@ import {
   Trophy, Clock, Check, Home, Wallet, Users, Gift,
   AlertCircle, ChevronRight, ShieldCheck, Smartphone, Banknote,
   Mail, Info, Send, ClipboardPaste, CheckCircle2, ImagePlus, X, FileText,
+  Infinity as InfinityIcon,
 } from 'lucide-react'
+
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.44 2.91h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94Z" />
+    </svg>
+  )
+}
 import { createClient } from '@/lib/supabase/client'
 import { logout } from '@/app/actions/auth'
 import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos } from '@/app/actions/deposito'
@@ -789,6 +798,10 @@ function DashboardContent() {
     window.open(`https://wa.me/?text=${encodeURIComponent(mensagemConvite)}`, '_blank')
   }
 
+  const shareFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteUrl)}&quote=${encodeURIComponent(mensagemConvite)}`, '_blank')
+  }
+
   // Abre o menu de partilha do próprio telemóvel (WhatsApp, SMS, Facebook,
   // Messenger, email...). Se o browser não suportar, cai no WhatsApp.
   const sharePartilhaNativa = async () => {
@@ -818,7 +831,7 @@ function DashboardContent() {
   }
   const estadoInfo = estadoLabel[ciclo?.estado ?? ''] ?? { label: ciclo?.estado ?? '—', color: '#666' }
 
-  const quickAmounts = [50, 100, 200, 500]
+  const quickAmounts = [100, 200, 500, 1000]
 
   if (loading) {
     return (
@@ -1097,6 +1110,13 @@ function DashboardContent() {
                     )}
                   </div>
 
+                  <div className="p-3.5 rounded-xl text-sm flex items-start gap-2.5" style={{ backgroundColor: '#1D9E7510', color: '#1D9E75' }}>
+                    <InfinityIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      <strong>A partir de 100 MT, sem limite máximo.</strong> Podes depositar em qualquer dia, quantas vezes quiseres — quanto mais depositares no total, maiores são as tuas chances no sorteio.
+                    </span>
+                  </div>
+
                   <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
                     Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
                   </div>
@@ -1192,15 +1212,26 @@ function DashboardContent() {
               </div>
               <div className="space-y-2">
                 <button onClick={shareWhatsApp}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white active:scale-95 transition-all"
-                  style={{ backgroundColor: '#25D366' }}>
-                  <Share2 className="w-4 h-4" /> Partilhar no WhatsApp
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-black text-base text-white active:scale-95 transition-all shadow-md"
+                  style={{ backgroundColor: '#25D366', boxShadow: '0 4px 16px rgba(37,211,102,0.3)' }}>
+                  <Share2 className="w-5 h-5" /> Partilhar no WhatsApp
                 </button>
-                <button onClick={sharePartilhaNativa}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold active:scale-95 transition-all"
-                  style={{ backgroundColor: 'var(--background)', color: '#003399' }}>
-                  <Send className="w-4 h-4" /> Partilhar noutra app
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={shareFacebook}
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white active:scale-95 transition-all"
+                    style={{ backgroundColor: '#1877F2' }}>
+                    <FacebookIcon className="w-4 h-4" /> Facebook
+                  </button>
+                  <button onClick={sharePartilhaNativa}
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold active:scale-95 transition-all"
+                    style={{ backgroundColor: 'var(--background)', color: '#003399' }}>
+                    <Send className="w-4 h-4" /> Outras apps
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3.5 rounded-xl text-xs leading-relaxed" style={{ backgroundColor: 'var(--background)', color: '#666' }}>
+                <strong style={{ color: '#003399' }}>Partilhar ajuda o fundo a crescer mais depressa</strong> para toda a comunidade. As tuas chances individuais no sorteio dependem sempre do que <strong>tu</strong> depositares — quanto mais depositares, mais bilhetes tens.
               </div>
             </div>
 
