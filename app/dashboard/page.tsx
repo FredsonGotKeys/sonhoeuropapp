@@ -142,7 +142,7 @@ const PAYMENT_INFO = {
 }
 
 // ─── Dados de pagamento (mostrar número, nome) ───────────────────────────
-function DadosPagamento({ method, valor }: { method: PayMethod; valor: number }) {
+function DadosPagamento({ method, valor, codigoConvite }: { method: PayMethod; valor: number; codigoConvite?: string }) {
   const info = PAYMENT_INFO[method]
   const [copiado, setCopiado] = useState(false)
 
@@ -151,6 +151,12 @@ function DadosPagamento({ method, valor }: { method: PayMethod; valor: number })
     setCopiado(true)
     setTimeout(() => setCopiado(false), 2000)
   }
+
+  const linkPartilha = typeof window !== 'undefined'
+    ? codigoConvite ? `${window.location.origin}/register?ref=${codigoConvite}` : window.location.origin
+    : ''
+  const mensagemPartilha = `Estou a participar no *SonhoEuropa* — depositamos em conjunto e concorremos a *200 000 MT* para a Europa. Junta-te: ${linkPartilha}`
+  const partilharEnquantoEspera = () => window.open(`https://wa.me/?text=${encodeURIComponent(mensagemPartilha)}`, '_blank')
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid #003399' }}>
@@ -189,6 +195,11 @@ function DadosPagamento({ method, valor }: { method: PayMethod; valor: number })
             Depois de enviar o dinheiro, <strong>cola a mensagem de confirmacao</strong> ou <strong>tira um screenshot</strong> e envia abaixo.
           </p>
         </div>
+        <button onClick={partilharEnquantoEspera}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+          style={{ backgroundColor: '#25D36615', color: '#1a9c4e' }}>
+          <Share2 className="w-3.5 h-3.5" /> Enquanto esperas, partilha o SonhoEuropa no WhatsApp
+        </button>
       </div>
     </div>
   )
@@ -576,12 +587,14 @@ function InscricaoComunitaria({
   loading,
   error,
   onComprovativoEnviado,
+  codigoConvite,
 }: {
   pendente: PagamentoPendente | null
   onIniciar: () => void
   loading: boolean
   error: string
   onComprovativoEnviado: () => void
+  codigoConvite?: string
 }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -592,7 +605,7 @@ function InscricaoComunitaria({
       <div className="p-5 space-y-4">
         {pendente?.status === 'aguardando_comprovativo' ? (
           <>
-            <DadosPagamento method="emola" valor={pendente.valor} />
+            <DadosPagamento method="emola" valor={pendente.valor} codigoConvite={codigoConvite} />
             <CampoComprovativo referencia={pendente.referencia} onSucesso={onComprovativoEnviado} />
           </>
         ) : pendente?.status === 'pendente_confirmacao' ? (
@@ -859,6 +872,11 @@ function DashboardContent() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={sharePartilhaNativa} title="Partilhar o SonhoEuropa"
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-transform active:scale-90"
+                style={{ backgroundColor: '#25D366' }}>
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
               <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
                 <Home className="w-3.5 h-3.5" /> Página inicial
               </Link>
@@ -891,6 +909,11 @@ function DashboardContent() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={sharePartilhaNativa} title="Partilhar o SonhoEuropa"
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-transform active:scale-90"
+                style={{ backgroundColor: '#25D366' }}>
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
               <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
                 <Home className="w-3.5 h-3.5" /> Página inicial
               </Link>
@@ -909,6 +932,7 @@ function DashboardContent() {
             loading={inscricaoLoading}
             error={inscricaoError}
             onComprovativoEnviado={recarregarDados}
+            codigoConvite={user?.codigo_convite}
           />
         </div>
       </div>
@@ -929,6 +953,11 @@ function DashboardContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={sharePartilhaNativa} title="Partilhar o SonhoEuropa"
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-transform active:scale-90"
+              style={{ backgroundColor: '#25D366' }}>
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
             <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
               <Home className="w-3.5 h-3.5" /> Página inicial
             </Link>
@@ -1020,7 +1049,7 @@ function DashboardContent() {
                   <p className="font-bold text-sm" style={{ color: '#EF9F27' }}>Tens um pagamento pendente</p>
                 </div>
                 <div className="p-5 space-y-4">
-                  <DadosPagamento method={pagamentoPendente.metodo as PayMethod} valor={pagamentoPendente.valor} />
+                  <DadosPagamento method={pagamentoPendente.metodo as PayMethod} valor={pagamentoPendente.valor} codigoConvite={user?.codigo_convite} />
                   <CampoComprovativo referencia={pagamentoPendente.referencia} onSucesso={recarregarDados} />
                 </div>
               </div>
@@ -1058,7 +1087,7 @@ function DashboardContent() {
                   <p className="text-xs text-gray-400 mt-0.5">Faz a transferencia e cola o comprovativo</p>
                 </div>
                 <div className="p-5 space-y-4">
-                  <DadosPagamento method={pedidoCriado.method} valor={pedidoCriado.valor} />
+                  <DadosPagamento method={pedidoCriado.method} valor={pedidoCriado.valor} codigoConvite={user?.codigo_convite} />
                   <CampoComprovativo
                     referencia={pedidoCriado.referencia}
                     onSucesso={() => { setPedidoCriado(null); setValor(''); recarregarDados() }}

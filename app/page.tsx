@@ -223,6 +223,14 @@ export default function LandingPage() {
                   </>
                 )}
               </div>
+
+              <a
+                href="#partilha"
+                className="inline-flex items-center gap-1.5 mt-5 px-3.5 py-1.5 rounded-full text-xs font-bold animate-enter-up delay-3"
+                style={{ background: 'rgba(239,159,39,0.15)', color: 'var(--amber)', border: '1px solid rgba(239,159,39,0.3)' }}
+              >
+                <Gift className="w-3.5 h-3.5" /> Partilha e ganha vantagem — sobe a Embaixador
+              </a>
             </div>
 
             {/* Right — Fund Card */}
@@ -502,7 +510,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Partilha ─── */}
-      <section className="py-14 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
+      <section id="partilha" className="py-14 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-tight">
           <div className="text-center mb-8">
             <div
