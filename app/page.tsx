@@ -137,7 +137,7 @@ export default function LandingPage() {
     },
     {
       q: 'Partilhar com amigos aumenta as minhas chances de ganhar?',
-      a: 'Partilhar ajuda o fundo comunitário a crescer mais depressa, o que beneficia todos os participantes — mas não altera, por si só, as tuas chances individuais no sorteio. Só o que tu depositares conta para o teu número de bilhetes: a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances.',
+      a: 'Partilhar ajuda o fundo comunitário a crescer mais depressa, o que beneficia todos os participantes — mas não altera, por si só, as tuas chances individuais no sorteio. Só o que tu depositares conta para o teu número de bilhetes: a partir de 250 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances.',
     },
   ]
 
@@ -193,11 +193,11 @@ export default function LandingPage() {
                 className="t-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white mb-5 animate-enter-up delay-1"
               >
                 O teu sonho começa<br className="hide-mobile" /> com{' '}
-                <span style={{ color: 'var(--amber)' }}>100 MT</span> por dia
+                <span style={{ color: 'var(--amber)' }}>250 MT</span> por dia
               </h1>
 
               <p className="text-base sm:text-lg mb-8 animate-enter-up delay-2" style={{ color: 'rgba(255,255,255,0.55)', maxWidth: 480 }}>
-                Deposita a partir de 100 MT, acompanha o fundo a crescer e concorre a um prémio de 200 000 MT.
+                Deposita a partir de 250 MT, acompanha o fundo a crescer e concorre a um prémio de 200 000 MT.
                 Quando o fundo estiver cheio, o sistema escolhe o vencedor.
               </p>
 
@@ -307,7 +307,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-3 gap-3 sm:gap-6">
             {[
               { value: '200 000', unit: 'MT', label: 'Prémio em dinheiro', color: 'var(--amber)' },
-              { value: '100', unit: 'MT/dia', label: 'Depósito mínimo', color: 'var(--cobalt)' },
+              { value: '250', unit: 'MT/dia', label: 'Depósito mínimo', color: 'var(--cobalt)' },
               { value: '+ dep.', unit: '', label: 'Mais chances', color: 'var(--emerald)' },
             ].map((s) => (
               <div key={s.label} className="text-center py-4 sm:py-6">
@@ -353,7 +353,7 @@ export default function LandingPage() {
                 title: 'Deposita',
                 desc: 'Cada depósito teu ajuda o fundo a crescer. Acompanha o progresso em tempo real.',
                 details: [
-                  'A partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances no sorteio.',
+                  'A partir de 250 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances no sorteio.',
                   'Paga via E-Mola directamente do telemóvel. Rápido, simples e seguro.',
                   'O fundo é visível para todos. Vês exactamente quanto falta para o prémio ser atribuído.',
                 ],
@@ -456,7 +456,7 @@ export default function LandingPage() {
           <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { icon: <Shield className="w-4 h-4" />, title: '100% transparente', desc: 'O fundo é visível em tempo real para todos. Sabes sempre quanto já foi acumulado.', color: 'var(--cobalt)' },
-              { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 100 MT por dia — menos do que um chá. Deposita o que puderes.', color: 'var(--amber)' },
+              { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 250 MT por dia. Deposita o que puderes.', color: 'var(--amber)' },
               { icon: <TrendingUp className="w-4 h-4" />, title: 'Convida amigos', desc: 'Partilha o teu link de convite no WhatsApp e redes sociais e ajuda o fundo a crescer mais depressa.', color: 'var(--emerald)' },
               { icon: <Heart className="w-4 h-4" />, title: 'Fundo comunitário', desc: 'Cada depósito contribui para o prémio de todos. Juntos construímos a oportunidade.', color: 'var(--red)' },
               { icon: <Star className="w-4 h-4" />, title: 'Dinheiro real', desc: '200 000 MT directamente na tua M-Pesa ou conta bancária.', color: 'var(--amber)' },
@@ -572,7 +572,7 @@ export default function LandingPage() {
             <div className="mt-4 p-3.5 rounded-lg text-xs leading-relaxed flex items-start gap-2.5" style={{ background: 'var(--bg-alt)', color: 'var(--fg-muted)' }}>
               <InfinityIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--emerald)' }} />
               <span>
-                Partilhar faz o fundo crescer para toda a comunidade. Mas as tuas chances individuais no sorteio dependem sempre do que <strong style={{ color: 'var(--fg)' }}>tu</strong> depositares — a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores as tuas chances.
+                Partilhar faz o fundo crescer para toda a comunidade. Mas as tuas chances individuais no sorteio dependem sempre do que <strong style={{ color: 'var(--fg)' }}>tu</strong> depositares — a partir de 250 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores as tuas chances.
               </span>
             </div>
           </div>
@@ -633,7 +633,7 @@ export default function LandingPage() {
                 Pronto para sonhar?
               </h2>
               <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>
-                Começa hoje com 100 MT. O fundo cresce todos os dias.
+                Começa hoje com 250 MT. O fundo cresce todos os dias.
               </p>
               <Link href="/register" className="btn btn-primary btn-lg">
                 Criar conta grátis <ArrowRight className="w-4 h-4" />

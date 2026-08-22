@@ -769,7 +769,7 @@ function DashboardContent() {
   const handleDepositar = async () => {
     setPayError('')
     const valorNum = Number(valor)
-    if (valorNum < 100) { setPayError('Valor minimo e 100 MT'); return }
+    if (valorNum < 250) { setPayError('Valor minimo e 250 MT'); return }
     setPayLoading(true)
     try {
       const result = await criarPedidoPagamento({ valor: valorNum, tipo: 'deposito' })
@@ -844,7 +844,7 @@ function DashboardContent() {
   }
   const estadoInfo = estadoLabel[ciclo?.estado ?? ''] ?? { label: ciclo?.estado ?? '—', color: '#666' }
 
-  const quickAmounts = [100, 200, 500, 1000]
+  const quickAmounts = [250, 500, 1000, 2000]
 
   if (loading) {
     return (
@@ -1098,7 +1098,7 @@ function DashboardContent() {
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: '#F5F5F0' }}>
                   <h2 className="font-black text-lg" style={{ color: '#003399' }}>Fazer Deposito</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Transferencia directa · Minimo 100 MT</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Transferencia directa · Minimo 250 MT</p>
                 </div>
 
                 <div className="p-5 space-y-5">
@@ -1120,7 +1120,7 @@ function DashboardContent() {
                     </div>
                     <div className="relative">
                       <input
-                        type="number" min={100} placeholder="Outro valor (min. 100)"
+                        type="number" min={250} placeholder="Outro valor (min. 250)"
                         value={valor} onChange={(e) => setValor(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all pr-14"
                         style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
@@ -1129,7 +1129,7 @@ function DashboardContent() {
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">MT</span>
                     </div>
-                    {valor && Number(valor) >= 100 && (
+                    {valor && Number(valor) >= 250 && (
                       <div className="mt-2 flex items-center gap-2 p-2.5 rounded-lg" style={{ backgroundColor: '#1D9E7510' }}>
                         <TrendingUp className="w-3.5 h-3.5" style={{ color: '#1D9E75' }} />
                         <p className="text-xs font-semibold" style={{ color: '#1D9E75' }}>
@@ -1142,7 +1142,7 @@ function DashboardContent() {
                   <div className="p-3.5 rounded-xl text-sm flex items-start gap-2.5" style={{ backgroundColor: '#1D9E7510', color: '#1D9E75' }}>
                     <InfinityIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>
-                      <strong>A partir de 100 MT, sem limite máximo.</strong> Podes depositar em qualquer dia, quantas vezes quiseres — quanto mais depositares no total, maiores são as tuas chances no sorteio.
+                      <strong>A partir de 250 MT, sem limite máximo.</strong> Podes depositar em qualquer dia, quantas vezes quiseres — quanto mais depositares no total, maiores são as tuas chances no sorteio.
                     </span>
                   </div>
 
@@ -1158,7 +1158,7 @@ function DashboardContent() {
 
                   <button
                     onClick={handleDepositar}
-                    disabled={payLoading || !valor || Number(valor) < 100}
+                    disabled={payLoading || !valor || Number(valor) < 250}
                     className="w-full py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md"
                     style={{ backgroundColor: '#EF9F27', color: '#001f6b', boxShadow: '0 4px 16px rgba(239,159,39,0.3)' }}>
                     {payLoading
