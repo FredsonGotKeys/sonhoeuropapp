@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Users, Trophy, ArrowRight, ChevronDown, Shield, Zap, Heart, TrendingUp, Star } from 'lucide-react'
+import { Users, Trophy, ArrowRight, ChevronDown, Shield, Zap, Heart, TrendingUp, Star, Share2, Send, Copy, Check, Gift, Infinity as InfinityIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface CicloData {
@@ -20,13 +20,22 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.44 2.91h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94Z" />
+    </svg>
+  )
+}
+
 export default function LandingPage() {
   const [ciclo, setCiclo] = useState<CicloData | null>(null)
   const [loading, setLoading] = useState(true)
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstall, setShowInstall] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [authUser, setAuthUser] = useState<{ nome?: string } | null>(null)
+  const [authUser, setAuthUser] = useState<{ nome?: string; codigo_convite?: string } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -46,8 +55,8 @@ export default function LandingPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
       const { data } = await supabase
-        .from('usuarios').select('nome').eq('id', user.id).maybeSingle()
-      setAuthUser({ nome: data?.nome })
+        .from('usuarios').select('nome, codigo_convite').eq('id', user.id).maybeSingle()
+      setAuthUser({ nome: data?.nome, codigo_convite: data?.codigo_convite })
     })
   }, [])
 
@@ -86,6 +95,29 @@ export default function LandingPage() {
   const progress = ciclo ? Math.min((ciclo.total_acumulado / 300000) * 100, 100) : 0
   const formatMT = (v: number) => v.toLocaleString('pt-PT')
 
+  const inviteUrl =
+    typeof window !== 'undefined'
+      ? authUser?.codigo_convite
+        ? `${window.location.origin}/register?ref=${authUser.codigo_convite}`
+        : window.location.origin
+      : ''
+  const primeiroNome = authUser?.nome?.trim().split(/\s+/)[0] ?? ''
+  const mensagemPartilha = `${primeiroNome ? `${primeiroNome} convida-te para o` : 'Junta-te ao'} *SonhoEuropa*!\n\nDepositamos em conjunto e concorremos a *200 000 MT* para a Europa. Quanto mais gente entrar, mais rápido o fundo enche e mais cedo há sorteio.\n\nVê aqui: ${inviteUrl}`
+
+  const copyInvite = async () => {
+    await navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(mensagemPartilha)}`, '_blank')
+  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteUrl)}&quote=${encodeURIComponent(mensagemPartilha)}`, '_blank')
+  const sharePartilhaNativa = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: 'SonhoEuropa', text: mensagemPartilha, url: inviteUrl }); return } catch { return }
+    }
+    shareWhatsApp()
+  }
+
   const faqs = [
     {
       q: 'É seguro? Quem fica com o dinheiro até ao sorteio?',
@@ -102,6 +134,10 @@ export default function LandingPage() {
     {
       q: 'Quais métodos de pagamento?',
       a: 'Só por E-Mola, para o número 876 252 006 (Fredson Bernardo Muianga). Fazes a transferência e envias o comprovativo na plataforma — a contribuição só é contabilizada, e só aumenta as tuas chances no sorteio, depois de confirmada manualmente pelo administrador.',
+    },
+    {
+      q: 'Partilhar com amigos aumenta as minhas chances de ganhar?',
+      a: 'Partilhar ajuda o fundo comunitário a crescer mais depressa, o que beneficia todos os participantes — mas não altera, por si só, as tuas chances individuais no sorteio. Só o que tu depositares conta para o teu número de bilhetes: a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances.',
     },
   ]
 
@@ -187,6 +223,14 @@ export default function LandingPage() {
                   </>
                 )}
               </div>
+
+              <a
+                href="#partilha"
+                className="inline-flex items-center gap-1.5 mt-5 px-3.5 py-1.5 rounded-full text-xs font-bold animate-enter-up delay-3"
+                style={{ background: 'rgba(239,159,39,0.15)', color: 'var(--amber)', border: '1px solid rgba(239,159,39,0.3)' }}
+              >
+                <Gift className="w-3.5 h-3.5" /> Partilha e ganha vantagem — sobe a Embaixador
+              </a>
             </div>
 
             {/* Right — Fund Card */}
@@ -309,7 +353,7 @@ export default function LandingPage() {
                 title: 'Deposita',
                 desc: 'Cada depósito teu ajuda o fundo a crescer. Acompanha o progresso em tempo real.',
                 details: [
-                  'A partir de 100 MT por dia — menos do que um café. Deposita o que puderes, quando puderes.',
+                  'A partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances no sorteio.',
                   'Paga via E-Mola directamente do telemóvel. Rápido, simples e seguro.',
                   'O fundo é visível para todos. Vês exactamente quanto falta para o prémio ser atribuído.',
                 ],
@@ -413,7 +457,7 @@ export default function LandingPage() {
             {[
               { icon: <Shield className="w-4 h-4" />, title: '100% transparente', desc: 'O fundo é visível em tempo real para todos. Sabes sempre quanto já foi acumulado.', color: 'var(--cobalt)' },
               { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 100 MT por dia — menos do que um chá. Deposita o que puderes.', color: 'var(--amber)' },
-              { icon: <TrendingUp className="w-4 h-4" />, title: 'Convida amigos', desc: 'Partilha o teu código de convite e cresce a comunidade junto com o fundo.', color: 'var(--emerald)' },
+              { icon: <TrendingUp className="w-4 h-4" />, title: 'Convida amigos', desc: 'Partilha o teu link de convite no WhatsApp e redes sociais e ajuda o fundo a crescer mais depressa.', color: 'var(--emerald)' },
               { icon: <Heart className="w-4 h-4" />, title: 'Fundo comunitário', desc: 'Cada depósito contribui para o prémio de todos. Juntos construímos a oportunidade.', color: 'var(--red)' },
               { icon: <Star className="w-4 h-4" />, title: 'Dinheiro real', desc: '200 000 MT directamente na tua M-Pesa ou conta bancária.', color: 'var(--amber)' },
               { icon: <Users className="w-4 h-4" />, title: 'M-Pesa e E-Mola', desc: 'Sem banco, sem cartão. Pagamento móvel simples e seguro.', color: 'var(--cobalt)' },
@@ -460,6 +504,76 @@ export default function LandingPage() {
               <div className="relative w-full md:w-56 lg:w-72 aspect-[4/3] rounded-lg overflow-hidden flex-shrink-0">
                 <Image src="/images/hero3.png" alt="O sonho europeu" fill className="object-cover" />
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Partilha ─── */}
+      <section id="partilha" className="py-14 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
+        <div className="container-tight">
+          <div className="text-center mb-8">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'linear-gradient(135deg, #003399, #0055cc)' }}
+            >
+              <Gift className="w-7 h-7 text-white" />
+            </div>
+            <p className="t-label mb-2" style={{ color: 'var(--cobalt)' }}>Partilha</p>
+            <h2 className="t-heading text-2xl sm:text-3xl mb-3" style={{ color: 'var(--fg)' }}>
+              Ajuda o fundo a crescer mais depressa
+            </h2>
+            <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--fg-muted)' }}>
+              {authUser
+                ? 'Envia o teu link pessoal a amigos e familiares. Quanto mais gente entrar, mais rápido o fundo enche e mais cedo há sorteio.'
+                : 'Cria a tua conta para teres um link pessoal de convite, ou partilha já a plataforma com quem conheces.'}
+            </p>
+          </div>
+
+          <div className="card p-5 sm:p-6 max-w-md mx-auto">
+            {authUser && (
+              <div className="flex items-center gap-2 p-3 rounded-lg mb-4" style={{ background: 'var(--bg-alt)' }}>
+                <span className="text-xs flex-1 truncate t-mono" style={{ color: 'var(--fg-muted)' }}>{inviteUrl}</span>
+                <button onClick={copyInvite}
+                  className="flex-shrink-0 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg text-white"
+                  style={{ backgroundColor: copied ? 'var(--emerald)' : 'var(--cobalt)' }}>
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <button onClick={shareWhatsApp}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-white active:scale-95 transition-all shadow-md"
+                style={{ backgroundColor: '#25D366', boxShadow: '0 4px 16px rgba(37,211,102,0.3)' }}>
+                <Share2 className="w-4 h-4" /> Partilhar no WhatsApp
+              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={shareFacebook}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white active:scale-95 transition-all"
+                  style={{ backgroundColor: '#1877F2' }}>
+                  <FacebookIcon className="w-4 h-4" /> Facebook
+                </button>
+                <button onClick={sharePartilhaNativa}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold active:scale-95 transition-all"
+                  style={{ background: 'var(--bg-alt)', color: 'var(--cobalt)' }}>
+                  <Send className="w-4 h-4" /> Outras apps
+                </button>
+              </div>
+            </div>
+
+            {!authUser && (
+              <Link href="/register" className="btn btn-primary w-full mt-4">
+                Criar conta e obter o meu link <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
+
+            <div className="mt-4 p-3.5 rounded-lg text-xs leading-relaxed flex items-start gap-2.5" style={{ background: 'var(--bg-alt)', color: 'var(--fg-muted)' }}>
+              <InfinityIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--emerald)' }} />
+              <span>
+                Partilhar faz o fundo crescer para toda a comunidade. Mas as tuas chances individuais no sorteio dependem sempre do que <strong style={{ color: 'var(--fg)' }}>tu</strong> depositares — a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores as tuas chances.
+              </span>
             </div>
           </div>
         </div>
