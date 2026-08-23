@@ -90,7 +90,7 @@ export default function PrivacidadePage() {
           <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" /> Início
         </Link>
         <Link href="/contacto" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Contacto</Link>
-        <Link href="/dashboard" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Dashboard</Link>
+        <Link href="/dashboard" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Painel</Link>
       </div>
     </div>
   )
