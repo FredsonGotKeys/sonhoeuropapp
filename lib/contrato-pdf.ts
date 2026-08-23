@@ -295,8 +295,8 @@ class Fluxo {
 
 export async function gerarContratoPdf(params: GerarContratoParams): Promise<{ bytes: Uint8Array; paginas: number }> {
   const doc = await PDFDocument.create()
-  doc.setTitle(`Contrato ${params.numero} — SonhoEuropa`)
-  doc.setProducer('SonhoEuropa — Sistema de Contratos')
+  doc.setTitle(`Contrato ${params.numero} · SonhoEuropa`)
+  doc.setProducer('SonhoEuropa · Sistema de Contratos')
   doc.setAuthor('SonhoEuropa')
   doc.setCreationDate(params.criadoEm)
 
@@ -349,7 +349,7 @@ export async function gerarContratoPdf(params: GerarContratoParams): Promise<{ b
     ['Nacionalidade', d.nacionalidade],
     ['Bilhete de Identidade n.º', d.biNumero],
     ['Validade do BI', formatarData(d.biValidade)],
-    ['NUIT', d.nuit || '— não fornecido —'],
+    ['NUIT', d.nuit || 'Não fornecido'],
     ['Telefone', d.telefone],
     ['Email', d.email],
   ]

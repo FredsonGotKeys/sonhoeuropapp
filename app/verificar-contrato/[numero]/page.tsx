@@ -11,7 +11,7 @@ import type { ClausulaTemplate, DadosContrato } from '@/lib/contrato-pdf'
 const BADGE: Record<string, { label: string; color: string }> = {
   pendente: { label: 'Dados por rever', color: '#888' },
   em_analise: { label: 'Em análise', color: '#EF9F27' },
-  a_aguardar_assinatura: { label: 'Aprovado — aguarda assinatura', color: '#7c3aed' },
+  a_aguardar_assinatura: { label: 'Aprovado, aguarda assinatura', color: '#7c3aed' },
   assinado: { label: 'Assinado', color: '#1D9E75' },
   finalizado: { label: 'Finalizado', color: '#1D9E75' },
   rejeitado: { label: 'Rejeitado', color: '#dc2626' },

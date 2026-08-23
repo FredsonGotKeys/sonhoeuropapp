@@ -221,7 +221,7 @@ function FluxoAssinatura({ contratoId, onAssinado }: { contratoId: string; onAss
             <ShieldCheck className="w-4 h-4" /> Assinatura Electrónica
           </h3>
           <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-            Vamos enviar um código de 6 dígitos para o teu email. Introduzi-lo confirma a tua assinatura electrónica deste contrato — não é uma assinatura digital certificada pelo INTIC, mas um mecanismo de autenticação forte.
+            Vamos enviar um código de 6 dígitos para o teu email. Introduzi-lo confirma a tua assinatura electrónica deste contrato. Não é uma assinatura digital certificada pelo INTIC, mas sim um mecanismo de autenticação forte.
           </p>
 
           {!otpEnviado ? (

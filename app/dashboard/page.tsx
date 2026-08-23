@@ -130,10 +130,10 @@ const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> =
 const CONTRATO_STATUS_LABEL: Record<string, string> = {
   pendente: 'Dados em análise pelo administrador',
   em_analise: 'Dados em análise pelo administrador',
-  rejeitado: 'Correcção pedida — toca para ver o motivo',
-  a_aguardar_assinatura: 'Aprovado — falta a tua assinatura',
-  assinado: 'Assinado — toca para descarregar',
-  finalizado: 'Assinado — toca para descarregar',
+  rejeitado: 'Correcção pedida, toca para ver o motivo',
+  a_aguardar_assinatura: 'Aprovado, falta a tua assinatura',
+  assinado: 'Assinado, toca para descarregar',
+  finalizado: 'Assinado, toca para descarregar',
 }
 
 const PAYMENT_INFO = {
@@ -155,7 +155,7 @@ function DadosPagamento({ method, valor, codigoConvite }: { method: PayMethod; v
   const linkPartilha = typeof window !== 'undefined'
     ? codigoConvite ? `${window.location.origin}/register?ref=${codigoConvite}` : window.location.origin
     : ''
-  const mensagemPartilha = `Estou a participar no *SonhoEuropa* — depositamos em conjunto e concorremos a *200 000 MT* para a Europa. Junta-te: ${linkPartilha}`
+  const mensagemPartilha = `Estou a participar no *SonhoEuropa*. Depositamos em conjunto e concorremos a *200 000 MT* para a Europa. Junta-te: ${linkPartilha}`
   const partilharEnquantoEspera = () => window.open(`https://wa.me/?text=${encodeURIComponent(mensagemPartilha)}`, '_blank')
 
   return (
@@ -634,7 +634,7 @@ function InscricaoComunitaria({
             >
               {loading
                 ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> A processar...</>
-                : <><ShieldCheck className="w-4 h-4" /> Inscrever-me — 149 MT</>}
+                : <><ShieldCheck className="w-4 h-4" /> Inscrever-me por 149 MT</>}
             </button>
           </>
         )}
@@ -984,7 +984,7 @@ function DashboardContent() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-bold text-sm" style={{ color: '#003399' }}>Contrato de Participação</p>
-                    <p className="text-xs text-gray-400 truncate">{CONTRATO_STATUS_LABEL[contrato?.estado ?? ''] ?? 'Ainda não iniciado — toca para começar'}</p>
+                    <p className="text-xs text-gray-400 truncate">{CONTRATO_STATUS_LABEL[contrato?.estado ?? ''] ?? 'Ainda não iniciado, toca para começar'}</p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
@@ -1012,7 +1012,7 @@ function DashboardContent() {
                 </div>
               </div>
               <p className="text-xs text-center text-gray-400 mt-3">
-                É este total que pesa no sorteio — não é dinheiro perdido, é o teu peso nas chances.
+                É este total que pesa no sorteio. Não é dinheiro perdido, é o teu peso nas chances.
               </p>
             </div>
 
@@ -1145,12 +1145,12 @@ function DashboardContent() {
                   <div className="p-3.5 rounded-xl text-sm flex items-start gap-2.5" style={{ backgroundColor: '#1D9E7510', color: '#1D9E75' }}>
                     <InfinityIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>
-                      <strong>A partir de 100 MT, sem limite máximo.</strong> Podes depositar em qualquer dia, quantas vezes quiseres — quanto mais depositares no total, maiores são as tuas chances no sorteio.
+                      <strong>A partir de 100 MT, sem limite máximo.</strong> Podes depositar em qualquer dia, quantas vezes quiseres. Quanto mais depositares no total, maiores são as tuas chances no sorteio.
                     </span>
                   </div>
 
                   <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
-                    Pagamento por <strong>E-Mola</strong> — vais ver o número e enviar o comprovativo no passo seguinte.
+                    Pagamento por <strong>E-Mola</strong>. Vais ver o número e enviar o comprovativo no passo seguinte.
                   </div>
 
                   {payError && (
@@ -1263,7 +1263,7 @@ function DashboardContent() {
               </div>
 
               <div className="mt-4 p-3.5 rounded-xl text-xs leading-relaxed" style={{ backgroundColor: 'var(--background)', color: '#666' }}>
-                <strong style={{ color: '#003399' }}>Partilhar ajuda o fundo a crescer mais depressa</strong> para toda a comunidade. As tuas chances individuais no sorteio dependem sempre do que <strong>tu</strong> depositares — quanto mais depositares, mais bilhetes tens.
+                <strong style={{ color: '#003399' }}>Partilhar ajuda o fundo a crescer mais depressa</strong> para toda a comunidade. As tuas chances individuais no sorteio dependem sempre do que <strong>tu</strong> depositares. Quanto mais depositares, mais bilhetes tens.
               </div>
             </div>
 

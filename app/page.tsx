@@ -135,19 +135,19 @@ export default function LandingPage() {
     },
     {
       q: 'Posso perder o dinheiro que depositei?',
-      a: 'Os depósitos não são reembolsáveis após o arranque do ciclo. Pensa nisto como uma contribuição para o fundo comunitário — estás a ajudar a construir o prémio enquanto concorres a ganhá-lo.',
+      a: 'Os depósitos não são reembolsáveis após o arranque do ciclo. Pensa nisto como uma contribuição para o fundo comunitário. Estás a ajudar a construir o prémio enquanto concorres a ganhá-lo.',
     },
     {
       q: 'Como é escolhido o vencedor? É por ordem de chegada?',
-      a: 'Não é por ordem nem por quem depositou primeiro — é um sorteio aleatório ponderado. Todos os que já depositaram entram no sorteio, e quanto mais depositares, mais bilhetes tens nesse sorteio e maiores são as tuas chances. O sistema escolhe o vencedor ao acaso entre todos esses bilhetes, por isso qualquer participante pode ganhar — só que quem contribui mais tem mais probabilidade.',
+      a: 'Não é por ordem nem por quem depositou primeiro: é um sorteio aleatório ponderado. Todos os que já depositaram entram no sorteio, e quanto mais depositares, mais bilhetes tens nesse sorteio e maiores são as tuas chances. O sistema escolhe o vencedor ao acaso entre todos esses bilhetes, por isso qualquer participante pode ganhar, só que quem contribui mais tem mais probabilidade.',
     },
     {
       q: 'Quais métodos de pagamento?',
-      a: 'Só por E-Mola, para o número 876 252 006 (Fredson Bernardo Muianga). Fazes a transferência e envias o comprovativo na plataforma — a contribuição só é contabilizada, e só aumenta as tuas chances no sorteio, depois de o sistema confirmar o teu depósito.',
+      a: 'Só por E-Mola, para o número 876 252 006 (Fredson Bernardo Muianga). Fazes a transferência e envias o comprovativo na plataforma. A contribuição só é contabilizada, e só aumenta as tuas chances no sorteio, depois de o sistema confirmar o teu depósito.',
     },
     {
       q: 'Partilhar com amigos aumenta as minhas chances de ganhar?',
-      a: 'Partilhar ajuda o fundo comunitário a crescer mais depressa, o que beneficia todos os participantes — mas não altera, por si só, as tuas chances individuais no sorteio. Só o que tu depositares conta para o teu número de bilhetes: a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances.',
+      a: 'Partilhar ajuda o fundo comunitário a crescer mais depressa, o que beneficia todos os participantes, mas não altera, por si só, as tuas chances individuais no sorteio. Só o que tu depositares conta para o teu número de bilhetes: a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores são as tuas chances.',
     },
   ]
 
@@ -366,7 +366,7 @@ export default function LandingPage() {
                 desc: 'Cria a tua conta gratuitamente em menos de 1 minuto. Só precisas de email e senha.',
                 details: [
                   'Recebeste um código de convite de um amigo? Usa-o no registo e ambos ganham vantagens.',
-                  'Sem taxas — a conta é totalmente gratuita.',
+                  'Sem taxas: a conta é totalmente gratuita.',
                   'Assim que fizeres o primeiro depósito, estás oficialmente a concorrer ao prémio de 200 000 MT.',
                 ],
                 cta: 'Criar conta agora',
@@ -391,9 +391,9 @@ export default function LandingPage() {
                 num: '03',
                 icon: <Trophy className="w-5 h-5" />,
                 title: 'Ganha o prémio',
-                desc: 'Quando o fundo atinge o valor necessário, o sistema faz um sorteio aleatório — não é por ordem de chegada. Quanto mais depositares, mais bilhetes tens no sorteio e maiores as tuas chances.',
+                desc: 'Quando o fundo atinge o valor necessário, o sistema faz um sorteio aleatório, não por ordem de chegada. Quanto mais depositares, mais bilhetes tens no sorteio e maiores as tuas chances.',
                 details: [
-                  'Todos os que já depositaram são elegíveis — qualquer um pode ser o escolhido.',
+                  'Todos os que já depositaram são elegíveis, qualquer um pode ser o escolhido.',
                   'É um sorteio aleatório: o sistema escolhe ao acaso, dando mais bilhetes a quem depositou mais.',
                   'O vencedor recebe 200 000 MT directamente na M-Pesa ou conta bancária. Sem atrasos.',
                 ],
@@ -482,7 +482,7 @@ export default function LandingPage() {
           <div style={{ borderTop: '1px solid var(--border)' }}>
             {[
               { icon: <Shield className="w-4 h-4" />, title: '100% transparente', desc: 'O fundo é visível em tempo real para todos. Sabes sempre quanto já foi acumulado.', color: 'var(--cobalt)' },
-              { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 100 MT por dia — menos do que um chá. Deposita o que puderes.', color: 'var(--amber)' },
+              { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 100 MT por dia, menos do que um chá. Deposita o que puderes.', color: 'var(--amber)' },
               { icon: <TrendingUp className="w-4 h-4" />, title: 'Convida amigos', desc: 'Partilha o teu link de convite no WhatsApp e redes sociais e ajuda o fundo a crescer mais depressa.', color: 'var(--emerald)' },
               { icon: <Heart className="w-4 h-4" />, title: 'Fundo comunitário', desc: 'Cada depósito contribui para o prémio de todos. Juntos construímos a oportunidade.', color: 'var(--red)' },
               { icon: <Star className="w-4 h-4" />, title: 'Dinheiro real', desc: '200 000 MT directamente na tua M-Pesa ou conta bancária.', color: 'var(--amber)' },
@@ -604,7 +604,7 @@ export default function LandingPage() {
             <div className="mt-4 p-3.5 rounded-lg text-xs leading-relaxed flex items-start gap-2.5" style={{ background: 'var(--bg-alt)', color: 'var(--fg-muted)' }}>
               <InfinityIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--emerald)' }} />
               <span>
-                Partilhar faz o fundo crescer para toda a comunidade. Mas as tuas chances individuais no sorteio dependem sempre do que <strong style={{ color: 'var(--fg)' }}>tu</strong> depositares — a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores as tuas chances.
+                Partilhar faz o fundo crescer para toda a comunidade. Mas as tuas chances individuais no sorteio dependem sempre do que <strong style={{ color: 'var(--fg)' }}>tu</strong> depositares, a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores as tuas chances.
               </span>
             </div>
           </div>
