@@ -195,7 +195,7 @@ export default function LandingPage() {
         </div>
 
         <div className="relative container-wide">
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 py-16 sm:py-20 lg:py-28">
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 py-12 sm:py-20 lg:py-28">
 
             {/* Left — Copy */}
             <div className="flex-1 text-center lg:text-left">
@@ -328,7 +328,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Stats ─── */}
-      <section className="py-10 sm:py-14" style={{ background: 'var(--bg-alt)' }}>
+      <section className="py-8 sm:py-14" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-wide">
           <div className="grid grid-cols-3 gap-3 sm:gap-6">
             {[
@@ -348,9 +348,9 @@ export default function LandingPage() {
       </section>
 
       {/* ─── How it works ─── */}
-      <section className="py-14 sm:py-20">
+      <section className="py-10 sm:py-20">
         <div className="container-wide">
-          <div className="text-center mb-10 sm:mb-14">
+          <div className="text-center mb-7 sm:mb-14">
             <p className="t-label mb-2" style={{ color: 'var(--cobalt)' }}>Como funciona</p>
             <h2 className="t-heading text-2xl sm:text-3xl" style={{ color: 'var(--fg)' }}>
               Três passos para o teu sonho
@@ -447,7 +447,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Images ─── */}
-      <section className="pb-14 sm:pb-20">
+      <section className="pb-10 sm:pb-20">
         <div className="container-wide">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
             {[
@@ -470,9 +470,9 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Why ─── */}
-      <section className="py-14 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
+      <section className="py-10 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-wide">
-          <div className="text-center mb-10 sm:mb-14">
+          <div className="text-center mb-7 sm:mb-14">
             <p className="t-label mb-2" style={{ color: 'var(--cobalt)' }}>Vantagens</p>
             <h2 className="t-heading text-2xl sm:text-3xl" style={{ color: 'var(--fg)' }}>
               Por que SonhoEuropa?
@@ -512,7 +512,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Prize Banner ─── */}
-      <section className="py-14 sm:py-20">
+      <section className="py-10 sm:py-20">
         <div className="container-wide">
           <div
             className="rounded-xl overflow-hidden relative grain"
@@ -542,9 +542,9 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Partilha ─── */}
-      <section id="partilha" className="py-14 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
+      <section id="partilha" className="py-10 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-tight">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ background: 'linear-gradient(135deg, #003399, #0055cc)' }}
@@ -612,9 +612,9 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FAQ ─── */}
-      <section className="py-14 sm:py-20">
+      <section className="py-10 sm:py-20">
         <div className="container-tight">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <p className="t-label mb-2" style={{ color: 'var(--cobalt)' }}>FAQ</p>
             <h2 className="t-heading text-2xl sm:text-3xl" style={{ color: 'var(--fg)' }}>Perguntas frequentes</h2>
           </div>
@@ -654,7 +654,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Final CTA ─── */}
-      <section className="py-14 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
+      <section className="py-10 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-tight text-center">
           {authUser ? (
             <>
@@ -690,7 +690,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Footer ─── */}
-      <footer className="py-10" style={{ background: 'var(--bg-dark)' }}>
+      <footer className="py-8 sm:py-10" style={{ background: 'var(--bg-dark)' }}>
         <div className="container-wide">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-8 mb-8">
             <div>
