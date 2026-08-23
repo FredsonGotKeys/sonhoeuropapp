@@ -28,6 +28,16 @@ function FacebookIcon({ className }: { className?: string }) {
   )
 }
 
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
 export default function LandingPage() {
   const [ciclo, setCiclo] = useState<CicloData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -93,7 +103,7 @@ export default function LandingPage() {
 
   const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado * ((ciclo.meta ?? 200000) / 300000)) : 0
   const progress = ciclo ? Math.min((ciclo.total_acumulado / 300000) * 100, 100) : 0
-  const formatMT = (v: number) => v.toLocaleString('pt-PT')
+  const formatMT = (v: number) => v.toLocaleString('pt-PT').replace(/\s/g, ' ')
 
   const inviteUrl =
     typeof window !== 'undefined'
@@ -197,7 +207,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-base sm:text-lg mb-8 animate-enter-up delay-2" style={{ color: 'rgba(255,255,255,0.55)', maxWidth: 480 }}>
-                Deposita a partir de 100 MT, acompanha o fundo a crescer e concorre a um prémio de 200 000 MT.
+                Deposita a partir de 100 MT, acompanha o fundo a crescer e concorre a um prémio de 200 000 MT.
                 Quando o fundo estiver cheio, o sistema escolhe o vencedor.
               </p>
 
@@ -258,7 +268,7 @@ export default function LandingPage() {
                   </span>
                 </div>
 
-                <div className="t-mono text-4xl sm:text-5xl font-black text-white mb-1 tracking-tight">
+                <div className="t-figure text-4xl sm:text-5xl font-black text-white mb-1">
                   {loading ? (
                     <span className="skeleton inline-block w-40 h-12 rounded-lg" style={{ background: 'rgba(255,255,255,0.1)' }} />
                   ) : (
@@ -295,7 +305,7 @@ export default function LandingPage() {
                     <span><strong className="text-white t-mono">{ciclo?.participantes_count ?? 0}</strong> participantes</span>
                   </div>
                   <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    mín. <strong style={{ color: 'rgba(255,255,255,0.6)' }}>{ciclo?.minimo_participantes ?? 150}</strong>
+                    mín. <strong style={{ color: 'rgba(255,255,255,0.6)' }}>{ciclo?.minimo_participantes ?? 3000}</strong>
                   </span>
                 </div>
               </div>
@@ -309,12 +319,12 @@ export default function LandingPage() {
         <div className="container-wide">
           <div className="grid grid-cols-3 gap-3 sm:gap-6">
             {[
-              { value: '200 000', unit: 'MT', label: 'Prémio em dinheiro', color: 'var(--amber)' },
+              { value: '200 000', unit: 'MT', label: 'Prémio em dinheiro', color: 'var(--amber)' },
               { value: '100', unit: 'MT/dia', label: 'Depósito mínimo', color: 'var(--cobalt)' },
-              { value: '+ dep.', unit: '', label: 'Mais chances', color: 'var(--emerald)' },
+              { value: '∞', unit: '', label: 'Sem limite de depósitos', color: 'var(--emerald)' },
             ].map((s) => (
               <div key={s.label} className="text-center py-4 sm:py-6">
-                <p className="t-mono text-xl sm:text-3xl lg:text-4xl font-black" style={{ color: s.color }}>
+                <p className="t-figure text-xl sm:text-3xl lg:text-4xl font-black" style={{ color: s.color }}>
                   {s.value}{s.unit && <span className="text-xs sm:text-sm font-semibold opacity-50 ml-1">{s.unit}</span>}
                 </p>
                 <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>{s.label}</p>
@@ -344,7 +354,7 @@ export default function LandingPage() {
                 details: [
                   'Recebeste um código de convite de um amigo? Usa-o no registo e ambos ganham vantagens.',
                   'Sem taxas — a conta é totalmente gratuita.',
-                  'Assim que fizeres o primeiro depósito, estás oficialmente a concorrer ao prémio de 200 000 MT.',
+                  'Assim que fizeres o primeiro depósito, estás oficialmente a concorrer ao prémio de 200 000 MT.',
                 ],
                 cta: 'Criar conta agora',
                 href: '/register',
@@ -372,7 +382,7 @@ export default function LandingPage() {
                 details: [
                   'Todos os que já depositaram são elegíveis — qualquer um pode ser o escolhido.',
                   'É um sorteio aleatório: o sistema escolhe ao acaso, dando mais bilhetes a quem depositou mais.',
-                  'O vencedor recebe 200 000 MT directamente na M-Pesa ou conta bancária. Sem atrasos.',
+                  'O vencedor recebe 200 000 MT directamente na M-Pesa ou conta bancária. Sem atrasos.',
                 ],
                 cta: 'Quero participar',
                 href: '/register',
@@ -456,26 +466,32 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div style={{ borderTop: '1px solid var(--border)' }}>
             {[
               { icon: <Shield className="w-4 h-4" />, title: '100% transparente', desc: 'O fundo é visível em tempo real para todos. Sabes sempre quanto já foi acumulado.', color: 'var(--cobalt)' },
               { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 100 MT por dia — menos do que um chá. Deposita o que puderes.', color: 'var(--amber)' },
               { icon: <TrendingUp className="w-4 h-4" />, title: 'Convida amigos', desc: 'Partilha o teu link de convite no WhatsApp e redes sociais e ajuda o fundo a crescer mais depressa.', color: 'var(--emerald)' },
               { icon: <Heart className="w-4 h-4" />, title: 'Fundo comunitário', desc: 'Cada depósito contribui para o prémio de todos. Juntos construímos a oportunidade.', color: 'var(--red)' },
-              { icon: <Star className="w-4 h-4" />, title: 'Dinheiro real', desc: '200 000 MT directamente na tua M-Pesa ou conta bancária.', color: 'var(--amber)' },
-              { icon: <Users className="w-4 h-4" />, title: 'M-Pesa e E-Mola', desc: 'Sem banco, sem cartão. Pagamento móvel simples e seguro.', color: 'var(--cobalt)' },
-            ].map((f) => (
-              <div key={f.title} className="flex gap-3 p-4 rounded-lg" style={{ border: '1px solid var(--border)' }}>
-                <div
-                  className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
-                  style={{ background: `color-mix(in srgb, ${f.color} 10%, transparent)`, color: f.color }}
-                >
-                  {f.icon}
+              { icon: <Star className="w-4 h-4" />, title: 'Dinheiro real', desc: '200 000 MT directamente na tua M-Pesa ou conta bancária.', color: 'var(--amber)' },
+              { icon: <Users className="w-4 h-4" />, title: 'Pagamento por E-Mola', desc: 'Sem banco, sem cartão. Pagamento móvel simples e seguro.', color: 'var(--cobalt)' },
+            ].map((f, i) => (
+              <div
+                key={f.title}
+                className="group relative flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-8 py-6 pl-4 -ml-4 transition-colors"
+                style={{ borderBottom: '1px solid var(--border)' }}
+              >
+                <span
+                  className="absolute left-0 top-0 bottom-0 w-0.5 scale-y-0 group-hover:scale-y-100 transition-transform origin-center"
+                  style={{ background: f.color }}
+                />
+                <span className="t-mono text-xs flex-shrink-0 sm:w-8" style={{ color: 'var(--fg-subtle)' }}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="flex items-center gap-2.5 sm:w-64 flex-shrink-0">
+                  <span style={{ color: f.color }}>{f.icon}</span>
+                  <h3 className="font-bold text-base" style={{ color: 'var(--fg)' }}>{f.title}</h3>
                 </div>
-                <div>
-                  <h3 className="font-bold text-sm mb-0.5" style={{ color: 'var(--fg)' }}>{f.title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--fg-muted)' }}>{f.desc}</p>
-                </div>
+                <p className="text-sm leading-relaxed sm:flex-1" style={{ color: 'var(--fg-muted)' }}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -493,7 +509,7 @@ export default function LandingPage() {
               <div className="flex-1 text-center md:text-left">
                 <p className="t-label mb-3" style={{ color: 'var(--amber)', opacity: 0.8 }}>Grande prémio</p>
                 <h2 className="t-display text-3xl sm:text-4xl lg:text-5xl text-white mb-2">
-                  <span className="t-mono" style={{ color: 'var(--amber)' }}>200 000</span>{' '}
+                  <span className="t-figure" style={{ color: 'var(--amber)' }}>200 000</span>{' '}
                   <span className="text-lg sm:text-xl font-semibold" style={{ color: 'rgba(255,255,255,0.3)' }}>MT</span>
                 </h2>
                 <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -614,6 +630,13 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--fg-muted)' }}>
+            Ainda tens dúvidas? Fala com{' '}
+            <a href="https://wa.me/258846283051" target="_blank" rel="noopener noreferrer" className="font-semibold" style={{ color: 'var(--cobalt)' }}>
+              Fredson Muianga · 84 628 3051
+            </a>
+          </p>
         </div>
       </section>
 
@@ -662,9 +685,20 @@ export default function LandingPage() {
                 <Image src="/images/logo.avif" alt="SonhoEuropa" width={24} height={24} className="rounded-md" />
                 <span className="font-extrabold text-sm text-white">SonhoEuropa</span>
               </div>
-              <p className="text-xs max-w-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                Fundo comunitário digital. Deposita, acompanha o fundo e concorre a 200 000 MT.
+              <p className="text-xs max-w-xs leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                Fundo comunitário digital. Deposita, acompanha o fundo e concorre a 200 000 MT.
               </p>
+              <a
+                href="https://www.instagram.com/muianga.oficial"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                style={{ color: 'rgba(255,255,255,0.35)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--amber)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+              >
+                <InstagramIcon className="w-4 h-4" /> @muianga.oficial
+              </a>
             </div>
 
             <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-xs">
@@ -699,7 +733,7 @@ export default function LandingPage() {
                 <span>·</span>
                 <Link href="/contacto">Contacto</Link>
                 <span>·</span>
-                <span>M-Pesa · E-Mola</span>
+                <span>E-Mola</span>
               </div>
             </div>
           </div>

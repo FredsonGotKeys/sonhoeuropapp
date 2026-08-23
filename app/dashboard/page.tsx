@@ -195,6 +195,12 @@ function DadosPagamento({ method, valor, codigoConvite }: { method: PayMethod; v
             Depois de enviar o dinheiro, <strong>cola a mensagem de confirmacao</strong> ou <strong>tira um screenshot</strong> e envia abaixo.
           </p>
         </div>
+        <p className="text-xs text-center text-gray-400">
+          Dúvidas? Fala com{' '}
+          <a href="https://wa.me/258846283051" target="_blank" rel="noopener noreferrer" className="font-bold" style={{ color: '#003399' }}>
+            Fredson Muianga · 84 628 3051
+          </a>
+        </p>
         <button onClick={partilharEnquantoEspera}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
           style={{ backgroundColor: '#25D36615', color: '#1a9c4e' }}>
@@ -833,7 +839,7 @@ function DashboardContent() {
   const metaUtilizador = ciclo?.meta ?? 200000
   const progress = ciclo ? Math.min((ciclo.total_acumulado / metaReal) * 100, 100) : 0
   const valorVisivel = ciclo ? Math.round(ciclo.total_acumulado * ((ciclo.meta ?? 200000) / 300000)) : 0
-  const formatMT = (v: number) => `${v.toLocaleString('pt-PT')} MT`
+  const formatMT = (v: number) => `${v.toLocaleString('pt-PT').replace(/\s/g, ' ')} MT`
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
 
