@@ -171,13 +171,14 @@ body {
     justify-content: center;
     gap: 18px;
     background: radial-gradient(circle at 50% 35%, var(--cobalt-dark) 0%, var(--ink) 75%);
-    opacity: 1;
-    transition: opacity 0.5s ease;
+    /* Rede de segurança em CSS puro: mesmo que o JavaScript falhe ou nunca
+       chegue a correr, o ecrã de arranque desaparece sozinho e nunca fica a
+       tapar a aplicação. O JavaScript apenas o esconde mais cedo. */
+    animation: splash-auto-out 2.6s ease forwards;
   }
 
   #pwa-splash.pwa-splash-hide {
-    opacity: 0;
-    pointer-events: none;
+    animation: splash-out 0.45s ease forwards;
   }
 
   .pwa-splash-mark {
@@ -202,6 +203,16 @@ body {
     margin: 0;
     animation: splash-word-in 0.7s var(--ease) 0.35s both;
   }
+}
+
+@keyframes splash-out {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+
+@keyframes splash-auto-out {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; pointer-events: none; }
 }
 
 @keyframes splash-mark-in {

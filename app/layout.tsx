@@ -41,21 +41,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <p className="pwa-splash-word">SonhoEuropa</p>
         </div>
         {children}
-        <Script id="pwa-splash-hide" strategy="beforeInteractive">{`
+        {/* O elemento NUNCA é removido do DOM: pertence à árvore do React, e
+            removê-lo à mão parte a hidratação e faz a navegação seguinte
+            rebentar. Esconder por CSS chega e é seguro. */}
+        <Script id="pwa-splash-hide" strategy="afterInteractive">{`
           (function () {
-            var MIN_MS = 900, MAX_MS = 2500, start = Date.now();
-            function hide() {
-              var el = document.getElementById('pwa-splash');
-              if (!el) return;
-              var wait = Math.max(0, MIN_MS - (Date.now() - start));
+            var MIN_MS = 900, MAX_MS = 2000, start = Date.now(), feito = false;
+            function esconder() {
+              if (feito) return;
+              feito = true;
+              var espera = Math.max(0, MIN_MS - (Date.now() - start));
               setTimeout(function () {
-                el.classList.add('pwa-splash-hide');
-                setTimeout(function () { el.remove(); }, 500);
-              }, wait);
+                try {
+                  var el = document.getElementById('pwa-splash');
+                  if (el) el.classList.add('pwa-splash-hide');
+                } catch (e) {}
+              }, espera);
             }
-            if (document.readyState === 'complete') hide();
-            else window.addEventListener('load', hide);
-            setTimeout(hide, MAX_MS);
+            try {
+              if (document.readyState === 'complete') esconder();
+              else window.addEventListener('load', esconder);
+              setTimeout(esconder, MAX_MS);
+            } catch (e) { esconder(); }
           })();
         `}</Script>
         <Script id="security-cleanup" strategy="afterInteractive">{`
