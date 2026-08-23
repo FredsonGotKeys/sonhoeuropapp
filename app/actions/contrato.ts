@@ -109,7 +109,7 @@ export async function submeterDadosContrato(dados: {
   if (idade > 110) return { error: 'Data de nascimento inválida' }
   if (nacionalidade.length < 2) return { error: 'Nacionalidade é obrigatória' }
   if (!NASCIMENTO_RE.test(biValidade)) return { error: 'Data de validade do BI inválida' }
-  if (new Date(biValidade + 'T00:00:00Z').getTime() < Date.now()) return { error: 'O teu BI está caducado — actualiza o documento antes de continuar' }
+  if (new Date(biValidade + 'T00:00:00Z').getTime() < Date.now()) return { error: 'O teu BI está caducado. Actualiza o documento antes de continuar' }
   if (nuit && !NUIT_RE.test(nuit)) return { error: 'NUIT inválido (deve ter 9 dígitos)' }
   if (morada.length < 5) return { error: 'Morada é obrigatória' }
 
@@ -246,7 +246,7 @@ export async function confirmarAssinatura(contratoId: string, codigo: string) {
   }
 
   const codigoLimpo = (codigo ?? '').trim()
-  if (!/^\d{6}$/.test(codigoLimpo)) return { error: 'Código inválido — introduz os 6 dígitos recebidos por email' }
+  if (!/^\d{6}$/.test(codigoLimpo)) return { error: 'Código inválido. Introduz os 6 dígitos recebidos por email' }
 
   const { error: otpError } = await supabase.auth.verifyOtp({
     email: user.email,

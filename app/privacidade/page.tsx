@@ -11,7 +11,7 @@ const seccoes = [
   },
   {
     titulo: '2. Dados recolhidos',
-    texto: 'Recolhemos os seguintes dados pessoais: nome completo, endereço de email, histórico de depósitos e transacções na plataforma. Não recolhemos dados bancários directos — os pagamentos são feitos via M-Pesa e E-Mola, plataformas independentes.',
+    texto: 'Recolhemos os seguintes dados pessoais: nome completo, endereço de email, histórico de depósitos e transacções na plataforma. Não recolhemos dados bancários directos. Os pagamentos são feitos via M-Pesa e E-Mola, plataformas independentes.',
   },
   {
     titulo: '3. Finalidade do tratamento',

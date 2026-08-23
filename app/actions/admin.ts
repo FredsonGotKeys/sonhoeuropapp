@@ -480,7 +480,7 @@ export async function rejeitarVerificacao(verificacaoId: string, motivo: string)
   const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
   const admin = createAdminClient()
   const motivoLimpo = (motivo ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 300)
-    || 'As fotos não estão legíveis — tenta enviar novamente com boa luz.'
+    || 'As fotos não estão legíveis. Tenta enviar novamente com boa luz.'
 
   const { data: v } = await admin.from('verificacoes').select('usuario_id').eq('id', verificacaoId).maybeSingle()
 
@@ -538,7 +538,7 @@ export async function rejeitarContrato(contratoId: string, motivo: string) {
   const auth = await requireAdmin(); if (auth.error) return { error: auth.error }
   const admin = createAdminClient()
   const motivoLimpo = (motivo ?? '').trim().replace(/<[^>]*>/g, '').slice(0, 300)
-    || 'Dados incorrectos — verifica e reenvia.'
+    || 'Dados incorrectos. Verifica e reenvia.'
 
   const { data: c } = await admin.from('contratos').select('usuario_id, estado').eq('id', contratoId).maybeSingle()
   if (!c) return { error: 'Contrato não encontrado' }

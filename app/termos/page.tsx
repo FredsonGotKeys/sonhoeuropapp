@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { ArrowLeft, FileText } from 'lucide-react'
 
 const TERMOS = [
-  { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos para um fundo colectivo. Quando o fundo atinge a meta de 200 000 MT, o vencedor e escolhido por sorteio aleatorio ponderado — nao e por ordem de inscricao ou de deposito. Quem deposita mais tem maiores chances de ganhar, mas qualquer inscrito pode ser o sorteado. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
+  { t: '1. O que e o SonhoEuropa', p: 'O SonhoEuropa e uma plataforma comunitaria digital onde participantes contribuem com depositos para um fundo colectivo. Quando o fundo atinge a meta de 200 000 MT, o vencedor e escolhido por sorteio aleatorio ponderado, nao por ordem de inscricao ou de deposito. Quem deposita mais tem maiores chances de ganhar, mas qualquer inscrito pode ser o sorteado. A plataforma e gerida por Fredson Bernardo Muianga, residente em Maputo, Mocambique.' },
   { t: '2. Inscricao e elegibilidade', p: 'Para participar, o utilizador deve: (a) ter pelo menos 18 anos de idade; (b) possuir um numero de telefone valido para M-Pesa ou E-Mola; (c) pagar a taxa de inscricao unica de 200 MT por ciclo. A taxa de inscricao cobre custos operacionais e nao e reembolsavel apos confirmacao do pagamento. Cada pessoa so pode ter uma conta na plataforma.' },
   { t: '3. Depositos', p: 'O valor minimo por deposito e 100 MT, sem limite maximo. Os depositos sao feitos por transferencia directa via E-Mola (876252006) para Fredson Bernardo Muianga, seguidos do envio de comprovativo (texto ou screenshot) na plataforma. O deposito so e contabilizado, e so conta para as chances no sorteio, apos confirmacao manual pelo administrador.' },
   { t: '4. Taxa de gestao e sustentabilidade', p: 'De cada deposito efectuado, 10% (dez por cento) do valor e alocado a gestao e manutencao da plataforma, cobrindo custos operacionais, suporte tecnico, alojamento do sistema, e seguranca. Os restantes 90% sao integralmente direccionados ao fundo comunitario. Exemplo: num deposito de 100 MT, 10 MT vao para gestao e 90 MT vao para o fundo. A taxa de inscricao (200 MT) e integralmente destinada a custos operacionais e nao entra no fundo do premio.' },
@@ -21,7 +21,7 @@ const TERMOS = [
 
 function gerarPdfTermos() {
   const content = [
-    'SONHOEUROPA — TERMOS E CONDICOES DE UTILIZACAO',
+    'SONHOEUROPA · TERMOS E CONDICOES DE UTILIZACAO',
     '══════════════════════════════════════════════',
     '',
     'Data de vigencia: Junho 2026',
@@ -34,7 +34,7 @@ function gerarPdfTermos() {
     'Objectivo do Projecto',
     'O SonhoEuropa nasceu da necessidade real de milhares de mocambicanos que sonham em imigrar para a Europa mas enfrentam barreiras financeiras significativas. Vistos, passagens aereas, alojamento inicial e documentacao podem facilmente ultrapassar 200 000 MT.',
     '',
-    'A plataforma cria um fundo comunitario onde cada participante contribui com depositos. Quando o fundo atinge a meta, o vencedor e escolhido por sorteio aleatorio — nao e por ordem de inscricao nem de deposito. Cada participante entra no sorteio com um numero de bilhetes proporcional ao que depositou, por isso quanto mais depositares, maiores sao as tuas chances, mas qualquer inscrito pode ganhar. O vencedor recebe o premio integral, permitindo-lhe dar o primeiro passo rumo ao sonho europeu.',
+    'A plataforma cria um fundo comunitario onde cada participante contribui com depositos. Quando o fundo atinge a meta, o vencedor e escolhido por sorteio aleatorio, nao por ordem de inscricao nem de deposito. Cada participante entra no sorteio com um numero de bilhetes proporcional ao que depositou, por isso quanto mais depositares, maiores sao as tuas chances, mas qualquer inscrito pode ganhar. O vencedor recebe o premio integral, permitindo-lhe dar o primeiro passo rumo ao sonho europeu.',
   ].join('\n')
 
   const blob = new Blob(['﻿' + content], { type: 'text/plain;charset=utf-8' })
@@ -79,7 +79,7 @@ export default function TermosPage() {
             <div className="pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
               <p className="font-bold mb-1" style={{ color: 'var(--fg)' }}>Objectivo do Projecto</p>
               <p>O SonhoEuropa nasceu da necessidade real de milhares de moçambicanos que sonham em imigrar para a Europa mas enfrentam barreiras financeiras significativas. Vistos, passagens aéreas, alojamento inicial e documentação podem facilmente ultrapassar 200 000 MT.</p>
-              <p className="mt-2">A plataforma cria um fundo comunitário onde cada participante contribui com depósitos. Quando o fundo atinge a meta, o vencedor é escolhido por sorteio aleatório — não é por ordem de inscrição nem de depósito. Cada participante entra no sorteio com um número de bilhetes proporcional ao que depositou, por isso quanto mais depositares, maiores são as tuas chances, mas qualquer inscrito pode ganhar. O vencedor recebe o prémio integral.</p>
+              <p className="mt-2">A plataforma cria um fundo comunitário onde cada participante contribui com depósitos. Quando o fundo atinge a meta, o vencedor é escolhido por sorteio aleatório, não por ordem de inscrição nem de depósito. Cada participante entra no sorteio com um número de bilhetes proporcional ao que depositou, por isso quanto mais depositares, maiores são as tuas chances, mas qualquer inscrito pode ganhar. O vencedor recebe o prémio integral.</p>
             </div>
           </div>
         </div>

@@ -671,7 +671,7 @@ function TabPagamentos() {
                                   <img src={p.comprovativo_imagem_url} alt="Comprovativo" className="w-full max-h-64 object-contain bg-white" />
                                 </a>
                               ) : p.comprovativo_enviado_at && (
-                                <p className="italic text-gray-400 mb-2">Imagem já expirou (removida 24h após o envio) — verifica pelo texto acima ou pelo teu telemóvel.</p>
+                                <p className="italic text-gray-400 mb-2">Imagem já expirou (removida 24h após o envio). Verifica pelo texto acima ou pelo teu telemóvel.</p>
                               )}
                               {p.comprovativo_enviado_at && (
                                 <p className="text-gray-300" style={{ fontSize: '10px' }}>
@@ -891,7 +891,7 @@ function TabContratos() {
     setLoadingId(id)
     const res = await aprovarContrato(id)
     if (res.error) setMsg('Erro: ' + res.error)
-    else { setMsg('Contrato aprovado — o participante já pode assinar'); carregar() }
+    else { setMsg('Contrato aprovado. O participante já pode assinar'); carregar() }
     setLoadingId(null)
   }
 
