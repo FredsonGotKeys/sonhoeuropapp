@@ -143,7 +143,7 @@ export default function LandingPage() {
     },
     {
       q: 'Quais métodos de pagamento?',
-      a: 'Só por E-Mola, para o número 876 252 006 (Fredson Bernardo Muianga). Fazes a transferência e envias o comprovativo na plataforma — a contribuição só é contabilizada, e só aumenta as tuas chances no sorteio, depois de confirmada manualmente pelo administrador.',
+      a: 'Só por E-Mola, para o número 876 252 006 (Fredson Bernardo Muianga). Fazes a transferência e envias o comprovativo na plataforma — a contribuição só é contabilizada, e só aumenta as tuas chances no sorteio, depois de o sistema confirmar o teu depósito.',
     },
     {
       q: 'Partilhar com amigos aumenta as minhas chances de ganhar?',

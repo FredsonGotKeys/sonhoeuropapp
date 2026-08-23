@@ -1175,7 +1175,7 @@ function DashboardContent() {
                       : `Depositar ${valor ? valor + ' MT' : '...'} via E-Mola`}
                   </button>
                   <p className="text-xs text-center text-gray-400">
-                    Transferência directa · Confirmação manual pelo admin
+                    Transferência directa · O sistema confirma o teu depósito
                   </p>
                 </div>
               </div>
