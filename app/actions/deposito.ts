@@ -58,7 +58,7 @@ export async function criarPedidoPagamento(params: {
   const valorNum = Math.floor(Number(params.valor))
   if (!Number.isFinite(valorNum) || valorNum <= 0) return { error: 'Valor inválido' }
   if (valorNum > 100000) return { error: 'Valor excede o limite permitido' }
-  if (params.tipo === 'deposito' && valorNum < 250) return { error: 'Valor mínimo é 250 MT' }
+  if (params.tipo === 'deposito' && valorNum < 100) return { error: 'Valor mínimo é 100 MT' }
 
   const valor = params.tipo === 'inscricao' ? 149 : valorNum
 
