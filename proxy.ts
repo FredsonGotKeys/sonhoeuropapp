@@ -5,7 +5,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 // ─── Rate Limiting (in-memory, per-IP) ──────────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_WINDOW = 60_000 // 1 minute
-const RATE_LIMIT_MAX = 60 // requests per window
+// Uma única visita normal já gera dezenas de pedidos (o Next.js faz prefetch
+// de todos os links visíveis), e em Moçambique é comum vários utilizadores
+// partilharem o mesmo IP público através do operador móvel. Um tecto baixo
+// aqui não trava abuso nenhum — só faz páginas legítimas falharem a meio.
+// O que interessa mesmo travar (tentativas de senha) tem o seu próprio
+// contador, por rota, mais abaixo.
+const RATE_LIMIT_MAX = 300 // requests per window
 const RATE_LIMIT_AUTH_MAX = 30 // requests per window, per auth route (not shared across routes)
 
 let lastCleanup = Date.now()
@@ -88,21 +94,36 @@ export default async function proxy(request: NextRequest) {
   // so testing /register doesn't burn through the budget for /admin/login —
   // people on the same carrier-shared IP (common on mobile in Mozambique)
   // no longer trip each other's limit just by using different pages.
-  const isAuthRoute = path === '/login' || path === '/register' || path === '/admin/login'
-  const limit = isAuthRoute ? RATE_LIMIT_AUTH_MAX : RATE_LIMIT_MAX
-  const rateLimitKey = isAuthRoute ? `${ip}:${path}` : ip
+  //
+  // Pedidos internos de navegação do Next.js (RSC / prefetch) ficam de fora:
+  // o Next.js vai buscar sozinho todos os links visíveis na página, por isso
+  // contá-los enchia o contador sem ninguém fazer nada. Pior: o prefetch de
+  // /login e /register era tratado como tentativa de autenticação, e depois a
+  // navegação verdadeira levava 429 — que o router não sabe recuperar e
+  // mostra como "a página não carregou". Não é uma brecha: quem faz login
+  // envia um POST, e esse continua a contar.
+  const isRscRequest =
+    request.headers.get('RSC') === '1' ||
+    request.headers.get('Next-Router-Prefetch') === '1' ||
+    request.nextUrl.searchParams.has('_rsc')
 
-  if (isRateLimited(rateLimitKey, limit)) {
-    return NextResponse.json(
-      { error: 'Demasiados pedidos. Tenta novamente em breve.' },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': '60',
-          'X-RateLimit-Limit': String(limit),
-        },
-      }
-    )
+  if (!isRscRequest) {
+    const isAuthRoute = path === '/login' || path === '/register' || path === '/admin/login'
+    const limit = isAuthRoute ? RATE_LIMIT_AUTH_MAX : RATE_LIMIT_MAX
+    const rateLimitKey = isAuthRoute ? `${ip}:${path}` : ip
+
+    if (isRateLimited(rateLimitKey, limit)) {
+      return NextResponse.json(
+        { error: 'Demasiados pedidos. Tenta novamente em breve.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Limit': String(limit),
+          },
+        }
+      )
+    }
   }
 
   // ── Supabase auth ──
