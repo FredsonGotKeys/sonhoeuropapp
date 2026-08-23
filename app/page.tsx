@@ -249,37 +249,46 @@ export default function LandingPage() {
             {/* Right — Fund Card */}
             <div className="w-full max-w-sm lg:max-w-xs xl:max-w-sm animate-enter-up delay-4">
               <div
-                className="p-6 sm:p-7 rounded-xl"
+                className="relative p-6 sm:p-7 rounded-2xl overflow-hidden"
                 style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  backdropFilter: 'blur(12px)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                  background: 'linear-gradient(160deg, rgba(255,255,255,0.13), rgba(255,255,255,0.03))',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  backdropFilter: 'blur(16px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)',
                 }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.7)' }}>Fundo actual</span>
-                  <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--emerald)' }}>
+                <div
+                  className="absolute -top-20 -right-20 w-48 h-48 rounded-full pointer-events-none"
+                  style={{ background: 'var(--amber)', opacity: 0.16, filter: 'blur(48px)' }}
+                />
+
+                <div className="relative flex items-center justify-between mb-5">
+                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.6)' }}>Fundo actual</span>
+                  <span
+                    className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
+                    style={{ color: 'var(--emerald)', background: 'rgba(16,185,129,0.14)' }}
+                  >
                     <span
-                      className="w-2 h-2 rounded-full inline-block"
+                      className="w-1.5 h-1.5 rounded-full inline-block"
                       style={{ background: 'var(--emerald)', animation: 'pulse-dot 2s ease-in-out infinite', boxShadow: '0 0 6px var(--emerald)' }}
                     />
                     Ao vivo
                   </span>
                 </div>
 
-                <div className="t-figure text-4xl sm:text-5xl font-black text-white mb-1">
+                <div className="relative t-figure text-5xl sm:text-6xl font-black text-white mb-1 leading-none">
                   {loading ? (
                     <span className="skeleton inline-block w-40 h-12 rounded-lg" style={{ background: 'rgba(255,255,255,0.1)' }} />
                   ) : (
                     <>{formatMT(valorVisivel)}<span className="text-lg font-bold ml-2" style={{ color: 'rgba(255,255,255,0.5)' }}>MT</span></>
                   )}
                 </div>
-                <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <p className="relative text-xs mb-5" style={{ color: 'rgba(255,255,255,0.4)' }}>
                   de {formatMT(ciclo?.meta ?? 200000)} MT necessários
                 </p>
 
-                <div className="mb-5">
+                <div className="relative mb-5">
                   <div className="flex justify-between text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
                     <span className="t-mono">{progress.toFixed(1)}%</span>
                     <span className="t-mono">{formatMT(ciclo?.meta ?? 200000)}</span>
@@ -296,17 +305,21 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div
-                  className="flex items-center justify-between p-3 rounded-lg text-sm"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                    <Users className="w-4 h-4" />
-                    <span><strong className="text-white t-mono">{ciclo?.participantes_count ?? 0}</strong> participantes</span>
+                <div className="relative grid grid-cols-2 gap-2">
+                  <div className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="flex items-center gap-1.5 mb-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      <Users className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold">Participantes</span>
+                    </div>
+                    <span className="t-mono text-lg font-bold text-white">{ciclo?.participantes_count ?? 0}</span>
                   </div>
-                  <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    mín. <strong style={{ color: 'rgba(255,255,255,0.6)' }}>{ciclo?.minimo_participantes ?? 3000}</strong>
-                  </span>
+                  <div className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="flex items-center gap-1.5 mb-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold">Mínimo</span>
+                    </div>
+                    <span className="t-mono text-lg font-bold text-white">{ciclo?.minimo_participantes ?? 3000}</span>
+                  </div>
                 </div>
               </div>
             </div>

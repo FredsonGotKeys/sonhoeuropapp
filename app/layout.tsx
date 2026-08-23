@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Manrope, IBM_Plex_Mono } from "next/font/google";
+import { Fraunces, Manrope, IBM_Plex_Mono, Bricolage_Grotesque } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
@@ -10,6 +10,7 @@ const fraunces = Fraunces({
 });
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono" });
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage" });
 
 export const viewport: Viewport = {
   themeColor: '#0D1117',
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt" className={`${fraunces.variable} ${manrope.variable} ${plexMono.variable} h-full`}>
+    <html lang="pt" className={`${fraunces.variable} ${manrope.variable} ${plexMono.variable} ${bricolage.variable} h-full`}>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="mobile-web-app-capable" content="yes" />

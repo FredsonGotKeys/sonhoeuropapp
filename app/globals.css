@@ -136,15 +136,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Big marketing/hero figures (fund totals, prize amount, stats) — the
-   editorial display serif reads far more premium here than a coding
-   monospace, and sidesteps the slashed/dotted-zero coding convention
-   that looks wrong at large sizes in a consumer-facing figure. */
+/* Big marketing/hero figures (fund totals, prize amount, stats) — a
+   modern grotesk reads cleaner and less stuffy here than the editorial
+   serif, and sidesteps the slashed/dotted-zero coding convention that
+   looks wrong at large sizes in a consumer-facing figure. */
 .t-figure {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-optical-sizing: auto;
+  font-family: var(--font-bricolage), -apple-system, sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
-  font-variation-settings: "SOFT" 0, "WONK" 0;
   letter-spacing: -0.02em;
 }
 
