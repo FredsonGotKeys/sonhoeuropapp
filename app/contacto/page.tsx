@@ -129,7 +129,7 @@ export default function ContactoPage() {
           <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" /> Início
         </Link>
         <Link href="/privacidade" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Privacidade</Link>
-        <Link href="/dashboard" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Dashboard</Link>
+        <Link href="/dashboard" className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Painel</Link>
       </div>
     </div>
   )

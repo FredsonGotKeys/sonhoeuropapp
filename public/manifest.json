@@ -25,9 +25,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Meu Dashboard",
+      "name": "Meu Painel",
       "url": "/dashboard",
-      "description": "Ver o meu dashboard"
+      "description": "Ver o meu painel"
     },
     {
       "name": "Registar",

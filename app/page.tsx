@@ -171,7 +171,7 @@ export default function LandingPage() {
                   {authUser.nome?.split(' ')[0]}
                 </span>
                 <Link href="/dashboard" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: 13 }}>
-                  Dashboard <ArrowRight className="w-3.5 h-3.5" />
+                  Painel <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </>
             ) : (
@@ -200,7 +200,7 @@ export default function LandingPage() {
             {/* Left — Copy */}
             <div className="flex-1 text-center lg:text-left">
               <h1
-                className="t-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white mb-5 animate-enter-up delay-1"
+                className="t-display t-hero-title text-white mb-5 animate-enter-up delay-1"
               >
                 O teu sonho começa<br className="hide-mobile" /> com{' '}
                 <span style={{ color: 'var(--amber)' }}>100 MT</span> por dia
@@ -214,7 +214,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-3 justify-center lg:justify-start animate-enter-up delay-3">
                 {authUser ? (
                   <Link href="/dashboard" className="btn btn-amber btn-lg">
-                    Ir ao Dashboard <ArrowRight className="w-4 h-4" />
+                    Ir ao Painel <ArrowRight className="w-4 h-4" />
                   </Link>
                 ) : (
                   <>
@@ -277,7 +277,7 @@ export default function LandingPage() {
                   </span>
                 </div>
 
-                <div className="relative t-figure text-5xl sm:text-6xl font-black text-white mb-1 leading-none">
+                <div className="relative t-figure t-hero-figure font-black text-white mb-1 leading-none">
                   {loading ? (
                     <span className="skeleton inline-block w-40 h-12 rounded-lg" style={{ background: 'rgba(255,255,255,0.1)' }} />
                   ) : (
@@ -661,9 +661,9 @@ export default function LandingPage() {
               <h2 className="t-heading text-2xl sm:text-3xl mb-2" style={{ color: 'var(--fg)' }}>
                 Olá, {authUser.nome?.split(' ')[0]}
               </h2>
-              <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>O teu Dashboard está à espera.</p>
+              <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>O teu Painel está à espera.</p>
               <Link href="/dashboard" className="btn btn-primary btn-lg">
-                Ir para o Dashboard <ArrowRight className="w-4 h-4" />
+                Ir para o Painel <ArrowRight className="w-4 h-4" />
               </Link>
             </>
           ) : (
@@ -721,7 +721,7 @@ export default function LandingPage() {
                   <Link href="/register" className="block transition-colors" style={{ color: 'rgba(255,255,255,0.4)' }}>Criar conta</Link>
                   <Link href="/login" className="block transition-colors" style={{ color: 'rgba(255,255,255,0.4)' }}>Entrar</Link>
                   {authUser && (
-                    <Link href="/dashboard" className="block transition-colors" style={{ color: 'var(--amber)' }}>Dashboard →</Link>
+                    <Link href="/dashboard" className="block transition-colors" style={{ color: 'var(--amber)' }}>Painel →</Link>
                   )}
                 </div>
               </div>

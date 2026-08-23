@@ -133,6 +133,18 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Fluid sizing for the most prominent headline/figure on the page —
+   scales continuously with viewport width instead of jumping at
+   breakpoints, so it also adapts smoothly on the installed PWA which
+   renders this same markup with no separate layout. */
+.t-hero-title {
+  font-size: clamp(1.875rem, 1rem + 4.3vw, 3.75rem);
+}
+
+.t-hero-figure {
+  font-size: clamp(2.5rem, 1.6rem + 4.3vw, 3.75rem);
+}
+
 /* Big marketing/hero figures (fund totals, prize amount, stats) —
    same system font, just tuned for large tabular numerals so the
    zero renders plain instead of a coding-font slash/dot. */
