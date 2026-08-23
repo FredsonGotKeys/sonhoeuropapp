@@ -1017,6 +1017,9 @@ function DashboardContent() {
                   <p className="text-xs text-gray-400">Total depositado</p>
                 </div>
               </div>
+              <p className="text-xs text-center text-gray-400 mt-3">
+                É este total que pesa no sorteio — não é dinheiro perdido, é o teu peso nas chances.
+              </p>
             </div>
 
             {/* Fund Progress */}
