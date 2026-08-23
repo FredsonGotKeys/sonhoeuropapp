@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sonhoeuropa-v2'
+const CACHE_NAME = 'sonhoeuropa-v3'
 const STATIC_ASSETS = ['/', '/login', '/register', '/manifest.json']
 
 self.addEventListener('install', (event) => {
@@ -30,7 +30,25 @@ self.addEventListener('fetch', (event) => {
         }
         return response
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || Response.error()))
+      .catch(async () => {
+        const cached = await caches.match(event.request)
+        if (cached) return cached
+
+        // Uma falha de rede isolada (comum em dados móveis) não deve deixar
+        // a página presa. Tenta mais uma vez antes de desistir.
+        try {
+          return await fetch(event.request)
+        } catch {
+          if (event.request.mode === 'navigate') {
+            const fallback = await caches.match('/')
+            if (fallback) return fallback
+          }
+          return new Response('Sem ligação à internet. Tenta novamente.', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          })
+        }
+      })
   )
 })
 
