@@ -1,10 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Manrope, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  axes: ["opsz", "SOFT", "WONK"],
+});
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
+const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono" });
 
 export const viewport: Viewport = {
   themeColor: '#0D1117',
@@ -25,7 +30,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt" className={`${geist.variable} ${geistMono.variable} h-full`}>
+    <html lang="pt" className={`${fraunces.variable} ${manrope.variable} ${plexMono.variable} h-full`}>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="mobile-web-app-capable" content="yes" />

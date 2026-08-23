@@ -269,7 +269,7 @@ export async function confirmarPagamentoManual(pagamentoId: string) {
       .eq('usuario_id', usuarioId).eq('ciclo_id', cicloId).maybeSingle()
     if (!exists) {
       await admin.from('inscricoes').insert({ usuario_id: usuarioId, ciclo_id: cicloId, taxa_paga: valorBruto })
-      const minPart = cicloInfo?.minimo_participantes ?? 150
+      const minPart = cicloInfo?.minimo_participantes ?? 3000
       await admin.rpc('increment_participantes', { p_ciclo_id: cicloId, p_min: minPart })
     }
   } else {
@@ -351,7 +351,7 @@ export async function criarNovoCiclo() {
     .in('estado', ['activo', 'aguardando_minimo'])
   // Criar novo ciclo já activo — sem inscrições, não há "mínimo de
   // participantes inscritos" para aguardar antes de aceitar depósitos.
-  const { data, error } = await admin.from('ciclos').insert({ estado: 'activo', meta: 200000, minimo_participantes: 150 }).select().single()
+  const { data, error } = await admin.from('ciclos').insert({ estado: 'activo', meta: 200000, minimo_participantes: 3000 }).select().single()
   if (error) return { error: error.message }
   return { success: true, ciclo: data }
 }

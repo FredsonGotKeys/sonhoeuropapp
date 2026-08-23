@@ -4,6 +4,16 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Phone, Mail, MessageCircle, ArrowLeft, Clock, Shield, ArrowRight } from 'lucide-react'
 
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
 export default function ContactoPage() {
   const whatsappUrl = 'https://wa.me/258846283051?text=' + encodeURIComponent('Ola, preciso de ajuda com o SonhoEuropa!')
 
@@ -23,6 +33,14 @@ export default function ContactoPage() {
       color: 'var(--cobalt)',
       title: 'Ligar',
       subtitle: '+258 84 628 3051',
+    },
+    {
+      href: 'https://www.instagram.com/muianga.oficial',
+      target: '_blank',
+      icon: InstagramIcon,
+      color: '#E1306C',
+      title: 'Instagram',
+      subtitle: '@muianga.oficial',
     },
     {
       href: 'tel:+258876252006',

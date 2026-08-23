@@ -16,7 +16,7 @@ const TERMOS = [
   { t: '9. Privacidade e dados', p: 'Os dados recolhidos (nome, email, numero de telefone) sao utilizados exclusivamente para o funcionamento da plataforma. Nao partilhamos dados com terceiros. Os comprovativos de pagamento sao armazenados de forma segura e acessiveis apenas ao administrador para fins de verificacao.' },
   { t: '10. Responsabilidade', p: 'A participacao no SonhoEuropa e inteiramente voluntaria. Nao existe garantia de retorno financeiro. O participante reconhece que os depositos sao contribuicoes para um fundo comunitario com seleccao automatica de vencedor. A plataforma nao constitui investimento financeiro, jogo de azar regulamentado, ou esquema de rendimento garantido.' },
   { t: '11. Alteracoes aos termos', p: 'O SonhoEuropa reserva-se o direito de alterar estes termos e condicoes a qualquer momento. As alteracoes serao comunicadas na plataforma e entram em vigor imediatamente apos publicacao. A continuacao do uso da plataforma apos alteracoes constitui aceitacao dos novos termos.' },
-  { t: '12. Contacto', p: 'Para duvidas, reclamacoes ou sugestoes, contacta-nos pelo WhatsApp, redes sociais @SonhoEuropa, ou email suporte@sonhoeuropa.co.mz. Resposta em ate 48 horas uteis.' },
+  { t: '12. Contacto', p: 'Para duvidas, reclamacoes ou sugestoes, contacta o administrador Fredson Muianga pelo WhatsApp ou telefone 84 628 3051, redes sociais @SonhoEuropa, ou email suporte@sonhoeuropa.co.mz. Resposta em ate 48 horas uteis.' },
 ]
 
 function gerarPdfTermos() {

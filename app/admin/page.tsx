@@ -185,7 +185,7 @@ function TabDashboard({ stats }: { stats: AdminStats }) {
             <p className="text-xs text-gray-400">Total bruto depositado</p>
             <p className="font-bold" style={{ color: '#003399' }}>{formatMT(fin.depositosBruto ?? 0)}</p>
           </div>
-          <div><p className="text-xs text-gray-400">Inscritos</p><p className="font-bold">{ciclo?.participantes_count ?? 0} / {ciclo?.minimo_participantes ?? 150}</p></div>
+          <div><p className="text-xs text-gray-400">Inscritos</p><p className="font-bold">{ciclo?.participantes_count ?? 0} / {ciclo?.minimo_participantes ?? 3000}</p></div>
           <div><p className="text-xs text-gray-400">Pagamentos a confirmar</p><p className="font-bold text-orange-500">{stats?.pagamentosPendentes ?? 0}</p></div>
           <div><p className="text-xs text-gray-400">Pagamentos confirmados</p><p className="font-bold" style={{ color: '#1D9E75' }}>{stats?.pagamentosConfirmados ?? 0}</p></div>
         </div>
@@ -1178,7 +1178,7 @@ function TabSorteio({ stats, onRefresh }: { stats: AdminStats; onRefresh: () => 
         <div className="grid grid-cols-2 gap-3 mb-5">
           {[
             { label: 'Estado do ciclo', value: <StatusBadge status={ciclo?.estado ?? '—'} />, ok: ciclo?.estado === 'activo' },
-            { label: 'Participantes', value: `${ciclo?.participantes_count ?? 0} / ${ciclo?.minimo_participantes ?? 150}`, ok: (ciclo?.participantes_count ?? 0) >= (ciclo?.minimo_participantes ?? 150) },
+            { label: 'Participantes', value: `${ciclo?.participantes_count ?? 0} / ${ciclo?.minimo_participantes ?? 3000}`, ok: (ciclo?.participantes_count ?? 0) >= (ciclo?.minimo_participantes ?? 3000) },
             { label: 'Fundo acumulado', value: formatMT(ciclo?.total_acumulado ?? 0), ok: (ciclo?.total_acumulado ?? 0) >= 300000 },
             { label: 'Alvo real necessário', value: formatMT(300000), ok: true },
           ].map(c => (
