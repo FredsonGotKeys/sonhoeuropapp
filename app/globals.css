@@ -75,8 +75,8 @@
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
-  --font-sans: var(--font-manrope);
-  --font-mono: var(--font-plex-mono);
+  --font-sans: var(--font-bricolage);
+  --font-mono: var(--font-bricolage);
 }
 
 /* ── Reset & Base ─────────────────────────────────── */
@@ -84,7 +84,7 @@
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-manrope), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-bricolage), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -107,19 +107,16 @@ body {
 /* ── Typography ───────────────────────────────────── */
 
 .t-display {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--font-bricolage), -apple-system, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   line-height: 1.05;
-  font-variation-settings: "SOFT" 0, "WONK" 0;
 }
 
 .t-heading {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 560;
-  letter-spacing: -0.015em;
+  font-family: var(--font-bricolage), -apple-system, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
@@ -132,14 +129,13 @@ body {
 }
 
 .t-mono {
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-family: var(--font-bricolage), -apple-system, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
-/* Big marketing/hero figures (fund totals, prize amount, stats) — a
-   modern grotesk reads cleaner and less stuffy here than the editorial
-   serif, and sidesteps the slashed/dotted-zero coding convention that
-   looks wrong at large sizes in a consumer-facing figure. */
+/* Big marketing/hero figures (fund totals, prize amount, stats) —
+   same system font, just tuned for large tabular numerals so the
+   zero renders plain instead of a coding-font slash/dot. */
 .t-figure {
   font-family: var(--font-bricolage), -apple-system, sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
