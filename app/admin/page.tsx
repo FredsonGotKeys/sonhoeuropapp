@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { EuropaWatermark } from '@/components/EuropaWatermark'
+import { Reveal } from '@/components/Reveal'
 import {
   Users, Trophy, TrendingUp, DollarSign, RefreshCw, LogOut,
   Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Search,
@@ -1305,7 +1307,8 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen pb-10" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
-      <header className="bg-white sticky top-0 z-40" style={{ borderBottom: '3px solid #003399' }}>
+      <header className="bg-white sticky top-0 z-40 relative overflow-hidden" style={{ borderBottom: '3px solid #003399' }}>
+        <EuropaWatermark size={220} color="#003399" opacity={0.06} className="absolute -top-16 -right-10 pointer-events-none hidden sm:block" />
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
@@ -1357,13 +1360,13 @@ export default function AdminPage() {
           </div>
         ) : (
           <>
-            {tab === 'dashboard'     && <TabDashboard stats={stats} />}
-            {tab === 'participantes' && <TabParticipantes participantes={stats?.participantes ?? []} onRefresh={loadStats} />}
-            {tab === 'pagamentos'    && <TabPagamentos />}
-            {tab === 'verificacoes'  && <TabVerificacoes />}
-            {tab === 'contratos'     && <TabContratos />}
-            {tab === 'ciclos'        && <TabCiclos onRefresh={loadStats} />}
-            {tab === 'sorteio'       && <TabSorteio stats={stats} onRefresh={loadStats} />}
+            {tab === 'dashboard'     && <Reveal><TabDashboard stats={stats} /></Reveal>}
+            {tab === 'participantes' && <Reveal><TabParticipantes participantes={stats?.participantes ?? []} onRefresh={loadStats} /></Reveal>}
+            {tab === 'pagamentos'    && <Reveal><TabPagamentos /></Reveal>}
+            {tab === 'verificacoes'  && <Reveal><TabVerificacoes /></Reveal>}
+            {tab === 'contratos'     && <Reveal><TabContratos /></Reveal>}
+            {tab === 'ciclos'        && <Reveal><TabCiclos onRefresh={loadStats} /></Reveal>}
+            {tab === 'sorteio'       && <Reveal><TabSorteio stats={stats} onRefresh={loadStats} /></Reveal>}
           </>
         )}
       </div>

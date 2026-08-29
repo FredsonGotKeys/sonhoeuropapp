@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Users, Trophy, ArrowRight, ChevronDown, Shield, Zap, Heart, TrendingUp, Star, Share2, Send, Copy, Check, Gift, Infinity as InfinityIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { EuropaWatermark } from '@/components/EuropaWatermark'
+import { Reveal } from '@/components/Reveal'
 
 interface CicloData {
   id: string
@@ -191,11 +193,16 @@ export default function LandingPage() {
       {/* ─── Hero ─── */}
       <section className="relative overflow-hidden grain" style={{ background: 'var(--bg-dark)', paddingTop: 56 }}>
         <div className="absolute inset-0">
-          <Image src="/images/hero1.avif" alt="" fill className="object-cover" priority style={{ opacity: 0.15 }} />
+          <Image src="/images/hero1.avif" alt="" fill sizes="100vw" className="object-cover" priority style={{ opacity: 0.15 }} />
         </div>
+        <EuropaWatermark
+          size={620}
+          opacity={0.07}
+          className="absolute -top-24 -right-24 hidden sm:block"
+        />
 
-        <div className="relative container-wide">
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 py-12 sm:py-20 lg:py-28">
+        <div className="relative z-10 container-wide">
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 fluid-y-lg">
 
             {/* Left — Copy */}
             <div className="flex-1 text-center lg:text-left">
@@ -328,9 +335,9 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Stats ─── */}
-      <section className="py-8 sm:py-14" style={{ background: 'var(--bg-alt)' }}>
+      <section className="fluid-y-sm" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-wide">
-          <div className="grid grid-cols-3 gap-3 sm:gap-6">
+          <Reveal className="grid grid-cols-3 gap-3 sm:gap-6">
             {[
               { value: '200 000', unit: 'MT', label: 'Prémio em dinheiro', color: 'var(--amber)' },
               { value: '100', unit: 'MT/dia', label: 'Depósito mínimo', color: 'var(--cobalt)' },
@@ -343,19 +350,19 @@ export default function LandingPage() {
                 <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>{s.label}</p>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ─── How it works ─── */}
-      <section className="py-10 sm:py-20">
+      <section className="fluid-y">
         <div className="container-wide">
-          <div className="text-center mb-7 sm:mb-14">
+          <Reveal className="text-center mb-7 sm:mb-14">
             <p className="t-label mb-2" style={{ color: 'var(--cobalt)' }}>Como funciona</p>
             <h2 className="t-heading text-2xl sm:text-3xl" style={{ color: 'var(--fg)' }}>
               Três passos para o teu sonho
             </h2>
-          </div>
+          </Reveal>
 
           <div className="grid sm:grid-cols-3 gap-4 sm:gap-6">
             {[
@@ -447,7 +454,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Images ─── */}
-      <section className="pb-10 sm:pb-20">
+      <section className="fluid-pb">
         <div className="container-wide">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
             {[
@@ -461,6 +468,7 @@ export default function LandingPage() {
                   src={img.src}
                   alt={img.alt}
                   fill
+                  sizes="(min-width: 768px) 25vw, 50vw"
                   className="object-cover transition-transform duration-500 hover:scale-105"
                 />
               </div>
@@ -470,16 +478,16 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Why ─── */}
-      <section className="py-10 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
+      <section className="fluid-y" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-wide">
-          <div className="text-center mb-7 sm:mb-14">
+          <Reveal className="text-center mb-7 sm:mb-14">
             <p className="t-label mb-2" style={{ color: 'var(--cobalt)' }}>Vantagens</p>
             <h2 className="t-heading text-2xl sm:text-3xl" style={{ color: 'var(--fg)' }}>
               Por que SonhoEuropa?
             </h2>
-          </div>
+          </Reveal>
 
-          <div style={{ borderTop: '1px solid var(--border)' }}>
+          <Reveal style={{ borderTop: '1px solid var(--border)' }}>
             {[
               { icon: <Shield className="w-4 h-4" />, title: '100% transparente', desc: 'O fundo é visível em tempo real para todos. Sabes sempre quanto já foi acumulado.', color: 'var(--cobalt)' },
               { icon: <Zap className="w-4 h-4" />, title: 'Acessível a todos', desc: 'Começa com 100 MT por dia, menos do que um chá. Deposita o que puderes.', color: 'var(--amber)' },
@@ -507,18 +515,19 @@ export default function LandingPage() {
                 <p className="text-sm leading-relaxed sm:flex-1" style={{ color: 'var(--fg-muted)' }}>{f.desc}</p>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ─── Prize Banner ─── */}
-      <section className="py-10 sm:py-20">
+      <section className="fluid-y">
         <div className="container-wide">
-          <div
+          <Reveal
             className="rounded-xl overflow-hidden relative grain"
             style={{ background: 'var(--bg-dark)' }}
           >
-            <div className="relative flex flex-col md:flex-row items-center gap-8 p-6 sm:p-10 lg:p-14">
+            <EuropaWatermark size={360} opacity={0.09} className="absolute -bottom-16 -left-16 hidden sm:block" />
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 p-6 sm:p-10 lg:p-14">
               <div className="flex-1 text-center md:text-left">
                 <p className="t-label mb-3" style={{ color: 'var(--amber)', opacity: 0.8 }}>Grande prémio</p>
                 <h2 className="t-display text-3xl sm:text-4xl lg:text-5xl text-white mb-2">
@@ -534,17 +543,17 @@ export default function LandingPage() {
               </div>
 
               <div className="relative w-full md:w-56 lg:w-72 aspect-[4/3] rounded-lg overflow-hidden flex-shrink-0">
-                <Image src="/images/hero3.png" alt="O sonho europeu" fill className="object-cover" />
+                <Image src="/images/hero3.png" alt="O sonho europeu" fill sizes="(min-width: 768px) 288px, 100vw" className="object-cover" />
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ─── Partilha ─── */}
-      <section id="partilha" className="py-10 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
+      <section id="partilha" className="fluid-y" style={{ background: 'var(--bg-alt)' }}>
         <div className="container-tight">
-          <div className="text-center mb-6 sm:mb-8">
+          <Reveal className="text-center mb-6 sm:mb-8">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ background: 'linear-gradient(135deg, #003399, #0055cc)' }}
@@ -560,9 +569,9 @@ export default function LandingPage() {
                 ? 'Envia o teu link pessoal a amigos e familiares. Quanto mais gente entrar, mais rápido o fundo enche e mais cedo há sorteio.'
                 : 'Cria a tua conta para teres um link pessoal de convite, ou partilha já a plataforma com quem conheces.'}
             </p>
-          </div>
+          </Reveal>
 
-          <div className="card p-5 sm:p-6 max-w-md mx-auto">
+          <Reveal className="card p-5 sm:p-6 max-w-md mx-auto" delay={100}>
             {authUser && (
               <div className="flex items-center gap-2 p-3 rounded-lg mb-4" style={{ background: 'var(--bg-alt)' }}>
                 <span className="text-xs flex-1 truncate t-mono" style={{ color: 'var(--fg-muted)' }}>{inviteUrl}</span>
@@ -607,19 +616,19 @@ export default function LandingPage() {
                 Partilhar faz o fundo crescer para toda a comunidade. Mas as tuas chances individuais no sorteio dependem sempre do que <strong style={{ color: 'var(--fg)' }}>tu</strong> depositares, a partir de 100 MT, em qualquer dia, sem limite máximo. Quanto mais depositares, maiores as tuas chances.
               </span>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ─── FAQ ─── */}
-      <section className="py-10 sm:py-20">
+      <section className="fluid-y">
         <div className="container-tight">
-          <div className="text-center mb-6 sm:mb-8">
+          <Reveal className="text-center mb-6 sm:mb-8">
             <p className="t-label mb-2" style={{ color: 'var(--cobalt)' }}>FAQ</p>
             <h2 className="t-heading text-2xl sm:text-3xl" style={{ color: 'var(--fg)' }}>Perguntas frequentes</h2>
-          </div>
+          </Reveal>
 
-          <div className="space-y-2">
+          <Reveal className="space-y-2" delay={100}>
             {faqs.map((faq, i) => (
               <div key={i} className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
                 <button
@@ -642,7 +651,7 @@ export default function LandingPage() {
                 )}
               </div>
             ))}
-          </div>
+          </Reveal>
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--fg-muted)' }}>
             Ainda tens dúvidas? Fala com{' '}
@@ -654,8 +663,8 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Final CTA ─── */}
-      <section className="py-10 sm:py-20" style={{ background: 'var(--bg-alt)' }}>
-        <div className="container-tight text-center">
+      <section className="fluid-y" style={{ background: 'var(--bg-alt)' }}>
+        <Reveal className="container-tight text-center">
           {authUser ? (
             <>
               <h2 className="t-heading text-2xl sm:text-3xl mb-2" style={{ color: 'var(--fg)' }}>
@@ -686,12 +695,13 @@ export default function LandingPage() {
               </p>
             </>
           )}
-        </div>
+        </Reveal>
       </section>
 
       {/* ─── Footer ─── */}
-      <footer className="py-8 sm:py-10" style={{ background: 'var(--bg-dark)' }}>
-        <div className="container-wide">
+      <footer className="fluid-y-sm relative overflow-hidden" style={{ background: 'var(--bg-dark)' }}>
+        <EuropaWatermark size={280} opacity={0.05} className="absolute -bottom-20 right-4 hidden sm:block" />
+        <div className="relative z-10 container-wide">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-2">
