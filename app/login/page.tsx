@@ -8,6 +8,7 @@ import { Suspense } from 'react'
 import { Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react'
 import { login } from '@/app/actions/auth'
 import GoogleButton from '@/components/GoogleButton'
+import { EuropaWatermark } from '@/components/EuropaWatermark'
 
 function LoginConteudo() {
   const searchParams = useSearchParams()
@@ -31,10 +32,16 @@ function LoginConteudo() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-5 py-12" style={{ background: 'var(--bg)' }}>
+    <div className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center px-5 py-12" style={{ background: 'var(--bg)' }}>
+      <EuropaWatermark
+        size={520}
+        color="var(--cobalt)"
+        opacity={0.05}
+        className="absolute -top-32 left-1/2 -translate-x-1/2"
+      />
 
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 mb-10 animate-enter-down">
+      <Link href="/" className="relative z-10 flex items-center gap-2.5 mb-10 animate-enter-down">
         <Image src="/images/logo.avif" alt="SonhoEuropa" width={36} height={36} className="rounded-lg" />
         <span className="font-extrabold text-lg tracking-tight" style={{ color: 'var(--fg)' }}>
           Sonho<span style={{ color: 'var(--cobalt)' }}>Europa</span>
@@ -42,7 +49,7 @@ function LoginConteudo() {
       </Link>
 
       {/* Card */}
-      <div className="w-full max-w-[380px] animate-enter-up delay-1">
+      <div className="relative z-10 w-full max-w-[380px] animate-enter-up delay-1">
         <div className="card p-6">
           <h2 className="t-heading text-xl mb-1" style={{ color: 'var(--fg)' }}>Entrar na conta</h2>
           <p className="text-sm mb-6" style={{ color: 'var(--fg-muted)' }}>Rápido e sem senhas para memorizar</p>
@@ -141,7 +148,7 @@ function LoginConteudo() {
         </div>
       </div>
 
-      <Link href="/" className="mt-8 text-xs flex items-center gap-1 group" style={{ color: 'var(--fg-subtle)' }}>
+      <Link href="/" className="relative z-10 mt-8 text-xs flex items-center gap-1 group" style={{ color: 'var(--fg-subtle)' }}>
         <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" /> Voltar ao início
       </Link>
     </div>

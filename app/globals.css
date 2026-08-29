@@ -497,6 +497,53 @@ body {
 
 [data-tooltip]:hover::after { opacity: 1; }
 
+/* ── Fluid section rhythm — continuous scaling instead
+   of jumping at breakpoints, so spacing feels alive as
+   the viewport resizes rather than snapping in steps ── */
+
+.fluid-y-sm { padding-top: clamp(1.75rem, 1.3rem + 2vw, 3rem); padding-bottom: clamp(1.75rem, 1.3rem + 2vw, 3rem); }
+.fluid-y { padding-top: clamp(2.25rem, 1.5rem + 3.5vw, 5rem); padding-bottom: clamp(2.25rem, 1.5rem + 3.5vw, 5rem); }
+.fluid-y-lg { padding-top: clamp(3rem, 2rem + 5vw, 7rem); padding-bottom: clamp(3rem, 2rem + 5vw, 7rem); }
+.fluid-pb { padding-bottom: clamp(2.25rem, 1.5rem + 3.5vw, 5rem); }
+.fluid-pt { padding-top: clamp(2.25rem, 1.5rem + 3.5vw, 5rem); }
+
+/* ── Scroll reveal — sections settle into place as the
+   user scrolls, the one "spectacular" motion moment per
+   section instead of scattered micro-animations ──────── */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transition: none; opacity: 1; transform: none; }
+}
+
+/* ── Europa watermark — a slowly drifting ring of stars
+   referencing the EU flag, used as background texture on
+   dark sections. Purely decorative (aria-hidden). ────── */
+
+.watermark-spin {
+  animation: stars-drift 160s linear infinite;
+}
+
+@keyframes stars-drift {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watermark-spin { animation: none; }
+}
+
 /* ── Legacy compat — used by dashboard/admin ──────── */
 
 .glass {

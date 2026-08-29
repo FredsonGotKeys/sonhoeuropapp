@@ -19,6 +19,8 @@ function FacebookIcon({ className }: { className?: string }) {
   )
 }
 import { createClient } from '@/lib/supabase/client'
+import { EuropaWatermark } from '@/components/EuropaWatermark'
+import { Reveal } from '@/components/Reveal'
 import { logout } from '@/app/actions/auth'
 import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos } from '@/app/actions/deposito'
 import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
@@ -943,8 +945,9 @@ function DashboardContent() {
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b"
+      <header className="sticky top-0 z-40 border-b relative overflow-hidden"
         style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
+        <EuropaWatermark size={200} color="#003399" opacity={0.06} className="absolute -top-16 -right-10 pointer-events-none hidden sm:block" />
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
@@ -974,6 +977,7 @@ function DashboardContent() {
 
         {/* ── HOME ── */}
         {activeTab === 'home' && (
+          <Reveal>
           <>
             {/* Contrato de participação */}
             <Link href="/dashboard/contrato" className="block bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -1077,11 +1081,12 @@ function DashboardContent() {
               <Wallet className="w-5 h-5" /> Fazer Deposito
             </button>
           </>
+          </Reveal>
         )}
 
         {/* ── DEPOSITAR ── */}
         {activeTab === 'depositar' && (
-          <div className="space-y-4">
+          <Reveal className="space-y-4">
             {/* Se já criou um pedido, mostrar dados de transferência */}
             {pedidoCriado ? (
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -1174,12 +1179,12 @@ function DashboardContent() {
                 </div>
               </div>
             )}
-          </div>
+          </Reveal>
         )}
 
         {/* ── CONVITE ── */}
         {activeTab === 'convite' && (
-          <div className="space-y-4">
+          <Reveal className="space-y-4">
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <div className="text-center mb-4">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3"
@@ -1305,12 +1310,12 @@ function DashboardContent() {
                 ))}
               </div>
             </div>
-          </div>
+          </Reveal>
         )}
 
         {/* ── PAGAMENTOS (status) ── */}
         {activeTab === 'pagamentos' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <Reveal className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 pt-5 pb-4 border-b flex items-center justify-between" style={{ borderColor: '#F5F5F0' }}>
               <h2 className="font-black" style={{ color: '#003399' }}>Meus Pagamentos</h2>
               <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
@@ -1376,12 +1381,12 @@ function DashboardContent() {
                 })}
               </div>
             )}
-          </div>
+          </Reveal>
         )}
 
         {/* ── HISTÓRICO DEPÓSITOS ── */}
         {activeTab === 'historico' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <Reveal className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 pt-5 pb-4 border-b flex items-center justify-between" style={{ borderColor: '#F5F5F0' }}>
               <h2 className="font-black" style={{ color: '#003399' }}>Depositos Confirmados</h2>
               <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
@@ -1415,7 +1420,7 @@ function DashboardContent() {
                 ))}
               </div>
             )}
-          </div>
+          </Reveal>
         )}
       </div>
 
