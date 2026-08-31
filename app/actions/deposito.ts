@@ -83,7 +83,7 @@ export async function criarPedidoPagamento(params: {
   // existe um pedido do mesmo tipo por confirmar, devolve-o em vez de criar outro.
   const { data: pedidoExistente } = await supabase
     .from('pagamentos')
-    .select('referencia')
+    .select('referencia, valor')
     .eq('usuario_id', user.id)
     .eq('tipo', params.tipo)
     .in('status', ['aguardando_comprovativo', 'pendente_confirmacao'])
@@ -91,8 +91,16 @@ export async function criarPedidoPagamento(params: {
     .limit(1)
     .maybeSingle()
 
+  // Devolve sempre o valor a que a referência está realmente associada. Sem
+  // isto o ecrã mostrava o valor acabado de escrever ao lado da referência
+  // antiga, e mandava transferir uma quantia que não corresponde ao registo.
   if (pedidoExistente) {
-    return { success: true, reference: pedidoExistente.referencia }
+    return {
+      success: true,
+      reference: pedidoExistente.referencia,
+      valor: Number(pedidoExistente.valor),
+      reaproveitado: true,
+    }
   }
 
   const uid8 = user.id.replace(/-/g, '').slice(0, 8).toUpperCase()
@@ -115,7 +123,7 @@ export async function criarPedidoPagamento(params: {
 
   if (error) return { error: error.message }
 
-  return { success: true, reference }
+  return { success: true, reference, valor, reaproveitado: false }
 }
 
 export async function enviarComprovativo(referencia: string, comprovativo: string, imagemUrl?: string) {

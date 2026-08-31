@@ -22,7 +22,7 @@ import { createClient } from '@/lib/supabase/client'
 import { EuropaWatermark } from '@/components/EuropaWatermark'
 import { Reveal } from '@/components/Reveal'
 import { logout } from '@/app/actions/auth'
-import { criarPedidoPagamento, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos } from '@/app/actions/deposito'
+import { criarPedidoPagamento, cancelarPagamentoPendente, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos } from '@/app/actions/deposito'
 import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
 import { enviarVerificacaoBi, limparVerificacoesExpiradas } from '@/app/actions/verificacao'
 import { getMeuContrato } from '@/app/actions/contrato'
@@ -48,10 +48,10 @@ class DashboardErrorBoundary extends Component<{ children: ReactNode }, { error:
         <div className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: 'var(--background)' }}>
           <div className="max-w-sm w-full bg-white rounded-2xl p-6 shadow-sm text-center">
             <p className="font-black text-lg mb-2" style={{ color: '#e74c3c' }}>Algo correu mal</p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-muted mb-4">
               Encontrámos um erro ao carregar esta página. Actualiza (F5) para tentar de novo.
             </p>
-            <p className="text-xs font-mono text-gray-400 break-all bg-gray-50 rounded-lg p-2.5">
+            <p className="text-xs font-mono text-muted break-all bg-gray-50 rounded-lg p-2.5">
               {this.state.error.message}
             </p>
           </div>
@@ -122,11 +122,11 @@ interface PagamentoHistorico {
 }
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
-  aguardando_comprovativo: { label: 'Aguardando comprovativo', bg: '#7c3aed12', color: '#7c3aed' },
-  pendente_confirmacao:    { label: 'Em analise',             bg: '#EF9F2712', color: '#EF9F27' },
-  pendente:                { label: 'A aguardar pagamento',   bg: '#3b82f612', color: '#3b82f6' },
-  confirmado:              { label: 'Confirmado',             bg: '#1D9E7512', color: '#1D9E75' },
-  falhado:                 { label: 'Recusado',               bg: '#fee2e2',   color: '#dc2626' },
+  aguardando_comprovativo: { label: 'Aguardando comprovativo', bg: 'var(--info-tint)', color: 'var(--info)' },
+  pendente_confirmacao:    { label: 'Em analise',             bg: 'var(--money-tint)', color: 'var(--money)' },
+  pendente:                { label: 'A aguardar pagamento',   bg: '#3B82F612', color: 'var(--cobalt-light)' },
+  confirmado:              { label: 'Confirmado',             bg: 'var(--success-tint)', color: 'var(--success)' },
+  falhado:                 { label: 'Recusado',               bg: 'var(--danger-bg)',   color: 'var(--danger)' },
 }
 
 const CONTRATO_STATUS_LABEL: Record<string, string> = {
@@ -161,22 +161,22 @@ function DadosPagamento({ method, valor, codigoConvite }: { method: PayMethod; v
   const partilharEnquantoEspera = () => window.open(`https://wa.me/?text=${encodeURIComponent(mensagemPartilha)}`, '_blank')
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid #003399' }}>
-      <div className="px-4 py-3 flex items-center gap-2" style={{ backgroundColor: '#003399' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid var(--brand)' }}>
+      <div className="px-4 py-3 flex items-center gap-2" style={{ backgroundColor: 'var(--brand)' }}>
         {method === 'mpesa' ? <Smartphone className="w-4 h-4 text-white" /> : <Banknote className="w-4 h-4 text-white" />}
         <span className="text-white font-bold text-sm">Enviar {valor} MT via {info.operadora}</span>
       </div>
       <div className="p-4 space-y-3 bg-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">Enviar para</p>
-            <p className="text-2xl font-black tracking-wider mt-1" style={{ color: '#003399' }}>{info.numero}</p>
+            <p className="text-xs text-muted uppercase tracking-widest font-bold">Enviar para</p>
+            <p className="text-2xl font-black tracking-wider mt-1" style={{ color: 'var(--brand)' }}>{info.numero}</p>
           </div>
           <button onClick={copiarNumero}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
             style={{
-              backgroundColor: copiado ? '#1D9E75' : '#00339910',
-              color: copiado ? 'white' : '#003399',
+              backgroundColor: copiado ? 'var(--success)' : 'var(--brand-tint)',
+              color: copiado ? 'white' : 'var(--brand)',
             }}>
             {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copiado ? 'Copiado!' : 'Copiar'}
@@ -184,22 +184,22 @@ function DadosPagamento({ method, valor, codigoConvite }: { method: PayMethod; v
         </div>
         <div className="h-px" style={{ backgroundColor: 'var(--background)' }} />
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Nome</span>
+          <span className="text-muted">Nome</span>
           <span className="font-bold text-gray-700">{info.nome}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Valor</span>
-          <span className="font-black" style={{ color: '#EF9F27' }}>{valor} MT</span>
+          <span className="text-muted">Valor</span>
+          <span className="font-black" style={{ color: 'var(--money)' }}>{valor} MT</span>
         </div>
-        <div className="p-3 rounded-xl flex items-start gap-2.5" style={{ backgroundColor: '#EF9F2710', border: '1px solid #EF9F2730' }}>
-          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#EF9F27' }} />
+        <div className="p-3 rounded-xl flex items-start gap-2.5" style={{ backgroundColor: 'var(--money-tint)', border: '1px solid var(--money-tint-3)' }}>
+          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--money)' }} />
           <p className="text-xs text-gray-600 leading-relaxed">
             Depois de enviar o dinheiro, <strong>cola a mensagem de confirmacao</strong> ou <strong>tira um screenshot</strong> e envia abaixo.
           </p>
         </div>
         <button onClick={partilharEnquantoEspera}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-          style={{ backgroundColor: '#25D36615', color: '#1a9c4e' }}>
+          style={{ backgroundColor: '#25D36612', color: '#1a9c4e' }}>
           <Share2 className="w-3.5 h-3.5" /> Enquanto esperas, partilha o SonhoEuropa no WhatsApp
         </button>
       </div>
@@ -321,32 +321,32 @@ function CampoComprovativo({
 
   if (enviado) {
     return (
-      <div className="p-5 rounded-2xl text-center" style={{ backgroundColor: '#1D9E7510', border: '2px solid #1D9E7530' }}>
-        <CheckCircle2 className="w-10 h-10 mx-auto mb-2" style={{ color: '#1D9E75' }} />
-        <p className="font-black" style={{ color: '#1D9E75' }}>Comprovativo enviado!</p>
-        <p className="text-xs text-gray-400 mt-1">O administrador ira verificar e confirmar o teu pagamento.</p>
+      <div className="p-5 rounded-2xl text-center" style={{ backgroundColor: 'var(--success-tint)', border: '2px solid var(--success-tint-3)' }}>
+        <CheckCircle2 className="w-10 h-10 mx-auto mb-2" style={{ color: 'var(--success)' }} />
+        <p className="font-black" style={{ color: 'var(--success)' }}>Comprovativo enviado!</p>
+        <p className="text-xs text-muted mt-1">O administrador ira verificar e confirmar o teu pagamento.</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-3" onPaste={handlePasteImagem}>
-      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Comprovativo de pagamento</p>
+      <p className="text-xs font-bold text-muted uppercase tracking-widest">Comprovativo de pagamento</p>
 
       {/* Texto */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-xs text-gray-400 flex items-center gap-1"><FileText className="w-3 h-3" /> Mensagem de confirmacao</p>
+          <p className="text-xs text-muted flex items-center gap-1"><FileText className="w-3 h-3" /> Mensagem de confirmacao</p>
           {texto ? (
             <button onClick={limparTexto}
               className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all"
-              style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+              style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
               <X className="w-3 h-3" /> Limpar
             </button>
           ) : (
             <button onClick={colar}
               className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all"
-              style={{ backgroundColor: '#00339910', color: '#003399' }}>
+              style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand)' }}>
               <ClipboardPaste className="w-3 h-3" /> Colar
             </button>
           )}
@@ -359,31 +359,31 @@ function CampoComprovativo({
           placeholder="Usa o botão Colar, ou cola aqui (Ctrl+V) a mensagem SMS que recebeste"
           rows={3}
           className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none resize-none transition-all cursor-default"
-          style={{ borderColor: texto ? '#003399' : '#e5e7eb', backgroundColor: texto ? 'white' : '#fafafa' }}
+          style={{ borderColor: texto ? 'var(--brand)' : 'var(--border)', backgroundColor: texto ? 'white' : 'var(--slate-50)' }}
         />
       </div>
 
       {/* Separador OU */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px" style={{ backgroundColor: '#e5e7eb' }} />
-        <span className="text-xs text-gray-300 font-bold">OU</span>
-        <div className="flex-1 h-px" style={{ backgroundColor: '#e5e7eb' }} />
+        <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
+        <span className="text-xs text-muted font-bold">OU</span>
+        <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
       </div>
 
       {/* Upload imagem */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-xs text-gray-400 flex items-center gap-1"><ImagePlus className="w-3 h-3" /> Screenshot / Foto do comprovativo</p>
+          <p className="text-xs text-muted flex items-center gap-1"><ImagePlus className="w-3 h-3" /> Screenshot / Foto do comprovativo</p>
           {!imagemPreview && (
             <button onClick={colarImagemDaAreaTransferencia}
               className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg transition-all"
-              style={{ backgroundColor: '#00339910', color: '#003399' }}>
+              style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand)' }}>
               <ClipboardPaste className="w-3 h-3" /> Colar
             </button>
           )}
         </div>
         {imagemPreview ? (
-          <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: '#003399' }}>
+          <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: 'var(--brand)' }}>
             <img src={imagemPreview} alt="Comprovativo" className="w-full max-h-48 object-contain bg-gray-50" />
             <button onClick={removerImagem}
               className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600">
@@ -396,10 +396,10 @@ function CampoComprovativo({
           </div>
         ) : (
           <label className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50/30"
-            style={{ borderColor: '#d1d5db' }}>
-            <ImagePlus className="w-8 h-8 text-gray-300" />
-            <span className="text-sm text-gray-400 font-semibold">Toca para escolher imagem</span>
-            <span className="text-xs text-gray-300">JPG, PNG ou GIF · Max 10 MB</span>
+            style={{ borderColor: 'var(--border-hover)' }}>
+            <ImagePlus className="w-8 h-8 text-muted" />
+            <span className="text-sm text-muted font-semibold">Toca para escolher imagem</span>
+            <span className="text-xs text-muted">JPG, PNG ou GIF · Max 10 MB</span>
             <input type="file" accept="image/*" capture="environment" onChange={handleImagem} className="hidden" />
           </label>
         )}
@@ -415,14 +415,14 @@ function CampoComprovativo({
         onClick={enviar}
         disabled={loading || (texto.trim().length < 10 && !imagem)}
         className="w-full py-3.5 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md"
-        style={{ backgroundColor: '#1D9E75', color: 'white', boxShadow: '0 4px 14px rgba(29,158,117,0.3)' }}
+        style={{ backgroundColor: 'var(--success)', color: 'white', boxShadow: '0 4px 14px rgba(29,158,117,0.3)' }}
       >
         {loading
           ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> {uploadProgress}</>
           : <><Send className="w-4 h-4" /> Enviar Comprovativo</>}
       </button>
 
-      <p className="text-xs text-center text-gray-300">Podes enviar texto, imagem ou ambos</p>
+      <p className="text-xs text-center text-muted">Podes enviar texto, imagem ou ambos</p>
     </div>
   )
 }
@@ -442,9 +442,9 @@ function CampoFotoBi({ label, preview, onFile, onRemover, capture = 'environment
 
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-1.5 flex items-center gap-1"><ImagePlus className="w-3 h-3" /> {label}</p>
+      <p className="text-xs text-muted mb-1.5 flex items-center gap-1"><ImagePlus className="w-3 h-3" /> {label}</p>
       {preview ? (
-        <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: '#003399' }}>
+        <div className="relative rounded-xl overflow-hidden border-2" style={{ borderColor: 'var(--brand)' }}>
           <img src={preview} alt={label} className="w-full max-h-40 object-contain bg-gray-50" />
           <button type="button" onClick={onRemover}
             className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600">
@@ -453,10 +453,10 @@ function CampoFotoBi({ label, preview, onFile, onRemover, capture = 'environment
         </div>
       ) : (
         <label className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50/30"
-          style={{ borderColor: '#d1d5db' }}>
-          <ImagePlus className="w-7 h-7 text-gray-300" />
-          <span className="text-sm text-gray-400 font-semibold">Toca para tirar/escolher foto</span>
-          <span className="text-xs text-gray-300">JPG ou PNG · Max 5 MB</span>
+          style={{ borderColor: 'var(--border-hover)' }}>
+          <ImagePlus className="w-7 h-7 text-muted" />
+          <span className="text-sm text-muted font-semibold">Toca para tirar/escolher foto</span>
+          <span className="text-xs text-muted">JPG ou PNG · Max 5 MB</span>
           <input type="file" accept="image/*" capture={capture} onChange={handleChange} className="hidden" />
         </label>
       )}
@@ -522,11 +522,11 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
   if (estado?.status === 'pendente') {
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm text-center">
-        <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: '#EF9F2715' }}>
-          <Clock className="w-7 h-7" style={{ color: '#EF9F27' }} />
+        <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'var(--money-tint)' }}>
+          <Clock className="w-7 h-7" style={{ color: 'var(--money)' }} />
         </div>
-        <h2 className="font-black" style={{ color: '#003399' }}>BI em análise</h2>
-        <p className="text-sm text-gray-400 mt-1 leading-relaxed">
+        <h2 className="font-black" style={{ color: 'var(--brand)' }}>BI em análise</h2>
+        <p className="text-sm text-muted mt-1 leading-relaxed">
           Recebemos as tuas fotos. Assim que confirmarmos a tua identidade, vais ter acesso completo ao app.
         </p>
       </div>
@@ -535,16 +535,16 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5">
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: '#00339915' }}>
-        <ShieldCheck className="w-7 h-7" style={{ color: '#003399' }} />
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: 'var(--brand-tint)' }}>
+        <ShieldCheck className="w-7 h-7" style={{ color: 'var(--brand)' }} />
       </div>
-      <h2 className="font-black text-base text-center" style={{ color: '#003399' }}>Confirma a tua identidade</h2>
-      <p className="text-xs text-gray-400 text-center mt-1 mb-5 leading-relaxed">
+      <h2 className="font-black text-base text-center" style={{ color: 'var(--brand)' }}>Confirma a tua identidade</h2>
+      <p className="text-xs text-muted text-center mt-1 mb-5 leading-relaxed">
         Para tua segurança, precisamos de uma foto da frente e do verso do teu Bilhete de Identidade, e de uma selfie tua, antes de continuares.
       </p>
 
       {estado?.status === 'rejeitado' && (
-        <div className="p-3 rounded-xl text-sm mb-4" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+        <div className="p-3 rounded-xl text-sm mb-4" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
           <p className="font-bold mb-0.5">O envio anterior não foi aceite</p>
           <p>{estado.motivo_rejeicao || 'Tenta enviar fotos mais nítidas.'}</p>
         </div>
@@ -570,7 +570,7 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
         onClick={enviar}
         disabled={loading || !frenteFile || !versoFile || !selfieFile}
         className="w-full py-3.5 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md mt-4"
-        style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 14px rgba(0,51,153,0.3)' }}
+        style={{ backgroundColor: 'var(--brand)', color: 'white', boxShadow: '0 4px 14px rgba(0,51,153,0.3)' }}
       >
         {loading
           ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> A enviar...</>
@@ -600,9 +600,9 @@ function InscricaoComunitaria({
 }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: '#F5F5F0' }}>
-        <h2 className="font-black text-lg" style={{ color: '#003399' }}>Inscrição no programa</h2>
-        <p className="text-xs text-gray-400 mt-0.5">Último passo para desbloqueares o dashboard</p>
+      <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: 'var(--surface-sunk)' }}>
+        <h2 className="font-black text-lg" style={{ color: 'var(--brand)' }}>Inscrição no programa</h2>
+        <p className="text-xs text-muted mt-0.5">Último passo para desbloqueares o dashboard</p>
       </div>
       <div className="p-5 space-y-4">
         {pendente?.status === 'aguardando_comprovativo' ? (
@@ -611,20 +611,20 @@ function InscricaoComunitaria({
             <CampoComprovativo referencia={pendente.referencia} onSucesso={onComprovativoEnviado} />
           </>
         ) : pendente?.status === 'pendente_confirmacao' ? (
-          <div className="p-4 rounded-xl flex items-center gap-3" style={{ backgroundColor: '#EF9F2710', border: '1.5px solid #EF9F2730' }}>
-            <Clock className="w-5 h-5 flex-shrink-0" style={{ color: '#EF9F27' }} />
+          <div className="p-4 rounded-xl flex items-center gap-3" style={{ backgroundColor: 'var(--money-tint)', border: '1.5px solid var(--money-tint-3)' }}>
+            <Clock className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--money)' }} />
             <div>
-              <p className="font-bold text-sm" style={{ color: '#003399' }}>Comprovativo enviado</p>
-              <p className="text-xs text-gray-400">A aguardar confirmação do administrador.</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--brand)' }}>Comprovativo enviado</p>
+              <p className="text-xs text-muted">A aguardar confirmação do administrador.</p>
             </div>
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Para acederes ao programa comunitário é preciso uma inscrição única de <strong style={{ color: '#003399' }}>149 MT</strong>.
+            <p className="text-sm text-muted leading-relaxed">
+              Para acederes ao programa comunitário é preciso uma inscrição única de <strong style={{ color: 'var(--brand)' }}>149 MT</strong>.
             </p>
             {error && (
-              <div className="p-3 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+              <div className="p-3 rounded-xl text-sm font-semibold" style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}>
                 {error}
               </div>
             )}
@@ -632,7 +632,7 @@ function InscricaoComunitaria({
               onClick={onIniciar}
               disabled={loading}
               className="w-full py-3.5 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md"
-              style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 14px rgba(0,51,153,0.3)' }}
+              style={{ backgroundColor: 'var(--brand)', color: 'white', boxShadow: '0 4px 14px rgba(0,51,153,0.3)' }}
             >
               {loading
                 ? <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> A processar...</>
@@ -661,6 +661,8 @@ function DashboardContent() {
   // Fluxo de pagamento manual
   const [pagamentoPendente, setPagamentoPendente] = useState<PagamentoPendente | null>(null)
   const [pedidoCriado, setPedidoCriado] = useState<{ referencia: string; method: PayMethod; valor: number } | null>(null)
+  const [avisoPedidoAberto, setAvisoPedidoAberto] = useState('')
+  const [cancelLoading, setCancelLoading] = useState(false)
   const [historicoPagamentos, setHistoricoPagamentos] = useState<PagamentoHistorico[]>([])
   const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
   const [ranking, setRanking] = useState<RankingEmbaixador[]>([])
@@ -776,7 +778,18 @@ function DashboardContent() {
     try {
       const result = await criarPedidoPagamento({ valor: valorNum, tipo: 'deposito' })
       if (result.error) { setPayError(result.error); return }
-      setPedidoCriado({ referencia: result.reference!, method: 'emola', valor: valorNum })
+      // O valor vem sempre do servidor. Se já existia um pedido por confirmar,
+      // é esse que continua válido, e a pessoa tem de transferir o valor dele,
+      // não o que acabou de escrever.
+      const valorReal = result.valor ?? valorNum
+      setPedidoCriado({ referencia: result.reference!, method: 'emola', valor: valorReal })
+      if (result.reaproveitado && valorReal !== valorNum) {
+        setAvisoPedidoAberto(
+          `Já tinhas um pedido de ${valorReal} MT por confirmar. Transfere esse valor, ou cancela o pedido aqui em baixo para criares um novo.`
+        )
+      } else {
+        setAvisoPedidoAberto('')
+      }
       await recarregarDados()
     } catch (e) {
       console.error('[handleDepositar]', e)
@@ -784,6 +797,31 @@ function DashboardContent() {
     } finally {
       setPayLoading(false)
     }
+  }
+
+  // A função de servidor já existia e já validava dono e estado; faltava-lhe
+  // apenas um botão. Sem isto, um pedido com o valor errado não tinha saída.
+  const handleCancelarReferencia = async (referencia: string) => {
+    setPayError('')
+    setCancelLoading(true)
+    try {
+      const result = await cancelarPagamentoPendente(referencia)
+      if (result.error) { setPayError(result.error); return }
+      setPedidoCriado(null)
+      setAvisoPedidoAberto('')
+      setValor('')
+      await recarregarDados()
+    } catch (e) {
+      console.error('[handleCancelarReferencia]', e)
+      setPayError('Não foi possível cancelar o pedido. Verifica a tua ligação e tenta novamente.')
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
+  const handleCancelarPedido = () => {
+    if (!pedidoCriado) return
+    return handleCancelarReferencia(pedidoCriado.referencia)
   }
 
   const inviteUrl =
@@ -801,10 +839,10 @@ function DashboardContent() {
   const mensagemConvite = `${primeiroNome ? `${primeiroNome} convida-te para o` : 'Junta-te ao'} *SonhoEuropa*!\n\nDepositamos em conjunto e concorremos a *200 000 MT* para a Europa. Quanto mais gente entrar, mais rápido o fundo enche e mais cedo há sorteio.\n\nRegista-te aqui: ${inviteUrl}`
 
   const NIVEIS_EMBAIXADOR = [
-    { min: 25, nome: 'Embaixador Ouro', emoji: '🏆', cor: '#EF9F27' },
-    { min: 10, nome: 'Embaixador Prata', emoji: '🥈', cor: '#94a3b8' },
+    { min: 25, nome: 'Embaixador Ouro', emoji: '🏆', cor: 'var(--money)' },
+    { min: 10, nome: 'Embaixador Prata', emoji: '🥈', cor: 'var(--fg-subtle)' },
     { min: 3, nome: 'Embaixador Bronze', emoji: '🥉', cor: '#c2703d' },
-    { min: 1, nome: 'Divulgador', emoji: '🌱', cor: '#1D9E75' },
+    { min: 1, nome: 'Divulgador', emoji: '🌱', cor: 'var(--success)' },
   ]
   const nivelActual = NIVEIS_EMBAIXADOR.find((n) => convites.participantes >= n.min)
   const proximoNivel = [...NIVEIS_EMBAIXADOR].reverse().find((n) => convites.participantes < n.min)
@@ -840,11 +878,11 @@ function DashboardContent() {
     new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
 
   const estadoLabel: Record<string, { label: string; color: string }> = {
-    aguardando_minimo: { label: 'A aguardar participantes', color: '#EF9F27' },
-    activo: { label: 'Ciclo activo', color: '#1D9E75' },
-    concluido: { label: 'Concluido', color: '#666' },
+    aguardando_minimo: { label: 'A aguardar participantes', color: 'var(--money)' },
+    activo: { label: 'Ciclo activo', color: 'var(--success)' },
+    concluido: { label: 'Concluido', color: 'var(--fg-muted)' },
   }
-  const estadoInfo = estadoLabel[ciclo?.estado ?? ''] ?? { label: ciclo?.estado ?? '—', color: '#666' }
+  const estadoInfo = estadoLabel[ciclo?.estado ?? ''] ?? { label: ciclo?.estado ?? '—', color: 'var(--fg-muted)' }
 
   const quickAmounts = [100, 200, 500, 1000]
 
@@ -853,8 +891,8 @@ function DashboardContent() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
         <div className="text-center">
           <div className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mx-auto mb-3"
-            style={{ borderColor: '#003399', borderTopColor: 'transparent' }} />
-          <p className="text-sm text-gray-400">A carregar...</p>
+            style={{ borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
+          <p className="text-sm text-muted">A carregar...</p>
         </div>
       </div>
     )
@@ -869,21 +907,21 @@ function DashboardContent() {
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
-              <p className="font-black text-sm" style={{ color: '#003399' }}>
+              <p className="font-black text-sm" style={{ color: 'var(--brand)' }}>
                 Olá, {primeiroNome}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={sharePartilhaNativa} title="Partilhar o SonhoEuropa"
                 className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-transform active:scale-90"
-                style={{ backgroundColor: '#25D366' }}>
+                style={{ backgroundColor: 'var(--whatsapp)' }}>
                 <Share2 className="w-3.5 h-3.5" />
               </button>
-              <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
+              <Link href="/" className="flex items-center gap-1.5 text-xs text-muted hover:text-[var(--brand)] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
                 <Home className="w-3.5 h-3.5" /> Página inicial
               </Link>
               <form action={logout}>
-                <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+                <button type="submit" className="flex items-center gap-1.5 text-xs text-muted hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
                   <LogOut className="w-3.5 h-3.5" /> Sair
                 </button>
               </form>
@@ -906,21 +944,21 @@ function DashboardContent() {
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
-              <p className="font-black text-sm" style={{ color: '#003399' }}>
+              <p className="font-black text-sm" style={{ color: 'var(--brand)' }}>
                 Olá, {primeiroNome}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={sharePartilhaNativa} title="Partilhar o SonhoEuropa"
                 className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-transform active:scale-90"
-                style={{ backgroundColor: '#25D366' }}>
+                style={{ backgroundColor: 'var(--whatsapp)' }}>
                 <Share2 className="w-3.5 h-3.5" />
               </button>
-              <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
+              <Link href="/" className="flex items-center gap-1.5 text-xs text-muted hover:text-[var(--brand)] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
                 <Home className="w-3.5 h-3.5" /> Página inicial
               </Link>
               <form action={logout}>
-                <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+                <button type="submit" className="flex items-center gap-1.5 text-xs text-muted hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
                   <LogOut className="w-3.5 h-3.5" /> Sair
                 </button>
               </form>
@@ -947,25 +985,25 @@ function DashboardContent() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b relative overflow-hidden"
         style={{ backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px) saturate(180%)', borderColor: 'var(--border)' }}>
-        <EuropaWatermark size={200} color="#003399" opacity={0.06} className="absolute -top-16 -right-10 pointer-events-none hidden sm:block" />
+        <EuropaWatermark size={200} color="var(--brand)" opacity={0.06} className="absolute -top-16 -right-10 pointer-events-none hidden sm:block" />
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-xl object-cover" />
-            <p className="font-black text-sm" style={{ color: '#003399' }}>
+            <p className="font-black text-sm" style={{ color: 'var(--brand)' }}>
               Olá, {primeiroNome}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={sharePartilhaNativa} title="Partilhar o SonhoEuropa"
               className="flex items-center justify-center w-8 h-8 rounded-lg text-white transition-transform active:scale-90"
-              style={{ backgroundColor: '#25D366' }}>
+              style={{ backgroundColor: 'var(--whatsapp)' }}>
               <Share2 className="w-3.5 h-3.5" />
             </button>
-            <Link href="/" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#003399] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
+            <Link href="/" className="flex items-center gap-1.5 text-xs text-muted hover:text-[var(--brand)] transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50">
               <Home className="w-3.5 h-3.5" /> Página inicial
             </Link>
             <form action={logout}>
-              <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
+              <button type="submit" className="flex items-center gap-1.5 text-xs text-muted hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50">
                 <LogOut className="w-3.5 h-3.5" /> Sair
               </button>
             </form>
@@ -983,39 +1021,39 @@ function DashboardContent() {
             <Link href="/dashboard/contrato" className="block bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#00339915' }}>
-                    <FileText className="w-4 h-4" style={{ color: '#003399' }} />
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--brand-tint)' }}>
+                    <FileText className="w-4 h-4" style={{ color: 'var(--brand)' }} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-sm" style={{ color: '#003399' }}>Contrato de Participação</p>
-                    <p className="text-xs text-gray-400 truncate">{CONTRATO_STATUS_LABEL[contrato?.estado ?? ''] ?? 'Ainda não iniciado, toca para começar'}</p>
+                    <p className="font-bold text-sm" style={{ color: 'var(--brand)' }}>Contrato de Participação</p>
+                    <p className="text-xs text-muted truncate">{CONTRATO_STATUS_LABEL[contrato?.estado ?? ''] ?? 'Ainda não iniciado, toca para começar'}</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-muted flex-shrink-0" />
               </div>
             </Link>
 
             {/* Stats */}
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2" style={{ color: '#003399' }}>
+                <div className="flex items-center gap-2" style={{ color: 'var(--brand)' }}>
                   <Trophy className="w-4 h-4" />
                   <span className="text-xs font-semibold">A tua participação</span>
                 </div>
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                  style={{ backgroundColor: '#1D9E7515', color: '#1D9E75' }}>Este ciclo</span>
+                  style={{ backgroundColor: 'var(--success-tint)', color: 'var(--success)' }}>Este ciclo</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 rounded-xl" style={{ backgroundColor: '#00339908' }}>
-                  <p className="text-2xl font-black" style={{ color: '#003399' }}>{depositos.length}</p>
-                  <p className="text-xs text-gray-400">Depósitos feitos</p>
+                <div className="text-center p-3 rounded-xl" style={{ backgroundColor: 'var(--brand-tint)' }}>
+                  <p className="text-2xl font-black" style={{ color: 'var(--brand)' }}>{depositos.length}</p>
+                  <p className="text-xs text-muted">Depósitos feitos</p>
                 </div>
-                <div className="text-center p-3 rounded-xl" style={{ backgroundColor: '#EF9F2708' }}>
-                  <p className="text-2xl font-black" style={{ color: '#EF9F27' }}>{formatMT(depositos.reduce((s, d) => s + d.valor, 0))}</p>
-                  <p className="text-xs text-gray-400">Total depositado</p>
+                <div className="text-center p-3 rounded-xl" style={{ backgroundColor: 'var(--money-tint)' }}>
+                  <p className="text-2xl font-black" style={{ color: 'var(--money)' }}>{formatMT(depositos.reduce((s, d) => s + d.valor, 0))}</p>
+                  <p className="text-xs text-muted">Total depositado</p>
                 </div>
               </div>
-              <p className="text-xs text-center text-gray-400 mt-3">
+              <p className="text-xs text-center text-muted mt-3">
                 É este total que pesa no sorteio. Não é dinheiro perdido, é o teu peso nas chances.
               </p>
             </div>
@@ -1024,26 +1062,26 @@ function DashboardContent() {
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="font-black" style={{ color: '#003399' }}>Fundo em Tempo Real</h2>
+                  <h2 className="font-black" style={{ color: 'var(--brand)' }}>Fundo em Tempo Real</h2>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
                     <span className="text-xs" style={{ color: estadoInfo.color }}>{estadoInfo.label}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-black" style={{ color: '#EF9F27' }}>{formatMT(valorVisivel)}</p>
-                  <p className="text-xs text-gray-400">de {formatMT(metaUtilizador)}</p>
+                  <p className="text-xl font-black" style={{ color: 'var(--money)' }}>{formatMT(valorVisivel)}</p>
+                  <p className="text-xs text-muted">de {formatMT(metaUtilizador)}</p>
                 </div>
               </div>
               <div className="h-4 rounded-full overflow-hidden mb-1" style={{ backgroundColor: 'var(--background)' }}>
                 <div className="h-full rounded-full transition-all duration-700 relative"
-                  style={{ width: `${progress || 1}%`, background: 'linear-gradient(90deg, #EF9F27, #f5c056)' }}>
+                  style={{ width: `${progress || 1}%`, background: 'linear-gradient(90deg, var(--money), #f5c056)' }}>
                   <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, transparent 60%, rgba(255,255,255,0.3))' }} />
                 </div>
               </div>
-              <div className="flex justify-between text-xs text-gray-400 mt-1 mb-3">
+              <div className="flex justify-between text-xs text-muted mt-1 mb-3">
                 <span>0 MT</span>
-                <span className="font-semibold" style={{ color: '#EF9F27' }}>{progress.toFixed(1)}%</span>
+                <span className="font-semibold" style={{ color: 'var(--money)' }}>{progress.toFixed(1)}%</span>
                 <span>{metaUtilizador.toLocaleString('pt-PT')} MT</span>
               </div>
             </div>
@@ -1051,24 +1089,37 @@ function DashboardContent() {
             {/* Pagamento pendente de comprovativo */}
             {pagamentoPendente && pagamentoPendente.status === 'aguardando_comprovativo' && (
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-5 pt-4 pb-3 border-b flex items-center gap-2" style={{ borderColor: '#F5F5F0' }}>
-                  <AlertCircle className="w-4 h-4" style={{ color: '#EF9F27' }} />
-                  <p className="font-bold text-sm" style={{ color: '#EF9F27' }}>Tens um pagamento pendente</p>
+                <div className="px-5 pt-4 pb-3 border-b flex items-center gap-2" style={{ borderColor: 'var(--surface-sunk)' }}>
+                  <AlertCircle className="w-4 h-4" style={{ color: 'var(--money)' }} />
+                  <p className="font-bold text-sm" style={{ color: 'var(--money)' }}>Tens um pagamento pendente</p>
                 </div>
                 <div className="p-5 space-y-4">
                   <DadosPagamento method={pagamentoPendente.metodo as PayMethod} valor={pagamentoPendente.valor} codigoConvite={user?.codigo_convite} />
                   <CampoComprovativo referencia={pagamentoPendente.referencia} onSucesso={recarregarDados} />
+                  {/* Também aqui, e não só logo a seguir a criar o pedido: se a
+                      pessoa fechar a app e voltar, é por este caminho que o
+                      pedido reaparece, e tem de continuar a poder cancelá-lo. */}
+                  {pagamentoPendente.tipo === 'deposito' && (
+                    <button
+                      onClick={() => handleCancelarReferencia(pagamentoPendente.referencia)}
+                      disabled={cancelLoading}
+                      className="w-full text-xs font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
+                      style={{ color: 'var(--danger)', backgroundColor: 'var(--danger-tint)', minHeight: 44 }}
+                    >
+                      {cancelLoading ? 'A cancelar...' : 'Cancelar este pedido e recomeçar'}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
 
             {pagamentoPendente && pagamentoPendente.status === 'pendente_confirmacao' && (
               <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3"
-                style={{ border: '1.5px solid #EF9F2730' }}>
-                <Clock className="w-5 h-5 flex-shrink-0" style={{ color: '#EF9F27' }} />
+                style={{ border: '1.5px solid var(--money-tint-3)' }}>
+                <Clock className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--money)' }} />
                 <div>
-                  <p className="font-bold text-sm" style={{ color: '#003399' }}>Comprovativo enviado</p>
-                  <p className="text-xs text-gray-400">A aguardar confirmacao do administrador.</p>
+                  <p className="font-bold text-sm" style={{ color: 'var(--brand)' }}>Comprovativo enviado</p>
+                  <p className="text-xs text-muted">A aguardar confirmacao do administrador.</p>
                 </div>
               </div>
             )}
@@ -1077,7 +1128,7 @@ function DashboardContent() {
             <button
               onClick={() => setActiveTab('depositar')}
               className="w-full py-3.5 rounded-2xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md"
-              style={{ backgroundColor: '#003399', color: 'white', boxShadow: '0 4px 16px rgba(0,51,153,0.25)' }}>
+              style={{ backgroundColor: 'var(--brand)', color: 'white', boxShadow: '0 4px 16px rgba(0,51,153,0.25)' }}>
               <Wallet className="w-5 h-5" /> Fazer Deposito
             </button>
           </>
@@ -1090,37 +1141,54 @@ function DashboardContent() {
             {/* Se já criou um pedido, mostrar dados de transferência */}
             {pedidoCriado ? (
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: '#F5F5F0' }}>
-                  <h2 className="font-black text-lg" style={{ color: '#003399' }}>Enviar Deposito</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Faz a transferencia e cola o comprovativo</p>
+                <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: 'var(--surface-sunk)' }}>
+                  <h2 className="font-black text-lg" style={{ color: 'var(--brand)' }}>Enviar Deposito</h2>
+                  <p className="text-xs text-muted mt-0.5">Faz a transferencia e cola o comprovativo</p>
                 </div>
                 <div className="p-5 space-y-4">
+                  {avisoPedidoAberto && (
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl text-xs leading-relaxed"
+                      style={{ backgroundColor: 'var(--money-tint)', color: 'var(--fg)' }}>
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--money)' }} />
+                      <span>{avisoPedidoAberto}</span>
+                    </div>
+                  )}
                   <DadosPagamento method={pedidoCriado.method} valor={pedidoCriado.valor} codigoConvite={user?.codigo_convite} />
                   <CampoComprovativo
                     referencia={pedidoCriado.referencia}
-                    onSucesso={() => { setPedidoCriado(null); setValor(''); recarregarDados() }}
+                    onSucesso={() => { setPedidoCriado(null); setValor(''); setAvisoPedidoAberto(''); recarregarDados() }}
                   />
+                  {/* Saída para quem fixou um valor errado: sem isto, a única
+                      forma de corrigir era contactar o administrador por fora. */}
+                  <button
+                    onClick={handleCancelarPedido}
+                    disabled={cancelLoading}
+                    className="w-full text-xs font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
+                    style={{ color: 'var(--danger)', backgroundColor: 'var(--danger-tint)', minHeight: 44 }}
+                  >
+                    {cancelLoading ? 'A cancelar...' : 'Cancelar este pedido e recomeçar'}
+                  </button>
                 </div>
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: '#F5F5F0' }}>
-                  <h2 className="font-black text-lg" style={{ color: '#003399' }}>Fazer Deposito</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Transferencia directa · Minimo 100 MT</p>
+                <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: 'var(--surface-sunk)' }}>
+                  <h2 className="font-black text-lg" style={{ color: 'var(--brand)' }}>Fazer Deposito</h2>
+                  <p className="text-xs text-muted mt-0.5">Transferencia directa · Minimo 100 MT</p>
                 </div>
 
                 <div className="p-5 space-y-5">
                   {/* Amount */}
                   <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Valor (MT)</p>
+                    <p className="text-xs font-bold text-muted uppercase tracking-widest mb-2">Valor (MT)</p>
                     <div className="grid grid-cols-4 gap-2 mb-3">
                       {quickAmounts.map((a) => (
                         <button key={a} onClick={() => setValor(String(a))}
                           className="py-2 rounded-xl text-sm font-bold border-2 transition-all"
                           style={{
-                            borderColor: valor === String(a) ? '#003399' : '#e5e7eb',
-                            backgroundColor: valor === String(a) ? '#00339910' : 'white',
-                            color: valor === String(a) ? '#003399' : '#666',
+                            borderColor: valor === String(a) ? 'var(--brand)' : 'var(--border)',
+                            backgroundColor: valor === String(a) ? 'var(--brand-tint)' : 'white',
+                            color: valor === String(a) ? 'var(--brand)' : 'var(--fg-muted)',
                           }}>
                           {a}
                         </button>
@@ -1131,30 +1199,30 @@ function DashboardContent() {
                         type="number" min={100} placeholder="Outro valor (min. 100)"
                         value={valor} onChange={(e) => setValor(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all pr-14"
-                        style={{ borderColor: '#e5e7eb', backgroundColor: '#fafafa' }}
-                        onFocus={(e) => { e.target.style.borderColor = '#003399'; e.target.style.backgroundColor = 'white' }}
-                        onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa' }}
+                        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--slate-50)' }}
+                        onFocus={(e) => { e.target.style.borderColor = 'var(--brand)'; e.target.style.backgroundColor = 'white' }}
+                        onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.backgroundColor = 'var(--slate-50)' }}
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">MT</span>
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted font-semibold">MT</span>
                     </div>
                     {valor && Number(valor) >= 100 && (
-                      <div className="mt-2 flex items-center gap-2 p-2.5 rounded-lg" style={{ backgroundColor: '#1D9E7510' }}>
-                        <TrendingUp className="w-3.5 h-3.5" style={{ color: '#1D9E75' }} />
-                        <p className="text-xs font-semibold" style={{ color: '#1D9E75' }}>
+                      <div className="mt-2 flex items-center gap-2 p-2.5 rounded-lg" style={{ backgroundColor: 'var(--success-tint)' }}>
+                        <TrendingUp className="w-3.5 h-3.5" style={{ color: 'var(--success)' }} />
+                        <p className="text-xs font-semibold" style={{ color: 'var(--success)' }}>
                           <strong>{Number(valor)} MT</strong> vão para o fundo comunitário
                         </p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-3.5 rounded-xl text-sm flex items-start gap-2.5" style={{ backgroundColor: '#1D9E7510', color: '#1D9E75' }}>
+                  <div className="p-3.5 rounded-xl text-sm flex items-start gap-2.5" style={{ backgroundColor: 'var(--success-tint)', color: 'var(--success)' }}>
                     <InfinityIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>
                       <strong>A partir de 100 MT, sem limite máximo.</strong> Podes depositar em qualquer dia, quantas vezes quiseres. Quanto mais depositares no total, maiores são as tuas chances no sorteio.
                     </span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: '#00339910', color: '#003399' }}>
+                  <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand)' }}>
                     Pagamento por <strong>E-Mola</strong>. Vais ver o número e enviar o comprovativo no passo seguinte.
                   </div>
 
@@ -1168,12 +1236,12 @@ function DashboardContent() {
                     onClick={handleDepositar}
                     disabled={payLoading || !valor || Number(valor) < 100}
                     className="w-full py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 shadow-md"
-                    style={{ backgroundColor: '#EF9F27', color: '#001f6b', boxShadow: '0 4px 16px rgba(239,159,39,0.3)' }}>
+                    style={{ backgroundColor: 'var(--money)', color: 'var(--brand-dark)', boxShadow: '0 4px 16px rgba(239,159,39,0.3)' }}>
                     {payLoading
                       ? <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       : `Depositar ${valor ? valor + ' MT' : '...'} via E-Mola`}
                   </button>
-                  <p className="text-xs text-center text-gray-400">
+                  <p className="text-xs text-center text-muted">
                     Transferência directa · O sistema confirma o teu depósito
                   </p>
                 </div>
@@ -1188,11 +1256,11 @@ function DashboardContent() {
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <div className="text-center mb-4">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg, #003399, #0055cc)' }}>
+                  style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-light))' }}>
                   <Gift className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="font-black text-lg" style={{ color: '#003399' }}>Convida amigos</h2>
-                <p className="text-xs text-gray-400 mt-1">Quanto mais participantes, mais rápido o fundo cresce</p>
+                <h2 className="font-black text-lg" style={{ color: 'var(--brand)' }}>Convida amigos</h2>
+                <p className="text-xs text-muted mt-1">Quanto mais participantes, mais rápido o fundo cresce</p>
               </div>
 
               {nivelActual && (
@@ -1205,44 +1273,44 @@ function DashboardContent() {
 
               {/* Progresso de quem divulga */}
               <div className="grid grid-cols-2 gap-2 mb-4">
-                <div className="text-center py-3 rounded-2xl" style={{ backgroundColor: '#00339910' }}>
-                  <p className="text-3xl font-black" style={{ color: '#003399' }}>{convites.registados}</p>
-                  <p className="text-xs font-bold text-gray-400 mt-0.5">
+                <div className="text-center py-3 rounded-2xl" style={{ backgroundColor: 'var(--brand-tint)' }}>
+                  <p className="text-3xl font-black" style={{ color: 'var(--brand)' }}>{convites.registados}</p>
+                  <p className="text-xs font-bold text-muted mt-0.5">
                     {convites.registados === 1 ? 'registou-se' : 'registaram-se'}
                   </p>
                 </div>
-                <div className="text-center py-3 rounded-2xl" style={{ backgroundColor: '#1D9E7510' }}>
-                  <p className="text-3xl font-black" style={{ color: '#1D9E75' }}>{convites.participantes}</p>
-                  <p className="text-xs font-bold text-gray-400 mt-0.5">
+                <div className="text-center py-3 rounded-2xl" style={{ backgroundColor: 'var(--success-tint)' }}>
+                  <p className="text-3xl font-black" style={{ color: 'var(--success)' }}>{convites.participantes}</p>
+                  <p className="text-xs font-bold text-muted mt-0.5">
                     {convites.participantes === 1 ? 'já participa' : 'já participam'}
                   </p>
                 </div>
               </div>
 
               {proximoNivel ? (
-                <p className="text-xs text-center text-gray-400 mb-4 leading-relaxed">
+                <p className="text-xs text-center text-muted mb-4 leading-relaxed">
                   Falta{proximoNivel.min - convites.participantes === 1 ? '' : 'm'} <strong style={{ color: proximoNivel.cor }}>{proximoNivel.min - convites.participantes}</strong> {proximoNivel.min - convites.participantes === 1 ? 'pessoa' : 'pessoas'} para chegares a <strong>{proximoNivel.emoji} {proximoNivel.nome}</strong>
                 </p>
               ) : convites.registados > 0 ? (
-                <p className="text-xs text-center text-gray-400 mb-4 leading-relaxed">
+                <p className="text-xs text-center text-muted mb-4 leading-relaxed">
                   Graças a ti, o fundo cresce mais depressa. Continua a partilhar!
                 </p>
               ) : (
-                <p className="text-xs text-center text-gray-400 mb-4 leading-relaxed">
+                <p className="text-xs text-center text-muted mb-4 leading-relaxed">
                   Sê o primeiro a partilhar e torna-te 🌱 Divulgador
                 </p>
               )}
               <div className="flex items-center justify-center gap-2 p-4 rounded-2xl mb-4"
                 style={{ backgroundColor: 'var(--background)' }}>
-                <span className="text-2xl font-black font-mono tracking-widest" style={{ color: '#003399', letterSpacing: '0.2em' }}>
+                <span className="text-2xl font-black font-mono tracking-widest" style={{ color: 'var(--brand)', letterSpacing: '0.2em' }}>
                   {user?.codigo_convite}
                 </span>
               </div>
               <div className="flex items-center gap-2 p-3 rounded-xl mb-3" style={{ backgroundColor: 'var(--background)' }}>
-                <span className="text-xs text-gray-500 flex-1 truncate font-mono">{inviteUrl}</span>
+                <span className="text-xs text-muted flex-1 truncate font-mono">{inviteUrl}</span>
                 <button onClick={copyInvite}
                   className="flex-shrink-0 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg text-white"
-                  style={{ backgroundColor: copied ? '#1D9E75' : '#003399' }}>
+                  style={{ backgroundColor: copied ? 'var(--success)' : 'var(--brand)' }}>
                   {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Copiado!' : 'Copiar'}
                 </button>
@@ -1250,41 +1318,41 @@ function DashboardContent() {
               <div className="space-y-2">
                 <button onClick={shareWhatsApp}
                   className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-black text-base text-white active:scale-95 transition-all shadow-md"
-                  style={{ backgroundColor: '#25D366', boxShadow: '0 4px 16px rgba(37,211,102,0.3)' }}>
+                  style={{ backgroundColor: 'var(--whatsapp)', boxShadow: '0 4px 16px rgba(37,211,102,0.3)' }}>
                   <Share2 className="w-5 h-5" /> Partilhar no WhatsApp
                 </button>
                 <div className="grid grid-cols-2 gap-2">
                   <button onClick={shareFacebook}
                     className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white active:scale-95 transition-all"
-                    style={{ backgroundColor: '#1877F2' }}>
+                    style={{ backgroundColor: 'var(--facebook)' }}>
                     <FacebookIcon className="w-4 h-4" /> Facebook
                   </button>
                   <button onClick={sharePartilhaNativa}
                     className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold active:scale-95 transition-all"
-                    style={{ backgroundColor: 'var(--background)', color: '#003399' }}>
+                    style={{ backgroundColor: 'var(--background)', color: 'var(--brand)' }}>
                     <Send className="w-4 h-4" /> Outras apps
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4 p-3.5 rounded-xl text-xs leading-relaxed" style={{ backgroundColor: 'var(--background)', color: '#666' }}>
-                <strong style={{ color: '#003399' }}>Partilhar ajuda o fundo a crescer mais depressa</strong> para toda a comunidade. As tuas chances individuais no sorteio dependem sempre do que <strong>tu</strong> depositares. Quanto mais depositares, mais bilhetes tens.
+              <div className="mt-4 p-3.5 rounded-xl text-xs leading-relaxed" style={{ backgroundColor: 'var(--background)', color: 'var(--fg-muted)' }}>
+                <strong style={{ color: 'var(--brand)' }}>Partilhar ajuda o fundo a crescer mais depressa</strong> para toda a comunidade. As tuas chances individuais no sorteio dependem sempre do que <strong>tu</strong> depositares. Quanto mais depositares, mais bilhetes tens.
               </div>
             </div>
 
             {ranking.length > 0 && (
               <div className="bg-white rounded-2xl p-5 shadow-sm">
-                <h3 className="font-bold text-sm mb-1" style={{ color: '#003399' }}>🏅 Top Embaixadores</h3>
-                <p className="text-xs text-gray-400 mb-3">Quem já trouxe mais participantes à comunidade</p>
+                <h3 className="font-bold text-sm mb-1" style={{ color: 'var(--brand)' }}>🏅 Top Embaixadores</h3>
+                <p className="text-xs text-muted mb-3">Quem já trouxe mais participantes à comunidade</p>
                 <div className="space-y-2">
                   {ranking.map((r, i) => (
                     <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl"
-                      style={{ backgroundColor: r.souEu ? '#00339910' : 'var(--background)' }}>
-                      <span className="w-6 text-center font-black text-sm text-gray-400">{i + 1}º</span>
-                      <span className="flex-1 font-bold text-sm truncate" style={{ color: r.souEu ? '#003399' : '#1A1A2E' }}>
+                      style={{ backgroundColor: r.souEu ? 'var(--brand-tint)' : 'var(--background)' }}>
+                      <span className="w-6 text-center font-black text-sm text-muted">{i + 1}º</span>
+                      <span className="flex-1 font-bold text-sm truncate" style={{ color: r.souEu ? 'var(--brand)' : 'var(--fg)' }}>
                         {r.nome}{r.souEu && ' (tu)'}
                       </span>
-                      <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ backgroundColor: '#1D9E7515', color: '#1D9E75' }}>
+                      <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ backgroundColor: 'var(--success-tint)', color: 'var(--success)' }}>
                         {r.participantes} {r.participantes === 1 ? 'convidado' : 'convidados'}
                       </span>
                     </div>
@@ -1294,7 +1362,7 @@ function DashboardContent() {
             )}
 
             <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-sm mb-3" style={{ color: '#003399' }}>Como funciona?</h3>
+              <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--brand)' }}>Como funciona?</h3>
               <div className="space-y-3">
                 {[
                   'Partilha o teu link com amigos',
@@ -1304,8 +1372,8 @@ function DashboardContent() {
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-black flex-shrink-0"
-                      style={{ backgroundColor: '#003399' }}>{i + 1}</div>
-                    <p className="text-sm text-gray-500">{s}</p>
+                      style={{ backgroundColor: 'var(--brand)' }}>{i + 1}</div>
+                    <p className="text-sm text-muted">{s}</p>
                   </div>
                 ))}
               </div>
@@ -1316,28 +1384,28 @@ function DashboardContent() {
         {/* ── PAGAMENTOS (status) ── */}
         {activeTab === 'pagamentos' && (
           <Reveal className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 pt-5 pb-4 border-b flex items-center justify-between" style={{ borderColor: '#F5F5F0' }}>
-              <h2 className="font-black" style={{ color: '#003399' }}>Meus Pagamentos</h2>
+            <div className="px-5 pt-5 pb-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--surface-sunk)' }}>
+              <h2 className="font-black" style={{ color: 'var(--brand)' }}>Meus Pagamentos</h2>
               <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                style={{ backgroundColor: '#00339912', color: '#003399' }}>
+                style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand)' }}>
                 {historicoPagamentos.length} registos
               </span>
             </div>
             {historicoPagamentos.length === 0 ? (
               <div className="text-center py-12 px-4">
-                <Wallet className="w-12 h-12 mx-auto mb-3 text-gray-200" />
-                <p className="font-semibold text-gray-400">Sem pagamentos ainda</p>
-                <p className="text-xs text-gray-300 mt-1 mb-4">Os teus pagamentos aparecerao aqui com o estado actualizado.</p>
+                <Wallet className="w-12 h-12 mx-auto mb-3 text-subtle" />
+                <p className="font-semibold text-muted">Sem pagamentos ainda</p>
+                <p className="text-xs text-muted mt-1 mb-4">Os teus pagamentos aparecerao aqui com o estado actualizado.</p>
                 <button onClick={() => setActiveTab('depositar')}
                   className="px-5 py-2.5 rounded-xl font-bold text-white text-sm"
-                  style={{ backgroundColor: '#003399' }}>
+                  style={{ backgroundColor: 'var(--brand)' }}>
                   Fazer primeiro deposito
                 </button>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: '#F5F5F0' }}>
+              <div className="divide-y" style={{ borderColor: 'var(--surface-sunk)' }}>
                 {historicoPagamentos.map((p) => {
-                  const st = STATUS_MAP[p.status] ?? { label: p.status, bg: '#F5F5F0', color: '#888' }
+                  const st = STATUS_MAP[p.status] ?? { label: p.status, bg: 'var(--surface-sunk)', color: 'var(--fg-muted)' }
                   return (
                     <div key={p.id} className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
@@ -1351,13 +1419,13 @@ function DashboardContent() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-bold text-sm" style={{ color: '#1A1A2E' }}>{formatMT(p.valor)}</p>
+                            <p className="font-bold text-sm" style={{ color: 'var(--fg)' }}>{formatMT(p.valor)}</p>
                             <span className="text-xs font-bold px-2 py-0.5 rounded-lg capitalize"
-                              style={{ backgroundColor: p.tipo === 'inscricao' ? '#7c3aed12' : '#00339912', color: p.tipo === 'inscricao' ? '#7c3aed' : '#003399' }}>
+                              style={{ backgroundColor: p.tipo === 'inscricao' ? 'var(--info-tint)' : 'var(--brand-tint)', color: p.tipo === 'inscricao' ? 'var(--info)' : 'var(--brand)' }}>
                               {p.tipo}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <p className="text-xs text-muted mt-0.5">
                             {p.metodo?.toUpperCase()} · {new Date(p.created_at).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
@@ -1367,12 +1435,12 @@ function DashboardContent() {
                         </span>
                       </div>
                       {p.status === 'confirmado' && p.confirmado_at && (
-                        <p className="text-xs text-gray-300 mt-1.5 ml-12">
+                        <p className="text-xs text-muted mt-1.5 ml-12">
                           Confirmado em {new Date(p.confirmado_at).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       )}
                       {p.status === 'falhado' && (
-                        <p className="text-xs mt-1.5 ml-12" style={{ color: '#dc2626' }}>
+                        <p className="text-xs mt-1.5 ml-12" style={{ color: 'var(--danger)' }}>
                           Pagamento recusado pelo administrador.
                         </p>
                       )}
@@ -1387,33 +1455,33 @@ function DashboardContent() {
         {/* ── HISTÓRICO DEPÓSITOS ── */}
         {activeTab === 'historico' && (
           <Reveal className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 pt-5 pb-4 border-b flex items-center justify-between" style={{ borderColor: '#F5F5F0' }}>
-              <h2 className="font-black" style={{ color: '#003399' }}>Depositos Confirmados</h2>
+            <div className="px-5 pt-5 pb-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--surface-sunk)' }}>
+              <h2 className="font-black" style={{ color: 'var(--brand)' }}>Depositos Confirmados</h2>
               <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                style={{ backgroundColor: '#1D9E7512', color: '#1D9E75' }}>
+                style={{ backgroundColor: 'var(--success-tint)', color: 'var(--success)' }}>
                 {depositos.length} registos
               </span>
             </div>
             {depositos.length === 0 ? (
               <div className="text-center py-12 px-4">
-                <Clock className="w-12 h-12 mx-auto mb-3 text-gray-200" />
-                <p className="font-semibold text-gray-400">Sem depositos confirmados</p>
-                <p className="text-xs text-gray-300 mt-1">Aparecerao aqui apos confirmacao do admin.</p>
+                <Clock className="w-12 h-12 mx-auto mb-3 text-subtle" />
+                <p className="font-semibold text-muted">Sem depositos confirmados</p>
+                <p className="text-xs text-muted mt-1">Aparecerao aqui apos confirmacao do admin.</p>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: '#F5F5F0' }}>
+              <div className="divide-y" style={{ borderColor: 'var(--surface-sunk)' }}>
                 {depositos.map((d) => (
                   <div key={d.id} className="flex items-center gap-3 px-5 py-3.5">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: '#1D9E7512' }}>
-                      <TrendingUp className="w-4 h-4" style={{ color: '#1D9E75' }} />
+                      style={{ backgroundColor: 'var(--success-tint)' }}>
+                      <TrendingUp className="w-4 h-4" style={{ color: 'var(--success)' }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm" style={{ color: '#1A1A2E' }}>{formatMT(d.valor)}</p>
-                      <p className="text-xs text-gray-400">{formatDate(d.data_deposito)}</p>
+                      <p className="font-bold text-sm" style={{ color: 'var(--fg)' }}>{formatMT(d.valor)}</p>
+                      <p className="text-xs text-muted">{formatDate(d.data_deposito)}</p>
                     </div>
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: '#1D9E7518', color: '#1D9E75' }}>
+                      style={{ backgroundColor: 'var(--success-tint-2)', color: 'var(--success)' }}>
                       Confirmado
                     </span>
                   </div>
@@ -1438,8 +1506,8 @@ function DashboardContent() {
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all"
               style={{
-                color: activeTab === tab.id ? '#003399' : '#aaa',
-                backgroundColor: activeTab === tab.id ? '#00339910' : 'transparent',
+                color: activeTab === tab.id ? 'var(--brand)' : 'var(--fg-muted)',
+                backgroundColor: activeTab === tab.id ? 'var(--brand-tint)' : 'transparent',
               }}>
               {tab.icon}
               <span className="text-xs font-semibold">{tab.label}</span>
@@ -1457,7 +1525,7 @@ export default function DashboardPage() {
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
           <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
-            style={{ borderColor: '#003399', borderTopColor: 'transparent' }} />
+            style={{ borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
         </div>
       }>
         <DashboardContent />
