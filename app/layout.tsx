@@ -7,7 +7,10 @@ const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-br
 const sacramento = Sacramento({ subsets: ["latin"], weight: "400", variable: "--font-script" });
 
 export const viewport: Viewport = {
-  themeColor: '#0D1117',
+  // Igual ao theme_color do manifest.json: a barra do browser e o ecrã de
+  // arranque da app instalada têm de ser a mesma cor, senão a app muda de
+  // identidade entre o momento em que abre e o momento em que carrega.
+  themeColor: '#003399',
   width: 'device-width',
   initialScale: 1,
 }

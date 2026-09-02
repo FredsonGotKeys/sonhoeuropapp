@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { pagamentosPendentesDe, historicoPagamentosDe } from '@/lib/painel-queries'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { caminhoNoBucket } from '@/lib/comprovativos'
 
@@ -83,7 +84,7 @@ export async function criarPedidoPagamento(params: {
   // existe um pedido do mesmo tipo por confirmar, devolve-o em vez de criar outro.
   const { data: pedidoExistente } = await supabase
     .from('pagamentos')
-    .select('referencia')
+    .select('referencia, valor')
     .eq('usuario_id', user.id)
     .eq('tipo', params.tipo)
     .in('status', ['aguardando_comprovativo', 'pendente_confirmacao'])
@@ -91,8 +92,16 @@ export async function criarPedidoPagamento(params: {
     .limit(1)
     .maybeSingle()
 
+  // Devolve sempre o valor a que a referência está realmente associada. Sem
+  // isto o ecrã mostrava o valor acabado de escrever ao lado da referência
+  // antiga, e mandava transferir uma quantia que não corresponde ao registo.
   if (pedidoExistente) {
-    return { success: true, reference: pedidoExistente.referencia }
+    return {
+      success: true,
+      reference: pedidoExistente.referencia,
+      valor: Number(pedidoExistente.valor),
+      reaproveitado: true,
+    }
   }
 
   const uid8 = user.id.replace(/-/g, '').slice(0, 8).toUpperCase()
@@ -115,7 +124,7 @@ export async function criarPedidoPagamento(params: {
 
   if (error) return { error: error.message }
 
-  return { success: true, reference }
+  return { success: true, reference, valor, reaproveitado: false }
 }
 
 export async function enviarComprovativo(referencia: string, comprovativo: string, imagemUrl?: string) {
@@ -171,6 +180,43 @@ export async function enviarComprovativo(referencia: string, comprovativo: strin
   return { success: true }
 }
 
+/**
+ * Corrige o valor de um pedido que ainda não tem comprovativo enviado.
+ *
+ * Antes, mudar de ideias sobre quanto depositar obrigava a cancelar o pedido
+ * e criar outro, com referência nova. Aqui a referência mantém-se e só o
+ * valor muda, desde que o pedido ainda esteja à espera de comprovativo: a
+ * partir do momento em que o comprovativo entra, o valor tem de corresponder
+ * ao que foi mesmo transferido e deixa de poder ser mexido.
+ */
+export async function alterarValorPedido(referencia: string, novoValor: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Não autenticado' }
+
+  const valorNum = Math.floor(Number(novoValor))
+  if (!Number.isFinite(valorNum) || valorNum <= 0) return { error: 'Valor inválido' }
+  if (valorNum > 100000) return { error: 'Valor excede o limite permitido' }
+  if (valorNum < 100) return { error: 'Valor mínimo é 100 MT' }
+
+  const admin = createAdminClient()
+  const { data: pag } = await admin.from('pagamentos')
+    .select('id, usuario_id, tipo, status')
+    .eq('referencia', referencia)
+    .maybeSingle()
+
+  if (!pag) return { error: 'Pagamento não encontrado' }
+  if (pag.usuario_id !== user.id) return { error: 'Sem permissão' }
+  if (pag.tipo === 'inscricao') return { error: 'O valor da inscrição é fixo' }
+  if (pag.status !== 'aguardando_comprovativo') {
+    return { error: 'Já enviaste o comprovativo deste pedido. Cancela-o para recomeçar com outro valor.' }
+  }
+
+  const { error } = await admin.from('pagamentos').update({ valor: valorNum }).eq('id', pag.id)
+  if (error) return { error: error.message }
+  return { success: true, valor: valorNum }
+}
+
 export async function getMeusPagamentosPendentes() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -180,14 +226,7 @@ export async function getMeusPagamentosPendentes() {
   // espera de ver o estado do pagamento, não da arrumação da casa.
   limparComprovativosExpirados().catch((e) => console.error('[pendentes] Falha ao limpar comprovativos:', e))
 
-  const { data } = await supabase
-    .from('pagamentos')
-    .select('id, referencia, tipo, valor, metodo, status, comprovativo, comprovativo_imagem_url, created_at')
-    .eq('usuario_id', user.id)
-    .in('status', ['aguardando_comprovativo', 'pendente_confirmacao'])
-    .order('created_at', { ascending: false })
-
-  return data ?? []
+  return pagamentosPendentesDe(supabase, user.id)
 }
 
 export async function cancelarPagamentoPendente(referencia: string) {
@@ -215,12 +254,5 @@ export async function getMeuHistoricoPagamentos() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data } = await supabase
-    .from('pagamentos')
-    .select('id, referencia, tipo, valor, metodo, status, created_at, confirmado_at')
-    .eq('usuario_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  return data ?? []
+  return historicoPagamentosDe(supabase, user.id)
 }

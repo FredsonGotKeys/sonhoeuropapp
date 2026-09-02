@@ -70,11 +70,60 @@
   /* Motion */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --duration: 200ms;
+
+  /* ── App palette — canonical ────────────────────────
+     These are the values actually shipped: the icon, the
+     manifest and the whole logged-in app use them. The
+     --cobalt/--amber/--emerald above are the drifted
+     copies that only the landing page still references,
+     and they retire as each screen migrates. */
+  --brand: #003399;
+  --brand-dark: #001F6B;
+  --brand-light: #0055CC;
+  --money: #EF9F27;
+  --success: #1D9E75;
+  --danger: #DC2626;
+  --danger-bg: #FEE2E2;
+  --info: #7C3AED;
+  --whatsapp: #25D366;
+  --facebook: #1877F2;
+  --surface-sunk: #F5F5F0;
+
+  /* Tints — three levels replacing the seven ad-hoc alpha
+     suffixes (08/10/12/15/18/25/30) that had accumulated
+     for what were only ever meant to be two or three.
+
+     Deliberately literal 8-digit hex, not color-mix(): the
+     build emits `--x: var(--brand)` as the pre-color-mix
+     fallback, so on an Android WebView older than Chrome 111
+     every one of these faint tints would paint at FULL
+     strength and bury the text on top of it. Alpha hex has
+     universal support and cannot fail that way. */
+  --brand-tint: #00339912;
+  --brand-tint-2: #0033991F;
+  --money-tint: #EF9F2712;
+  --money-tint-2: #EF9F271F;
+  --money-tint-3: #EF9F2730;
+  --success-tint: #1D9E7512;
+  --success-tint-2: #1D9E751F;
+  --success-tint-3: #1D9E7530;
+  --info-tint: #7C3AED12;
+  --info-tint-2: #7C3AED1F;
+  --danger-tint: #DC262612;
+
+  /* Alias. The dashboard and admin referenced var(--background)
+     in 26 places while it was never defined anywhere, so every
+     one of them silently resolved to transparent — including
+     both fund progress-bar tracks. */
+  --background: var(--bg);
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+  --color-hairline: var(--border);
   --font-sans: var(--font-bricolage);
   --font-mono: var(--font-bricolage);
 }
