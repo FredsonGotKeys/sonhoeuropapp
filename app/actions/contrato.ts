@@ -2,6 +2,7 @@
 
 import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import { contratoDe } from '@/lib/painel-queries'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { registarAuditoria } from '@/lib/auditoria'
 import { gerarContratoPdf, type ClausulaTemplate, type DadosContrato } from '@/lib/contrato-pdf'
@@ -37,15 +38,7 @@ export async function getMeuContrato() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data } = await supabase
-    .from('contratos')
-    .select('id, numero, estado, dados, pdf_paginas, pdf_versao, consentimento_dados_at, declaracao_veracidade_at, aceitacao_termos_at, assinado_at, rejeitado_motivo, created_at')
-    .eq('usuario_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  return data
+  return contratoDe(supabase, user.id)
 }
 
 // Conteúdo completo para o utilizador ler antes de assinar — só acessível

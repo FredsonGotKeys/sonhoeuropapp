@@ -127,30 +127,46 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── Supabase auth ──
+  // getUser() é uma chamada de REDE ao servidor de auth do Supabase, não uma
+  // leitura local do cookie — é esse o preço de ela ser de confiança. Corria em
+  // todos os pedidos que passam pelo matcher, mas o resultado só serve para
+  // proteger os três caminhos abaixo. Em tudo o resto (página inicial, login,
+  // registo, termos, privacidade, contacto, admin — que usa o seu próprio
+  // cookie assinado) era latência pura, paga também por cada prefetch que o
+  // router dispara: só a página inicial tem 21 links.
+  //
+  // A sessão continua a renovar-se: o cliente do browser faz refresh sozinho e
+  // escreve o cookie no mesmo caminho, e qualquer visita a rota protegida ou
+  // qualquer server action volta a validar do lado do servidor.
   let supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+  const rotaProtegida =
+    path.startsWith('/dashboard') ||
+    path.startsWith('/completar-perfil') ||
+    path.startsWith('/verificacao')
+
+  if (rotaProtegida) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+            supabaseResponse = NextResponse.next({ request })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            )
+          },
         },
-      },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
     }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // ── Protected routes ──
-  if (!user && (path.startsWith('/dashboard') || path.startsWith('/completar-perfil') || path.startsWith('/verificacao'))) {
-    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (path.startsWith('/admin') && path !== '/admin/login') {

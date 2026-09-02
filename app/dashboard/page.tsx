@@ -22,10 +22,10 @@ import { createClient } from '@/lib/supabase/client'
 import { EuropaWatermark } from '@/components/EuropaWatermark'
 import { Reveal } from '@/components/Reveal'
 import { logout } from '@/app/actions/auth'
-import { criarPedidoPagamento, cancelarPagamentoPendente, enviarComprovativo, getMeusPagamentosPendentes, getMeuHistoricoPagamentos } from '@/app/actions/deposito'
-import { getMinhasEstatisticasConvite, getRankingEmbaixadores, type EstatisticasConvite, type RankingEmbaixador } from '@/app/actions/convite'
+import { criarPedidoPagamento, cancelarPagamentoPendente, alterarValorPedido, enviarComprovativo } from '@/app/actions/deposito'
+import { getDadosPainel } from '@/app/actions/painel'
+import type { EstatisticasConvite, RankingEmbaixador } from '@/app/actions/convite'
 import { enviarVerificacaoBi, limparVerificacoesExpiradas } from '@/app/actions/verificacao'
-import { getMeuContrato } from '@/app/actions/contrato'
 import { Suspense, Component, type ReactNode } from 'react'
 
 // Se algo rebentar a desenhar o dashboard (ex: um dado inesperado vindo da
@@ -663,6 +663,9 @@ function DashboardContent() {
   const [pedidoCriado, setPedidoCriado] = useState<{ referencia: string; method: PayMethod; valor: number } | null>(null)
   const [avisoPedidoAberto, setAvisoPedidoAberto] = useState('')
   const [cancelLoading, setCancelLoading] = useState(false)
+  const [aEditarValor, setAEditarValor] = useState(false)
+  const [novoValor, setNovoValor] = useState('')
+  const [alterarLoading, setAlterarLoading] = useState(false)
   const [historicoPagamentos, setHistoricoPagamentos] = useState<PagamentoHistorico[]>([])
   const [convites, setConvites] = useState<EstatisticasConvite>({ registados: 0, participantes: 0 })
   const [ranking, setRanking] = useState<RankingEmbaixador[]>([])
@@ -705,16 +708,17 @@ function DashboardContent() {
 
     if (depositosData.data) setDepositos(depositosData.data)
 
-    // Verificar pagamentos pendentes + histórico — em paralelo, é o caminho
-    // crítico logo a seguir a criar/confirmar um pagamento, tem de ser rápido.
-    const [pendentes, historico] = await Promise.all([
-      getMeusPagamentosPendentes(),
-      getMeuHistoricoPagamentos(),
-    ])
-    setPagamentoPendente(pendentes.length > 0 ? pendentes[0] : null)
-    setHistoricoPagamentos(historico)
+    // Pagamentos, histórico, contrato, convites e ranking numa só ida ao
+    // servidor: eram cinco chamadas, cada uma a revalidar a sessão contra o
+    // Supabase antes de fazer a sua consulta.
+    const painel = await getDadosPainel()
+    if (!painel.autenticado) return
 
-    getMeuContrato().then(setContrato).catch((e) => console.error('[dashboard] Falha ao carregar contrato:', e))
+    setPagamentoPendente(painel.pendentes.length > 0 ? painel.pendentes[0] : null)
+    setHistoricoPagamentos(painel.historico)
+    setContrato(painel.contrato)
+    setConvites(painel.convites)
+    setRanking(painel.ranking)
   }
 
   useEffect(() => {
@@ -728,11 +732,6 @@ function DashboardContent() {
       }
     }
     load()
-
-    // Estatísticas de convite/ranking: não fazem parte do fluxo de pagamento,
-    // por isso correm à parte, sem atrasar recarregarDados().
-    Promise.all([getMinhasEstatisticasConvite(), getRankingEmbaixadores()])
-      .then(([stats, rankingData]) => { setConvites(stats); setRanking(rankingData) })
 
     const supabase = createClient()
     const channel = supabase.channel('dashboard-live')
@@ -801,6 +800,32 @@ function DashboardContent() {
 
   // A função de servidor já existia e já validava dono e estado; faltava-lhe
   // apenas um botão. Sem isto, um pedido com o valor errado não tinha saída.
+  // Mudar de ideias sobre o valor sem perder o pedido: a referência mantém-se,
+  // por isso quem já a tinha copiada para a transferência continua bom.
+  const handleAlterarValor = async (referencia: string) => {
+    const valorNum = Math.floor(Number(novoValor))
+    setPayError('')
+    if (!Number.isFinite(valorNum) || valorNum < 100) {
+      setPayError('Valor minimo e 100 MT')
+      return
+    }
+    setAlterarLoading(true)
+    try {
+      const result = await alterarValorPedido(referencia, valorNum)
+      if (result.error) { setPayError(result.error); return }
+      setPedidoCriado((p) => (p ? { ...p, valor: result.valor! } : p))
+      setAvisoPedidoAberto('')
+      setAEditarValor(false)
+      setNovoValor('')
+      await recarregarDados()
+    } catch (e) {
+      console.error('[handleAlterarValor]', e)
+      setPayError('Não foi possível alterar o valor. Verifica a tua ligação e tenta novamente.')
+    } finally {
+      setAlterarLoading(false)
+    }
+  }
+
   const handleCancelarReferencia = async (referencia: string) => {
     setPayError('')
     setCancelLoading(true)
@@ -1100,14 +1125,31 @@ function DashboardContent() {
                       pessoa fechar a app e voltar, é por este caminho que o
                       pedido reaparece, e tem de continuar a poder cancelá-lo. */}
                   {pagamentoPendente.tipo === 'deposito' && (
-                    <button
-                      onClick={() => handleCancelarReferencia(pagamentoPendente.referencia)}
-                      disabled={cancelLoading}
-                      className="w-full text-xs font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
-                      style={{ color: 'var(--danger)', backgroundColor: 'var(--danger-tint)', minHeight: 44 }}
-                    >
-                      {cancelLoading ? 'A cancelar...' : 'Cancelar este pedido e recomeçar'}
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setPedidoCriado({
+                            referencia: pagamentoPendente.referencia,
+                            method: pagamentoPendente.metodo as PayMethod,
+                            valor: pagamentoPendente.valor,
+                          })
+                          setAEditarValor(true)
+                          setNovoValor(String(pagamentoPendente.valor))
+                        }}
+                        className="w-full text-xs font-semibold py-3 rounded-xl"
+                        style={{ color: 'var(--brand)', backgroundColor: 'var(--brand-tint)', minHeight: 44 }}
+                      >
+                        Alterar o valor deste pedido
+                      </button>
+                      <button
+                        onClick={() => handleCancelarReferencia(pagamentoPendente.referencia)}
+                        disabled={cancelLoading}
+                        className="w-full text-xs font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
+                        style={{ color: 'var(--danger)', backgroundColor: 'var(--danger-tint)', minHeight: 44 }}
+                      >
+                        {cancelLoading ? 'A cancelar...' : 'Cancelar este pedido e recomeçar'}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1154,9 +1196,51 @@ function DashboardContent() {
                     </div>
                   )}
                   <DadosPagamento method={pedidoCriado.method} valor={pedidoCriado.valor} codigoConvite={user?.codigo_convite} />
+
+                  {/* Enganou-se no valor? Corrige aqui, sem perder a referência
+                      que talvez já tenha copiado para a app do E-Mola. */}
+                  {aEditarValor ? (
+                    <div className="p-3.5 rounded-xl space-y-2.5" style={{ backgroundColor: 'var(--brand-tint)' }}>
+                      <p className="text-xs font-bold" style={{ color: 'var(--brand)' }}>Novo valor (MT)</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          value={novoValor}
+                          onChange={(e) => setNovoValor(e.target.value)}
+                          placeholder={String(pedidoCriado.valor)}
+                          className="flex-1 px-3 rounded-xl font-bold outline-none"
+                          style={{ minHeight: 48, border: '1.5px solid var(--border)', color: 'var(--fg)' }}
+                        />
+                        <button
+                          onClick={() => handleAlterarValor(pedidoCriado.referencia)}
+                          disabled={alterarLoading}
+                          className="px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                          style={{ minHeight: 48, backgroundColor: 'var(--brand)' }}
+                        >
+                          {alterarLoading ? '...' : 'Guardar'}
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => { setAEditarValor(false); setNovoValor(''); setPayError('') }}
+                        className="text-xs font-semibold text-muted"
+                      >
+                        Cancelar alteração
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setAEditarValor(true); setNovoValor(String(pedidoCriado.valor)) }}
+                      className="w-full text-xs font-semibold py-3 rounded-xl"
+                      style={{ color: 'var(--brand)', backgroundColor: 'var(--brand-tint)', minHeight: 44 }}
+                    >
+                      Alterar o valor deste pedido
+                    </button>
+                  )}
+
                   <CampoComprovativo
                     referencia={pedidoCriado.referencia}
-                    onSucesso={() => { setPedidoCriado(null); setValor(''); setAvisoPedidoAberto(''); recarregarDados() }}
+                    onSucesso={() => { setPedidoCriado(null); setValor(''); setAvisoPedidoAberto(''); setAEditarValor(false); recarregarDados() }}
                   />
                   {/* Saída para quem fixou um valor errado: sem isto, a única
                       forma de corrigir era contactar o administrador por fora. */}
