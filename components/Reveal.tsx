@@ -24,10 +24,10 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true)
-      return
-    }
+    // Movimento reduzido é tratado inteiramente em CSS (.reveal dentro de
+    // @media prefers-reduced-motion fica logo opaco e sem transição), por isso
+    // aqui não é preciso mexer em estado: chamar setState em linha no corpo do
+    // efeito só provocava um render extra em cadeia.
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

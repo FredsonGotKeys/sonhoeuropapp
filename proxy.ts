@@ -173,10 +173,14 @@ export default async function proxy(request: NextRequest) {
     const token = request.cookies.get('admin-session')?.value ?? ''
     const parts = token.split(':')
     let valid = false
-    if (parts.length === 3 && parts[0] === 'admin') {
+    // Mesma regra de app/actions/admin.ts: sem segredo configurado, ninguém
+    // entra. Com `?? ''` a chave passava a ser sha256('admin-session:'), uma
+    // constante derivável por qualquer pessoa — e portanto um cookie de admin
+    // forjável num deploy a que faltassem as variáveis.
+    const secret = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.ADMIN_PASSWORD ?? ''
+    if (secret && parts.length === 3 && parts[0] === 'admin') {
       const expires = parseInt(parts[1], 10)
       if (expires && Date.now() <= expires) {
-        const secret = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.ADMIN_PASSWORD ?? ''
         const key = crypto.createHash('sha256').update('admin-session:' + secret).digest()
         const expected = crypto.createHmac('sha256', key).update(`admin:${parts[1]}`).digest('hex')
         try { valid = crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(parts[2], 'hex')) } catch {}

@@ -11,6 +11,15 @@ import {
   Infinity as InfinityIcon,
 } from 'lucide-react'
 
+// Formatos aceites nos envios de imagem. Lista fechada de propósito: o teste
+// anterior era `type.startsWith('image/')`, que deixa passar image/svg+xml —
+// um SVG é um documento que pode transportar script, e estas imagens vão para
+// armazenamento servido por URL. Validação de cliente é conveniência, não
+// segurança (o upload é directo para o Storage e pode ser contornado); a
+// barreira real são as políticas do bucket.
+const TIPOS_IMAGEM_ACEITES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+const aceitaTipoImagem = (tipo: string) => TIPOS_IMAGEM_ACEITES.includes(tipo.toLowerCase())
+
 function FacebookIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -225,7 +234,7 @@ function CampoComprovativo({
 
   const processarImagem = (file: File) => {
     if (file.size > 10 * 1024 * 1024) { setErro('Imagem muito grande. Máximo 10 MB.'); return }
-    if (!file.type.startsWith('image/')) { setErro('Ficheiro invalido. Envia uma imagem.'); return }
+    if (!aceitaTipoImagem(file.type)) { setErro('Formato nao aceite. Envia uma foto JPG, PNG ou WEBP.'); return }
     setImagem(file)
     setErro('')
     const reader = new FileReader()
@@ -242,7 +251,7 @@ function CampoComprovativo({
   // "colar" (Ctrl+V ou o toque de colar do teclado), sem passar pela
   // galeria de ficheiros.
   const handlePasteImagem = (e: React.ClipboardEvent) => {
-    const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith('image/'))
+    const item = Array.from(e.clipboardData.items).find((i) => aceitaTipoImagem(i.type))
     const file = item?.getAsFile()
     if (file) { e.preventDefault(); processarImagem(file) }
   }
@@ -251,7 +260,7 @@ function CampoComprovativo({
     try {
       const items = await navigator.clipboard.read()
       for (const item of items) {
-        const tipo = item.types.find((t) => t.startsWith('image/'))
+        const tipo = item.types.find((t) => aceitaTipoImagem(t))
         if (!tipo) continue
         const blob = await item.getType(tipo)
         processarImagem(new File([blob], `comprovativo.${tipo.split('/')[1] ?? 'png'}`, { type: tipo }))
@@ -400,7 +409,7 @@ function CampoComprovativo({
             <ImagePlus className="w-8 h-8 text-muted" />
             <span className="text-sm text-muted font-semibold">Toca para escolher imagem</span>
             <span className="text-xs text-muted">JPG, PNG ou GIF · Max 10 MB</span>
-            <input type="file" accept="image/*" capture="environment" onChange={handleImagem} className="hidden" />
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={handleImagem} className="hidden" />
           </label>
         )}
       </div>
@@ -457,7 +466,7 @@ function CampoFotoBi({ label, preview, onFile, onRemover, capture = 'environment
           <ImagePlus className="w-7 h-7 text-muted" />
           <span className="text-sm text-muted font-semibold">Toca para tirar/escolher foto</span>
           <span className="text-xs text-muted">JPG ou PNG · Max 5 MB</span>
-          <input type="file" accept="image/*" capture={capture} onChange={handleChange} className="hidden" />
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture={capture} onChange={handleChange} className="hidden" />
         </label>
       )}
     </div>
@@ -479,7 +488,7 @@ function VerificacaoBiObrigatoria({ estado, onEnviado }: {
 
   const processar = (file: File, setFile: (f: File) => void, setPreview: (p: string) => void) => {
     if (file.size > 5 * 1024 * 1024) { setErro('Imagem muito grande. Máximo 5 MB.'); return }
-    if (!file.type.startsWith('image/')) { setErro('Ficheiro inválido. Envia uma imagem.'); return }
+    if (!aceitaTipoImagem(file.type)) { setErro('Formato não aceite. Envia uma foto JPG, PNG ou WEBP.'); return }
     setErro('')
     setFile(file)
     const reader = new FileReader()
