@@ -20,7 +20,18 @@ const ADMIN_LOCKOUT = 15 * 60 * 1000
 const ADMIN_TOKEN_TTL = 4 * 60 * 60 * 1000
 
 function getSigningKey(): Buffer {
+  // Falha fechada, nunca aberta. Com `?? ''`, um deploy a que faltassem as
+  // duas variáveis passava a assinar com sha256('admin-session:') — uma
+  // constante que qualquer pessoa consegue derivar, e portanto um cookie de
+  // admin forjável sem saber senha nenhuma. Não poder entrar é um incidente
+  // de configuração; poder entrar sem credenciais é uma porta aberta.
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.ADMIN_PASSWORD ?? ''
+  if (!secret) {
+    throw new Error(
+      'Configuração em falta: define SUPABASE_SERVICE_ROLE_KEY ou ADMIN_PASSWORD. ' +
+      'Sem uma delas as sessões de administrador não podem ser assinadas em segurança.'
+    )
+  }
   return crypto.createHash('sha256').update('admin-session:' + secret).digest()
 }
 
@@ -39,8 +50,10 @@ function verifyAdminToken(token: string): boolean {
   if (prefix !== 'admin') return false
   const expires = parseInt(expiresStr, 10)
   if (!expires || Date.now() > expires) return false
-  const expected = crypto.createHmac('sha256', getSigningKey()).update(`${prefix}:${expiresStr}`).digest('hex')
   try {
+    // getSigningKey() lança se a configuração estiver em falta: nesse caso
+    // ninguém entra, que é o lado correcto para falhar.
+    const expected = crypto.createHmac('sha256', getSigningKey()).update(`${prefix}:${expiresStr}`).digest('hex')
     return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(sig, 'hex'))
   } catch {
     return false
@@ -251,41 +264,83 @@ export async function confirmarPagamentoManual(pagamentoId: string) {
   if (!pag) return { error: 'Pagamento não encontrado' }
   if (pag.status === 'confirmado') return { error: 'Já confirmado' }
 
+  const estadoAnterior = pag.status
+
+  // Reivindica o pagamento ANTES de creditar seja o que for.
+  //
+  // Ler o estado e só depois creditar deixava uma janela entre as duas coisas:
+  // dois cliques no botão de confirmar (ou duas abas do admin, ou um pedido
+  // repetido por ligação lenta) liam ambos "por confirmar", ambos passavam a
+  // verificação de duplicado, e ambos inseriam o depósito e incrementavam o
+  // total do utilizador e o fundo. O depósito ficava contado duas vezes: peso a
+  // dobrar no sorteio para essa pessoa e fundo inflacionado para toda a gente.
+  //
+  // Um UPDATE com condição é atómico no Postgres: de dois pedidos simultâneos,
+  // só um encontra a linha por confirmar e a actualiza; o outro recebe zero
+  // linhas e sai aqui. Creditar de menos é recuperável e visível; creditar a
+  // dobrar corrompe o sorteio em silêncio.
+  const { data: reivindicado } = await admin
+    .from('pagamentos')
+    .update({ status: 'confirmado', confirmado_at: new Date().toISOString() })
+    .eq('id', pagamentoId)
+    .neq('status', 'confirmado')
+    .select('id')
+    .maybeSingle()
+
+  if (!reivindicado) return { error: 'Já confirmado' }
+
   const cicloId = pag.ciclo_id
   const usuarioId = pag.usuario_id
   const valorBruto = Number(pag.valor)
 
-  const { data: cicloInfo } = await admin.from('ciclos').select('total_acumulado, meta, minimo_participantes').eq('id', cicloId).single()
-  const acumulado = Number(cicloInfo?.total_acumulado ?? 0)
-  const meta = Number(cicloInfo?.meta ?? 200000)
-  const coberturaAtingida = acumulado >= meta
-
-  const taxa = coberturaAtingida ? TAXA_APOS_COBERTURA : TAXA_ANTES_COBERTURA
-  const comissao = Math.round(valorBruto * taxa)
-  const valorLiquido = valorBruto - comissao
-
-  if (pag.tipo === 'inscricao') {
-    const { data: exists } = await admin.from('inscricoes').select('id')
-      .eq('usuario_id', usuarioId).eq('ciclo_id', cicloId).maybeSingle()
-    if (!exists) {
-      await admin.from('inscricoes').insert({ usuario_id: usuarioId, ciclo_id: cicloId, taxa_paga: valorBruto })
-      const minPart = cicloInfo?.minimo_participantes ?? 3000
-      await admin.rpc('increment_participantes', { p_ciclo_id: cicloId, p_min: minPart })
-    }
-  } else {
-    const { data: dup } = await admin.from('depositos').select('id').eq('referencia_paysuite', pag.referencia).maybeSingle()
-    if (!dup) {
-      await admin.from('depositos').insert({ usuario_id: usuarioId, ciclo_id: cicloId, valor: valorBruto, pontos_gerados: 0, referencia_paysuite: pag.referencia })
-      await admin.rpc('increment_user_deposito', { p_user_id: usuarioId, p_amount: valorBruto })
-
-      if (acumulado < ALVO_REAL) {
-        const adicaoFundo = Math.min(valorLiquido, ALVO_REAL - acumulado)
-        await admin.rpc('increment_fundo', { p_ciclo_id: cicloId, p_amount: adicaoFundo, p_max: ALVO_REAL })
-      }
-    }
+  // Se algo falhar a meio do crédito, devolve o pagamento ao estado anterior
+  // para o admin poder repetir, em vez de o deixar marcado como confirmado
+  // sem nunca ter sido creditado.
+  const desfazerReivindicacao = async () => {
+    await admin
+      .from('pagamentos')
+      .update({ status: estadoAnterior, confirmado_at: null })
+      .eq('id', pagamentoId)
   }
 
-  await admin.from('pagamentos').update({ status: 'confirmado', confirmado_at: new Date().toISOString() }).eq('id', pagamentoId)
+  try {
+    const { data: cicloInfo } = await admin.from('ciclos').select('total_acumulado, meta, minimo_participantes').eq('id', cicloId).single()
+    const acumulado = Number(cicloInfo?.total_acumulado ?? 0)
+    const meta = Number(cicloInfo?.meta ?? 200000)
+    const coberturaAtingida = acumulado >= meta
+
+    const taxa = coberturaAtingida ? TAXA_APOS_COBERTURA : TAXA_ANTES_COBERTURA
+    const comissao = Math.round(valorBruto * taxa)
+    const valorLiquido = valorBruto - comissao
+
+    if (pag.tipo === 'inscricao') {
+      const { data: exists } = await admin.from('inscricoes').select('id')
+        .eq('usuario_id', usuarioId).eq('ciclo_id', cicloId).maybeSingle()
+      if (!exists) {
+        await admin.from('inscricoes').insert({ usuario_id: usuarioId, ciclo_id: cicloId, taxa_paga: valorBruto })
+        const minPart = cicloInfo?.minimo_participantes ?? 3000
+        await admin.rpc('increment_participantes', { p_ciclo_id: cicloId, p_min: minPart })
+      }
+    } else {
+      const { data: dup } = await admin.from('depositos').select('id').eq('referencia_paysuite', pag.referencia).maybeSingle()
+      if (!dup) {
+        const { error: erroDeposito } = await admin.from('depositos').insert({ usuario_id: usuarioId, ciclo_id: cicloId, valor: valorBruto, pontos_gerados: 0, referencia_paysuite: pag.referencia })
+        if (erroDeposito) throw new Error(erroDeposito.message)
+
+        await admin.rpc('increment_user_deposito', { p_user_id: usuarioId, p_amount: valorBruto })
+
+        if (acumulado < ALVO_REAL) {
+          const adicaoFundo = Math.min(valorLiquido, ALVO_REAL - acumulado)
+          await admin.rpc('increment_fundo', { p_ciclo_id: cicloId, p_amount: adicaoFundo, p_max: ALVO_REAL })
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[confirmarPagamentoManual] Falha a creditar, a reverter:', e)
+    await desfazerReivindicacao()
+    return { error: 'Não foi possível creditar o pagamento. Nada foi alterado, tenta novamente.' }
+  }
+
   return { success: true }
 }
 
@@ -392,10 +447,39 @@ export async function realizarSorteio() {
   }))
 
   const pesoTotal = participants.reduce((s, p) => s + p.totalDepositado, 0)
+  if (pesoTotal <= 0) return { error: 'Sem participantes com depósitos' }
 
-  // Selecção ponderada: quem deposita mais tem mais chances
+  // Reivindica o ciclo ANTES de sortear.
+  //
+  // Sem isto, dois pedidos simultâneos liam ambos o ciclo como 'activo',
+  // sorteavam cada um o SEU vencedor (aleatório, portanto provavelmente
+  // pessoas diferentes) e inseriam os dois em `sorteios`. Ficavam dois
+  // vencedores registados para o mesmo ciclo — e não há forma honesta de
+  // decidir depois qual deles conta. Só um pedido consegue mudar o estado de
+  // 'activo' para 'concluido'; o outro sai aqui sem sortear nada.
+  const { data: cicloReivindicado } = await admin
+    .from('ciclos')
+    .update({ estado: 'concluido', concluido_at: new Date().toISOString() })
+    .eq('id', ciclo.id)
+    .eq('estado', 'activo')
+    .select('id')
+    .maybeSingle()
+
+  if (!cicloReivindicado) return { error: 'Este ciclo já foi sorteado' }
+
+  // Selecção ponderada: quem deposita mais tem mais chances.
+  //
+  // Amostragem por rejeição em vez de `% pesoTotal` directo: o módulo só é
+  // uniforme quando o divisor divide 2^32 exactamente, e caso contrário os
+  // resíduos mais baixos saem com um pouco mais de frequência. O desvio seria
+  // ínfimo, mas isto é um sorteio de dinheiro real — o custo de o eliminar é
+  // um ciclo while que quase nunca repete.
+  const limite = Math.floor(0xFFFFFFFF / pesoTotal) * pesoTotal
   const buf = new Uint32Array(1)
-  crypto.getRandomValues(buf)
+  do {
+    crypto.getRandomValues(buf)
+  } while (buf[0] >= limite)
+
   let rand = buf[0] % pesoTotal
   let winner = participants[0]
   for (const p of participants) {
@@ -405,10 +489,21 @@ export async function realizarSorteio() {
     if (rand < 0) { winner = p; break }
   }
 
-  await Promise.all([
-    admin.from('sorteios').insert({ ciclo_id: ciclo.id, vencedor_id: winner.userId, total_fundo: ciclo.total_acumulado, premio: 200000 }),
-    admin.from('ciclos').update({ estado: 'concluido', concluido_at: new Date().toISOString() }).eq('id', ciclo.id),
-  ])
+  // Sequencial, não Promise.all: o ciclo já está reivindicado acima, falta
+  // registar quem ganhou. Se este insert falhar, o ciclo fica fechado sem
+  // vencedor registado — estado visível e corrigível, ao contrário de dois
+  // vencedores em simultâneo.
+  const { error: erroSorteio } = await admin.from('sorteios').insert({
+    ciclo_id: ciclo.id,
+    vencedor_id: winner.userId,
+    total_fundo: ciclo.total_acumulado,
+    premio: 200000,
+  })
+
+  if (erroSorteio) {
+    console.error('[realizarSorteio] Ciclo fechado mas sorteio não registado:', erroSorteio)
+    return { error: 'O vencedor foi escolhido mas não ficou registado. Não repitas o sorteio: contacta o suporte técnico.' }
+  }
 
   return { success: true, winnerNome: winner.nome, winnerEmail: winner.email, winnerTelefone: winner.telefone, totalDepositado: winner.totalDepositado }
 }
