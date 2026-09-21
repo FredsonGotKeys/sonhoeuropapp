@@ -17,6 +17,7 @@ nome, e pode ser consultada com `list_migrations`.
 | `endurecer_politicas_sorteios_e_funcoes` | Remove política pública de `sorteios`; fixa `search_path` nas funções de dinheiro |
 | `revogar_execute_publico_rls_auto_enable` | Tira `EXECUTE` de `PUBLIC` na função de event trigger |
 | `restricoes_unicidade_contra_dupla_contagem` | UNIQUE em `depositos.referencia_paysuite`, `inscricoes(usuario_id, ciclo_id)`, `sorteios.ciclo_id` |
+| `limites_de_tamanho_e_tipo_nos_buckets` | Limite de tamanho e tipos permitidos nos três buckets de Storage |
 
 ### Porque é que a revogação de escrita não parte nada
 
@@ -63,6 +64,40 @@ Teste como visitante anónimo, corrido depois das migrações:
 | `verificacoes` | 0 | 0 |
 | `pagamentos` | 0 | 0 |
 | `sorteios` | 0 | 0 |
+
+## Storage
+
+| Bucket | Público | Tamanho máximo | Tipos aceites |
+|---|---|---|---|
+| `comprovativos` | **sim** | 10 MB | JPEG, PNG, WEBP, HEIC, HEIF |
+| `contratos` | não | 10 MB | PDF |
+| `verificacoes` | não | 5 MB | JPEG, PNG, WEBP, HEIC, HEIF |
+
+As fotos de BI e selfies (`verificacoes`) estão privadas e a política exige que
+cada pessoa só escreva na sua própria pasta (`auth.uid()`). O admin vê-as por
+URLs assinados de 10 minutos. Os contratos também são privados, com URLs
+assinados de 5 minutos.
+
+Antes desta migração nenhum bucket tinha limite de tamanho nem restrição de
+tipo. Como os uploads vão directos do browser, a validação que existe em
+`app/dashboard/page.tsx` é conveniência, não barreira: quem chame a API do
+Storage directamente contorna-a. Os limites acima são aplicados pelo próprio
+Storage e valem para qualquer caminho de upload.
+
+### Fica por resolver: `comprovativos` é público
+
+Os comprovativos de pagamento mostram tipicamente nome, número e saldo de quem
+transferiu, e o bucket é de leitura pública — quem tenha o URL vê, sem sessão.
+Está mitigado por `limparComprovativosExpirados()`, que apaga as imagens ao fim
+de 24h, e os nomes têm entropia razoável (referência + dois carimbos de tempo em
+milissegundos), mas o desenho correcto é bucket privado com URLs assinados,
+como já é feito em `verificacoes` e `contratos`.
+
+Mudar isso implica tocar no caminho de depósito, que é o mais sensível da
+aplicação: `getPublicUrl` passa a `createSignedUrl` no envio, a validação de
+URL em `app/actions/deposito.ts` deixa de poder exigir `/object/public/`, e a
+vista de admin precisa de assinar cada imagem. Não foi feito nesta passagem
+por não ser testável aqui sem uma sessão autenticada.
 
 ## Por fazer, fora do SQL
 
