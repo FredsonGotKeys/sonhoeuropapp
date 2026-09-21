@@ -234,6 +234,49 @@ export async function getParticipanteDetalhes(userId: string) {
 
 // ─── PAGAMENTOS ───────────────────────────────────────────────────────────────
 
+// Duração dos URLs assinados dos comprovativos. Mais longa do que os 10 min
+// das fotos de verificação porque o admin percorre uma lista inteira de uma
+// assentada; curta o suficiente para um link copiado por engano não sobreviver
+// à sessão.
+const COMPROVATIVO_URL_TTL_S = 30 * 60
+
+/**
+ * Troca o caminho guardado em `comprovativo_imagem_url` por um URL assinado.
+ *
+ * O bucket `comprovativos` era de leitura pública: quem tivesse o URL via o
+ * comprovativo — que mostra tipicamente nome, número e saldo de quem
+ * transferiu — sem sessão nenhuma. Agora é privado e só a service role lhe
+ * toca; a vista de admin recebe o mesmo campo com o mesmo significado, por
+ * isso o JSX fica exactamente como estava.
+ */
+async function assinarComprovativos<T extends { comprovativo_imagem_url: string | null }>(
+  linhas: T[]
+): Promise<T[]> {
+  const caminhos = [...new Set(
+    linhas.map((l) => caminhoNoBucket(l.comprovativo_imagem_url)).filter((c): c is string => !!c)
+  )]
+  if (!caminhos.length) return linhas
+
+  const admin = createAdminClient()
+  const { data } = await admin.storage
+    .from('comprovativos')
+    .createSignedUrls(caminhos, COMPROVATIVO_URL_TTL_S)
+
+  const assinados = new Map<string, string>()
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl && !item.error) assinados.set(item.path, item.signedUrl)
+  }
+
+  return linhas.map((l) => {
+    const caminho = caminhoNoBucket(l.comprovativo_imagem_url)
+    const url = caminho ? assinados.get(caminho) ?? null : null
+    // Sem assinatura — o ficheiro já foi apagado pelas 24h, por exemplo — o
+    // campo fica a null e a vista mostra a mensagem de imagem expirada que já
+    // existia, em vez de uma imagem partida.
+    return { ...l, comprovativo_imagem_url: url }
+  })
+}
+
 export async function getPagamentos(filtroStatus?: string) {
   const auth = await requireAdmin(); if (auth.error) return []
   await limparComprovativosExpirados()
@@ -250,7 +293,7 @@ export async function getPagamentos(filtroStatus?: string) {
 
   const { data, error } = await query
   if (error) return []
-  return data ?? []
+  return assinarComprovativos(data ?? [])
 }
 
 const TAXA_ANTES_COBERTURA = 0.10

@@ -28,6 +28,7 @@ function FacebookIcon({ className }: { className?: string }) {
   )
 }
 import { createClient } from '@/lib/supabase/client'
+import { nomeDeComprovativo } from '@/lib/comprovativos'
 import { EuropaWatermark } from '@/components/EuropaWatermark'
 import { Reveal } from '@/components/Reveal'
 import { logout } from '@/app/actions/auth'
@@ -287,23 +288,24 @@ function CampoComprovativo({
 
     setLoading(true)
     setErro('')
-    let imagemUrl: string | undefined
+    // O bucket é privado: o que segue para o servidor é o caminho do ficheiro,
+    // não um URL público. Quem precisa de ver a imagem (o admin) recebe um
+    // URL assinado de curta duração gerado do lado do servidor.
+    let imagemPath: string | undefined
 
     if (imagem) {
       setUploadProgress('A enviar imagem...')
       const supabase = createClient()
-      const ext = imagem.name.split('.').pop() ?? 'jpg'
-      const path = `${referencia}_${Date.now()}.${ext}`
+      const path = nomeDeComprovativo(referencia, imagem.name)
       const { error: upErr } = await supabase.storage
         .from('comprovativos')
         .upload(path, imagem, { contentType: imagem.type })
       if (upErr) { setErro('Erro ao enviar imagem: ' + upErr.message); setLoading(false); setUploadProgress(''); return }
-      const { data: urlData } = supabase.storage.from('comprovativos').getPublicUrl(path)
-      imagemUrl = urlData.publicUrl
+      imagemPath = path
     }
 
     setUploadProgress('A guardar comprovativo...')
-    const res = await enviarComprovativo(referencia, texto, imagemUrl)
+    const res = await enviarComprovativo(referencia, texto, imagemPath)
     if (res.error) { setErro(res.error); setLoading(false); setUploadProgress(''); return }
     setEnviado(true)
     setLoading(false)

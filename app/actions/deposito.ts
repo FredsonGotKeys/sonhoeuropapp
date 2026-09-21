@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { pagamentosPendentesDe, historicoPagamentosDe } from '@/lib/painel-queries'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { caminhoNoBucket } from '@/lib/comprovativos'
+import { caminhoNoBucket, caminhoPertenceA } from '@/lib/comprovativos'
 
 // ─── PaySuite e ZumboPay estão INACTIVOS ────────────────────────────────────
 // Ambos tiveram problemas de fiabilidade (PaySuite exige conta empresarial;
@@ -127,7 +127,7 @@ export async function criarPedidoPagamento(params: {
   return { success: true, reference, valor, reaproveitado: false }
 }
 
-export async function enviarComprovativo(referencia: string, comprovativo: string, imagemUrl?: string) {
+export async function enviarComprovativo(referencia: string, comprovativo: string, imagem?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado' }
@@ -139,21 +139,23 @@ export async function enviarComprovativo(referencia: string, comprovativo: strin
   const textoLimpo = comprovativo.trim().replace(/<[^>]*>/g, '').slice(0, 2000)
 
   const temTexto = textoLimpo.length >= 10
-  const temImagem = !!imagemUrl
+  const temImagem = !!imagem
 
   if (!temTexto && !temImagem) {
     return { error: 'Envia o texto do comprovativo ou uma imagem/screenshot.' }
   }
 
-  // Validate image URL if provided — tem de ser um objecto dentro do bucket
-  // 'comprovativos', não apenas qualquer URL do mesmo projecto Supabase.
-  if (imagemUrl) {
-    try {
-      const url = new URL(imagemUrl)
-      const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname
-      const dentroDoBucket = url.pathname.includes('/object/public/comprovativos/')
-      if (url.hostname !== supabaseHost || !dentroDoBucket) return { error: 'URL de imagem inválida' }
-    } catch {
+  // O bucket é privado, por isso o que chega aqui é o caminho do ficheiro.
+  // `caminhoNoBucket` também aceita o URL público completo, para o caso de um
+  // cliente ainda ter em memória o pacote anterior durante o deploy.
+  //
+  // `caminhoPertenceA` é a parte nova que interessa: o nome tem de ser o desta
+  // referência. Antes bastava que o objecto estivesse algures no bucket, o que
+  // deixava anexar ao próprio pagamento o comprovativo de outra pessoa.
+  let caminhoImagem: string | null = null
+  if (imagem) {
+    caminhoImagem = caminhoNoBucket(imagem)
+    if (!caminhoImagem || !caminhoPertenceA(caminhoImagem, referencia)) {
       return { error: 'URL de imagem inválida' }
     }
   }
@@ -171,7 +173,7 @@ export async function enviarComprovativo(referencia: string, comprovativo: strin
 
   const { error } = await admin.from('pagamentos').update({
     comprovativo: textoLimpo || null,
-    comprovativo_imagem_url: imagemUrl || null,
+    comprovativo_imagem_url: caminhoImagem,
     comprovativo_enviado_at: new Date().toISOString(),
     status: 'pendente_confirmacao',
   }).eq('id', pag.id)

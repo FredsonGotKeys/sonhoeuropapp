@@ -18,6 +18,7 @@ nome, e pode ser consultada com `list_migrations`.
 | `revogar_execute_publico_rls_auto_enable` | Tira `EXECUTE` de `PUBLIC` na função de event trigger |
 | `restricoes_unicidade_contra_dupla_contagem` | UNIQUE em `depositos.referencia_paysuite`, `inscricoes(usuario_id, ciclo_id)`, `sorteios.ciclo_id` |
 | `limites_de_tamanho_e_tipo_nos_buckets` | Limite de tamanho e tipos permitidos nos três buckets de Storage |
+| `comprovativos_bucket_privado` | Tira a leitura pública do bucket `comprovativos` |
 
 ### Porque é que a revogação de escrita não parte nada
 
@@ -69,7 +70,7 @@ Teste como visitante anónimo, corrido depois das migrações:
 
 | Bucket | Público | Tamanho máximo | Tipos aceites |
 |---|---|---|---|
-| `comprovativos` | **sim** | 10 MB | JPEG, PNG, WEBP, HEIC, HEIF |
+| `comprovativos` | não | 10 MB | JPEG, PNG, WEBP, HEIC, HEIF |
 | `contratos` | não | 10 MB | PDF |
 | `verificacoes` | não | 5 MB | JPEG, PNG, WEBP, HEIC, HEIF |
 
@@ -84,20 +85,41 @@ tipo. Como os uploads vão directos do browser, a validação que existe em
 Storage directamente contorna-a. Os limites acima são aplicados pelo próprio
 Storage e valem para qualquer caminho de upload.
 
-### Fica por resolver: `comprovativos` é público
+### `comprovativos` deixou de ser público
 
 Os comprovativos de pagamento mostram tipicamente nome, número e saldo de quem
-transferiu, e o bucket é de leitura pública — quem tenha o URL vê, sem sessão.
-Está mitigado por `limparComprovativosExpirados()`, que apaga as imagens ao fim
-de 24h, e os nomes têm entropia razoável (referência + dois carimbos de tempo em
-milissegundos), mas o desenho correcto é bucket privado com URLs assinados,
-como já é feito em `verificacoes` e `contratos`.
+transferiu, e o bucket era de leitura pública — quem tivesse o URL via a imagem
+sem sessão nenhuma. Estava mitigado por `limparComprovativosExpirados()`, que
+apaga as imagens ao fim de 24h, e pela entropia do nome do ficheiro, mas
+mitigação não é controlo de acesso.
 
-Mudar isso implica tocar no caminho de depósito, que é o mais sensível da
-aplicação: `getPublicUrl` passa a `createSignedUrl` no envio, a validação de
-URL em `app/actions/deposito.ts` deixa de poder exigir `/object/public/`, e a
-vista de admin precisa de assinar cada imagem. Não foi feito nesta passagem
-por não ser testável aqui sem uma sessão autenticada.
+Agora o bucket é privado, como `verificacoes` e `contratos`. O que mudou no
+código:
+
+- `app/dashboard/page.tsx` deixou de chamar `getPublicUrl`. O envio passa ao
+  servidor o **caminho** do ficheiro dentro do bucket.
+- `pagamentos.comprovativo_imagem_url` passa a guardar esse caminho. Linhas
+  antigas guardam o URL público completo e continuam a funcionar:
+  `caminhoNoBucket()` aceita as duas formas.
+- `getPagamentos()` (em `app/actions/admin.ts`) assina cada caminho com
+  `createSignedUrls`, 30 minutos, numa só chamada para a lista toda. A vista de
+  admin recebe o mesmo campo com o mesmo significado — o JSX não mudou.
+- Quando não há assinatura (ficheiro já apagado pelas 24h) o campo fica a
+  `null` e aparece a mensagem de imagem expirada que já existia, em vez de uma
+  imagem partida.
+
+Aproveitou-se para fechar um buraco lateral que não tinha nada que ver com o
+bucket ser público: a validação antiga só exigia que o URL apontasse para
+dentro de `comprovativos`, portanto qualquer pessoa autenticada podia anexar ao
+seu próprio pagamento o comprovativo de outra. O nome do ficheiro passa a ser
+`<referencia>_<carimbo>.<extensão>` e o servidor exige que corresponda à
+referência que está a ser enviada (`caminhoPertenceA`), referência essa que já
+era verificada como pertencendo a quem envia.
+
+A leitura do bucket passa toda pela service role: não há política de `SELECT`
+em `storage.objects` para `comprovativos`, de propósito. O upload não foi
+tocado — a política de `INSERT` continua a mesma, e `public` só governa a
+leitura anónima.
 
 ## Por fazer, fora do SQL
 
