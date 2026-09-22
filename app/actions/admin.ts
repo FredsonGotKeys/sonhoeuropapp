@@ -2,7 +2,7 @@
 
 import crypto from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { caminhoNoBucket } from '@/lib/comprovativos'
 import { limparComprovativosExpirados } from '@/app/actions/deposito'
 import { limparVerificacoesExpiradas } from '@/app/actions/verificacao'
@@ -14,10 +14,84 @@ const ALVO_REAL = 300000
 
 // ─── AUTH (stateless HMAC tokens — works across serverless instances) ────────
 
-const adminAttempts = new Map<string, { count: number; lockedUntil: number }>()
 const ADMIN_MAX_ATTEMPTS = 5
-const ADMIN_LOCKOUT = 15 * 60 * 1000
+const ADMIN_LOCKOUT_MIN = 15
 const ADMIN_TOKEN_TTL = 4 * 60 * 60 * 1000
+
+// Rede de segurança para quando a base de dados não responde. Não é o
+// mecanismo principal — é o que existia antes, com os seus defeitos: vive na
+// memória de uma instância e some no arranque a frio. Só entra em jogo se a
+// contagem persistente falhar, e mesmo aí é melhor do que não contar nada.
+const tentativasEmMemoria = new Map<string, { contagem: number; bloqueadoAte: number }>()
+
+/**
+ * IP de quem está a tentar entrar.
+ *
+ * A ordem importa. `x-forwarded-for` é uma lista a que o cliente pode juntar
+ * entradas à frente, por isso ler a primeira posição às cegas dá um valor que
+ * o atacante escolhe — e escolher o valor é escolher um contador novo a cada
+ * tentativa. Os cabeçalhos que a própria Vercel escreve vêm primeiro.
+ */
+async function ipDeOrigem(): Promise<string> {
+  const h = await headers()
+  const vercel = h.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
+  if (vercel) return vercel
+  const real = h.get('x-real-ip')?.trim()
+  if (real) return real
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'desconhecido'
+}
+
+/** Momento até ao qual este IP está bloqueado, ou null. */
+async function bloqueioActivo(ip: string): Promise<number | null> {
+  try {
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from('admin_login_tentativas')
+      .select('bloqueado_ate')
+      .eq('ip', ip)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    const ate = data?.bloqueado_ate ? new Date(data.bloqueado_ate).getTime() : 0
+    return ate > Date.now() ? ate : null
+  } catch (e) {
+    console.error('[admin] Falha a ler o bloqueio, a usar a contagem em memória:', e)
+    const local = tentativasEmMemoria.get(ip)
+    return local && local.bloqueadoAte > Date.now() ? local.bloqueadoAte : null
+  }
+}
+
+/** Conta mais uma falha para este IP e bloqueia-o se chegou ao limite. */
+async function registarFalha(ip: string): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    const { error } = await admin.rpc('registar_tentativa_admin', {
+      p_ip: ip,
+      p_max: ADMIN_MAX_ATTEMPTS,
+      p_bloqueio: `${ADMIN_LOCKOUT_MIN} minutes`,
+    })
+    if (error) throw new Error(error.message)
+  } catch (e) {
+    console.error('[admin] Falha a registar a tentativa, a contar em memória:', e)
+    const local = tentativasEmMemoria.get(ip) ?? { contagem: 0, bloqueadoAte: 0 }
+    local.contagem += 1
+    if (local.contagem >= ADMIN_MAX_ATTEMPTS) {
+      local.bloqueadoAte = Date.now() + ADMIN_LOCKOUT_MIN * 60_000
+      local.contagem = 0
+    }
+    tentativasEmMemoria.set(ip, local)
+  }
+}
+
+/** Entrou com sucesso: o histórico deste IP deixa de interessar. */
+async function limparTentativas(ip: string): Promise<void> {
+  tentativasEmMemoria.delete(ip)
+  try {
+    const admin = createAdminClient()
+    await admin.from('admin_login_tentativas').delete().eq('ip', ip)
+  } catch (e) {
+    console.error('[admin] Falha a limpar as tentativas de', ip, e)
+  }
+}
 
 function getSigningKey(): Buffer {
   // Falha fechada, nunca aberta. Com `?? ''`, um deploy a que faltassem as
@@ -77,27 +151,23 @@ async function requireAdmin(): Promise<{ error?: string }> {
 }
 
 export async function verifyAdminPassword(password: string) {
-  const key = 'admin-login'
-  const now = Date.now()
-  const attempt = adminAttempts.get(key)
+  // A contagem é por IP. Era uma chave única para toda a gente, o que fazia do
+  // bloqueio uma arma contra o próprio administrador: cinco tentativas erradas
+  // de um desconhecido e o dono do painel ficava de fora quinze minutos.
+  const ip = await ipDeOrigem()
 
-  if (attempt && now < attempt.lockedUntil) {
-    const mins = Math.ceil((attempt.lockedUntil - now) / 60000)
+  const bloqueadoAte = await bloqueioActivo(ip)
+  if (bloqueadoAte) {
+    const mins = Math.max(1, Math.ceil((bloqueadoAte - Date.now()) / 60000))
     return { error: `Demasiadas tentativas. Tenta em ${mins} minutos.` }
   }
 
   if (!adminPasswordMatches(password)) {
-    const entry = { count: (attempt?.count ?? 0) + 1, lockedUntil: 0 }
-
-    if (entry.count >= ADMIN_MAX_ATTEMPTS) {
-      entry.lockedUntil = now + ADMIN_LOCKOUT
-      entry.count = 0
-    }
-    adminAttempts.set(key, entry)
+    await registarFalha(ip)
     return { error: 'Senha incorrecta' }
   }
 
-  adminAttempts.delete(key)
+  await limparTentativas(ip)
   const token = createAdminToken()
   const cookieStore = await cookies()
   cookieStore.set('admin-session', token, {
@@ -234,6 +304,49 @@ export async function getParticipanteDetalhes(userId: string) {
 
 // ─── PAGAMENTOS ───────────────────────────────────────────────────────────────
 
+// Duração dos URLs assinados dos comprovativos. Mais longa do que os 10 min
+// das fotos de verificação porque o admin percorre uma lista inteira de uma
+// assentada; curta o suficiente para um link copiado por engano não sobreviver
+// à sessão.
+const COMPROVATIVO_URL_TTL_S = 30 * 60
+
+/**
+ * Troca o caminho guardado em `comprovativo_imagem_url` por um URL assinado.
+ *
+ * O bucket `comprovativos` era de leitura pública: quem tivesse o URL via o
+ * comprovativo — que mostra tipicamente nome, número e saldo de quem
+ * transferiu — sem sessão nenhuma. Agora é privado e só a service role lhe
+ * toca; a vista de admin recebe o mesmo campo com o mesmo significado, por
+ * isso o JSX fica exactamente como estava.
+ */
+async function assinarComprovativos<T extends { comprovativo_imagem_url: string | null }>(
+  linhas: T[]
+): Promise<T[]> {
+  const caminhos = [...new Set(
+    linhas.map((l) => caminhoNoBucket(l.comprovativo_imagem_url)).filter((c): c is string => !!c)
+  )]
+  if (!caminhos.length) return linhas
+
+  const admin = createAdminClient()
+  const { data } = await admin.storage
+    .from('comprovativos')
+    .createSignedUrls(caminhos, COMPROVATIVO_URL_TTL_S)
+
+  const assinados = new Map<string, string>()
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl && !item.error) assinados.set(item.path, item.signedUrl)
+  }
+
+  return linhas.map((l) => {
+    const caminho = caminhoNoBucket(l.comprovativo_imagem_url)
+    const url = caminho ? assinados.get(caminho) ?? null : null
+    // Sem assinatura — o ficheiro já foi apagado pelas 24h, por exemplo — o
+    // campo fica a null e a vista mostra a mensagem de imagem expirada que já
+    // existia, em vez de uma imagem partida.
+    return { ...l, comprovativo_imagem_url: url }
+  })
+}
+
 export async function getPagamentos(filtroStatus?: string) {
   const auth = await requireAdmin(); if (auth.error) return []
   await limparComprovativosExpirados()
@@ -250,7 +363,7 @@ export async function getPagamentos(filtroStatus?: string) {
 
   const { data, error } = await query
   if (error) return []
-  return data ?? []
+  return assinarComprovativos(data ?? [])
 }
 
 const TAXA_ANTES_COBERTURA = 0.10

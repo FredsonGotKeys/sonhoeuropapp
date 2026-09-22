@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   LogOut, Copy, Share2, TrendingUp, Star,
   Trophy, Clock, Check, Home, Wallet, Users, Gift,
-  AlertCircle, ChevronRight, ShieldCheck, Smartphone, Banknote,
+  AlertCircle, ChevronRight, ShieldCheck,
   Mail, Info, Send, ClipboardPaste, CheckCircle2, ImagePlus, X, FileText,
   Infinity as InfinityIcon,
 } from 'lucide-react'
@@ -28,6 +28,7 @@ function FacebookIcon({ className }: { className?: string }) {
   )
 }
 import { createClient } from '@/lib/supabase/client'
+import { nomeDeComprovativo } from '@/lib/comprovativos'
 import { EuropaWatermark } from '@/components/EuropaWatermark'
 import { Reveal } from '@/components/Reveal'
 import { logout } from '@/app/actions/auth'
@@ -115,7 +116,7 @@ interface PagamentoPendente {
   created_at: string
 }
 
-type PayMethod = 'mpesa' | 'emola'
+type PayMethod = 'mpesa' | 'emola' | 'payizi'
 
 type Tab = 'home' | 'depositar' | 'convite' | 'historico' | 'pagamentos'
 
@@ -147,20 +148,34 @@ const CONTRATO_STATUS_LABEL: Record<string, string> = {
   finalizado: 'Assinado, toca para descarregar',
 }
 
+// Os três destinos possíveis. O `numero` é exactamente a cadeia que vai para a
+// área de transferência — sem espaços nem separadores — para que o que se cola
+// na app do operador seja o que aqui está.
 const PAYMENT_INFO = {
-  mpesa: { numero: '846283051', operadora: 'M-Pesa (Vodacom)', nome: 'Fredson Bernardo Muianga' },
-  emola: { numero: '876252006', operadora: 'E-Mola (Movitel)', nome: 'Fredson Bernardo Muianga' },
-}
+  mpesa:  { rotulo: 'M-Pesa', via: 'Vodacom',      numero: '846283051',             logo: '/images/pay-mpesa.webp'  },
+  emola:  { rotulo: 'e-Mola', via: 'Movitel',      numero: '876252006',             logo: '/images/pay-emola.webp'  },
+  payizi: { rotulo: 'PayIZI', via: 'NIB bancário', numero: '000100000056214914557', logo: '/images/pay-payizi.webp' },
+} as const
 
-// ─── Dados de pagamento (mostrar número, nome) ───────────────────────────
-function DadosPagamento({ method, valor, codigoConvite }: { method: PayMethod; valor: number; codigoConvite?: string }) {
-  const info = PAYMENT_INFO[method]
-  const [copiado, setCopiado] = useState(false)
+const ORDEM_PAGAMENTO = ['mpesa', 'emola', 'payizi'] as const
+const TITULAR = 'Fredson Bernardo Muianga'
 
-  const copiarNumero = async () => {
-    await navigator.clipboard.writeText(info.numero)
-    setCopiado(true)
-    setTimeout(() => setCopiado(false), 2000)
+// ─── Dados de pagamento (os três destinos, cada um com o seu logótipo) ───
+function DadosPagamento({ valor, codigoConvite }: { valor: number; codigoConvite?: string }) {
+  // Qual das linhas acabou de ser copiada, para o "Copiado!" aparecer só nessa.
+  const [copiado, setCopiado] = useState<string | null>(null)
+
+  const copiar = async (chave: string, texto: string) => {
+    try {
+      await navigator.clipboard.writeText(texto)
+      setCopiado(chave)
+      setTimeout(() => setCopiado(null), 2000)
+    } catch {
+      // Fora de HTTPS, ou com a permissão negada, a área de transferência
+      // rejeita. O número continua visível e seleccionável — o que não pode
+      // acontecer é a promessa rejeitada rebentar por tratar.
+      setCopiado(null)
+    }
   }
 
   const linkPartilha = typeof window !== 'undefined'
@@ -172,29 +187,55 @@ function DadosPagamento({ method, valor, codigoConvite }: { method: PayMethod; v
   return (
     <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid var(--brand)' }}>
       <div className="px-4 py-3 flex items-center gap-2" style={{ backgroundColor: 'var(--brand)' }}>
-        {method === 'mpesa' ? <Smartphone className="w-4 h-4 text-white" /> : <Banknote className="w-4 h-4 text-white" />}
-        <span className="text-white font-bold text-sm">Enviar {valor} MT via {info.operadora}</span>
+        <Wallet className="w-4 h-4 text-white" />
+        <span className="text-white font-bold text-sm">Enviar {valor} MT por uma destas vias</span>
       </div>
       <div className="p-4 space-y-3 bg-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted uppercase tracking-widest font-bold">Enviar para</p>
-            <p className="text-2xl font-black tracking-wider mt-1" style={{ color: 'var(--brand)' }}>{info.numero}</p>
-          </div>
-          <button onClick={copiarNumero}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
-            style={{
-              backgroundColor: copiado ? 'var(--success)' : 'var(--brand-tint)',
-              color: copiado ? 'white' : 'var(--brand)',
-            }}>
-            {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            {copiado ? 'Copiado!' : 'Copiar'}
-          </button>
+        <div className="space-y-2">
+          {ORDEM_PAGAMENTO.map((chave) => {
+            const info = PAYMENT_INFO[chave]
+            const estaCopiado = copiado === chave
+            // O NIB tem 21 dígitos e não cabe no mesmo corpo de letra que um
+            // número de telemóvel num ecrã estreito.
+            const numeroLongo = info.numero.length > 12
+            return (
+              <div key={chave} className="p-3 rounded-xl"
+                style={{ backgroundColor: 'var(--surface-sunk)', border: '1px solid var(--border)' }}>
+                <div className="flex items-center gap-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={info.logo} alt="" width={36} height={36}
+                    className="w-9 h-9 rounded-lg flex-shrink-0" style={{ objectFit: 'cover' }} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-gray-700 text-sm leading-tight">{info.rotulo}</p>
+                    <p className="text-muted leading-tight truncate" style={{ fontSize: '10px' }}>{info.via}</p>
+                  </div>
+                  <button onClick={() => copiar(chave, info.numero)}
+                    aria-label={`Copiar o número ${info.rotulo}`}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex-shrink-0"
+                    style={{
+                      backgroundColor: estaCopiado ? 'var(--success)' : 'var(--brand-tint)',
+                      color: estaCopiado ? 'white' : 'var(--brand)',
+                    }}>
+                    {estaCopiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {estaCopiado ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                {/* O número fica em linha própria: a 320px não cabe ao lado do
+                    botão sem encolher para um corpo de letra em que se erra a
+                    ler. É isto que a pessoa vai conferir contra a app do
+                    operador, por isso é o que manda no espaço. */}
+                <p className={`font-black mt-2 ${numeroLongo ? 'text-base tracking-tight break-all' : 'text-2xl tracking-wider'}`}
+                  style={{ color: 'var(--brand)' }}>
+                  {info.numero}
+                </p>
+              </div>
+            )
+          })}
         </div>
         <div className="h-px" style={{ backgroundColor: 'var(--background)' }} />
         <div className="flex justify-between text-sm">
           <span className="text-muted">Nome</span>
-          <span className="font-bold text-gray-700">{info.nome}</span>
+          <span className="font-bold text-gray-700">{TITULAR}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted">Valor</span>
@@ -287,23 +328,24 @@ function CampoComprovativo({
 
     setLoading(true)
     setErro('')
-    let imagemUrl: string | undefined
+    // O bucket é privado: o que segue para o servidor é o caminho do ficheiro,
+    // não um URL público. Quem precisa de ver a imagem (o admin) recebe um
+    // URL assinado de curta duração gerado do lado do servidor.
+    let imagemPath: string | undefined
 
     if (imagem) {
       setUploadProgress('A enviar imagem...')
       const supabase = createClient()
-      const ext = imagem.name.split('.').pop() ?? 'jpg'
-      const path = `${referencia}_${Date.now()}.${ext}`
+      const path = nomeDeComprovativo(referencia, imagem.name)
       const { error: upErr } = await supabase.storage
         .from('comprovativos')
         .upload(path, imagem, { contentType: imagem.type })
       if (upErr) { setErro('Erro ao enviar imagem: ' + upErr.message); setLoading(false); setUploadProgress(''); return }
-      const { data: urlData } = supabase.storage.from('comprovativos').getPublicUrl(path)
-      imagemUrl = urlData.publicUrl
+      imagemPath = path
     }
 
     setUploadProgress('A guardar comprovativo...')
-    const res = await enviarComprovativo(referencia, texto, imagemUrl)
+    const res = await enviarComprovativo(referencia, texto, imagemPath)
     if (res.error) { setErro(res.error); setLoading(false); setUploadProgress(''); return }
     setEnviado(true)
     setLoading(false)
@@ -616,7 +658,7 @@ function InscricaoComunitaria({
       <div className="p-5 space-y-4">
         {pendente?.status === 'aguardando_comprovativo' ? (
           <>
-            <DadosPagamento method="emola" valor={pendente.valor} codigoConvite={codigoConvite} />
+            <DadosPagamento valor={pendente.valor} codigoConvite={codigoConvite} />
             <CampoComprovativo referencia={pendente.referencia} onSucesso={onComprovativoEnviado} />
           </>
         ) : pendente?.status === 'pendente_confirmacao' ? (
@@ -1128,7 +1170,7 @@ function DashboardContent() {
                   <p className="font-bold text-sm" style={{ color: 'var(--money)' }}>Tens um pagamento pendente</p>
                 </div>
                 <div className="p-5 space-y-4">
-                  <DadosPagamento method={pagamentoPendente.metodo as PayMethod} valor={pagamentoPendente.valor} codigoConvite={user?.codigo_convite} />
+                  <DadosPagamento valor={pagamentoPendente.valor} codigoConvite={user?.codigo_convite} />
                   <CampoComprovativo referencia={pagamentoPendente.referencia} onSucesso={recarregarDados} />
                   {/* Também aqui, e não só logo a seguir a criar o pedido: se a
                       pessoa fechar a app e voltar, é por este caminho que o
@@ -1204,7 +1246,7 @@ function DashboardContent() {
                       <span>{avisoPedidoAberto}</span>
                     </div>
                   )}
-                  <DadosPagamento method={pedidoCriado.method} valor={pedidoCriado.valor} codigoConvite={user?.codigo_convite} />
+                  <DadosPagamento valor={pedidoCriado.valor} codigoConvite={user?.codigo_convite} />
 
                   {/* Enganou-se no valor? Corrige aqui, sem perder a referência
                       que talvez já tenha copiado para a app do E-Mola. */}
@@ -1316,7 +1358,7 @@ function DashboardContent() {
                   </div>
 
                   <div className="p-3.5 rounded-xl text-sm" style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand)' }}>
-                    Pagamento por <strong>E-Mola</strong>. Vais ver o número e enviar o comprovativo no passo seguinte.
+                    Pagamento por <strong>M-Pesa</strong>, <strong>e-Mola</strong> ou <strong>transferência bancária</strong>. Vais ver os dados e enviar o comprovativo no passo seguinte.
                   </div>
 
                   {payError && (
@@ -1332,7 +1374,7 @@ function DashboardContent() {
                     style={{ backgroundColor: 'var(--money)', color: 'var(--brand-dark)', boxShadow: '0 4px 16px rgba(239,159,39,0.3)' }}>
                     {payLoading
                       ? <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      : `Depositar ${valor ? valor + ' MT' : '...'} via E-Mola`}
+                      : `Depositar ${valor ? valor + ' MT' : '...'}`}
                   </button>
                   <p className="text-xs text-center text-muted">
                     Transferência directa · O sistema confirma o teu depósito

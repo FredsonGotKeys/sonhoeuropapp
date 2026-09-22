@@ -1,20 +1,13 @@
--- ════════════════════════════════════════════════════════════════════════════
--- POR APLICAR — requer acesso à base de dados
+-- APLICADA em 2026-09-20 (migração `restricoes_unicidade_contra_dupla_contagem`).
 --
--- Estas restrições são a defesa de último recurso contra dupla contagem de
--- dinheiro. O código em app/actions/admin.ts já foi corrigido para reivindicar
--- o pagamento e o ciclo atomicamente antes de creditar seja o que for, o que
--- fecha a janela na prática. Isto fecha-a no sítio onde ela não pode ser
--- contornada por código futuro: a própria base de dados.
+-- Diagnóstico corrido antes de aplicar: 0 depósitos com referência repetida,
+-- 0 inscrições repetidas, 0 ciclos com mais de um sorteio. Nenhum dado
+-- existente entrava em conflito.
 --
--- Como aplicar (o projecto estava hibernado quando isto foi escrito):
---   1. Acorda o projecto Supabase.
---   2. Corre PRIMEIRO as consultas de diagnóstico abaixo.
---   3. Se devolverem linhas, há duplicados JÁ EXISTENTES: resolve-os antes,
---      senão o ALTER TABLE falha. Não apagues nada sem perceber o que é.
---   4. Só então aplica as restrições.
--- ════════════════════════════════════════════════════════════════════════════
-
+-- Defesa de último recurso contra dupla contagem de dinheiro: o código em
+-- app/actions/admin.ts já reivindica o pagamento e o ciclo atomicamente antes
+-- de creditar, e isto fecha a janela no único sítio onde código futuro não a
+-- pode reabrir por distracção. Ver db/README.md.
 
 -- ─── 1. DIAGNÓSTICO: já existem duplicados? ─────────────────────────────────
 
