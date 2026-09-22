@@ -8,7 +8,7 @@ As migrações aqui são o que **já foi aplicado**, por ordem. Cada uma está
 também registada no histórico de migrações do próprio projecto com o mesmo
 nome, e pode ser consultada com `list_migrations`.
 
-## Aplicadas em 2026-09-20 (auditoria de segurança)
+## Aplicadas (auditoria de segurança)
 
 | Migração | O que faz |
 |---|---|
@@ -18,8 +18,8 @@ nome, e pode ser consultada com `list_migrations`.
 | `revogar_execute_publico_rls_auto_enable` | Tira `EXECUTE` de `PUBLIC` na função de event trigger |
 | `restricoes_unicidade_contra_dupla_contagem` | UNIQUE em `depositos.referencia_paysuite`, `inscricoes(usuario_id, ciclo_id)`, `sorteios.ciclo_id` |
 | `limites_de_tamanho_e_tipo_nos_buckets` | Limite de tamanho e tipos permitidos nos três buckets de Storage |
-| `comprovativos_bucket_privado` | Tira a leitura pública do bucket `comprovativos` |
-| `bloqueio_de_login_admin_persistente` | Contador de tentativas de login de admin, por IP e partilhado entre instâncias |
+| `comprovativos_bucket_privado` | Tira a leitura pública do bucket `comprovativos` (2026-09-22) |
+| `bloqueio_de_login_admin_persistente` | Contador de tentativas de login de admin, por IP e partilhado entre instâncias (2026-09-22) |
 
 ### Porque é que a revogação de escrita não parte nada
 
