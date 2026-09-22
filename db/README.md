@@ -19,6 +19,7 @@ nome, e pode ser consultada com `list_migrations`.
 | `restricoes_unicidade_contra_dupla_contagem` | UNIQUE em `depositos.referencia_paysuite`, `inscricoes(usuario_id, ciclo_id)`, `sorteios.ciclo_id` |
 | `limites_de_tamanho_e_tipo_nos_buckets` | Limite de tamanho e tipos permitidos nos três buckets de Storage |
 | `comprovativos_bucket_privado` | Tira a leitura pública do bucket `comprovativos` |
+| `bloqueio_de_login_admin_persistente` | Contador de tentativas de login de admin, por IP e partilhado entre instâncias |
 
 ### Porque é que a revogação de escrita não parte nada
 
@@ -50,8 +51,8 @@ Todas as 12 tabelas de `public` têm RLS activo. As tabelas com dados pessoais
 (`auth.uid() = usuario_id`). `ciclos` é legível publicamente de propósito: é o
 que a página inicial mostra a quem ainda não tem conta.
 
-`admin_financeiro`, `auditoria` e `contrato_templates` têm RLS activo e
-nenhuma política — ou seja, ninguém lhes toca excepto a service role. É
+`admin_financeiro`, `auditoria`, `contrato_templates` e
+`admin_login_tentativas` têm RLS activo e nenhuma política — ou seja, ninguém lhes toca excepto a service role. É
 intencional: são tabelas só de servidor. O linter da Supabase assinala-as como
 INFO, não como problema.
 
@@ -120,6 +121,33 @@ A leitura do bucket passa toda pela service role: não há política de `SELECT`
 em `storage.objects` para `comprovativos`, de propósito. O upload não foi
 tocado — a política de `INSERT` continua a mesma, e `public` só governa a
 leitura anónima.
+
+## Bloqueio de login do administrador
+
+O contador de tentativas vivia num `Map` em memória do processo, com a chave
+constante `'admin-login'`. Dois defeitos independentes:
+
+1. Em serverless há várias instâncias, cada uma com o seu `Map`. O limite
+   efectivo era 5 × (instâncias quentes), e um arranque a frio zerava a
+   contagem.
+2. A chave era igual para toda a gente. O bloqueio não distinguia quem
+   falhava, portanto qualquer pessoa trancava o administrador fora do painel
+   durante 15 minutos falhando cinco vezes de propósito — uma defesa virada
+   contra quem devia proteger.
+
+Agora a contagem é por IP, em `admin_login_tentativas`, partilhada por todas
+as instâncias, e o incremento é atómico (`registar_tentativa_admin`). Se a
+base de dados não responder, o código cai para a contagem antiga em memória:
+pior, mas melhor do que não contar. O que nunca acontece é saltar a
+verificação da senha.
+
+O IP vem de `x-vercel-forwarded-for` ou `x-real-ip` — cabeçalhos escritos pela
+plataforma — e só depois de `x-forwarded-for`. Ler a primeira posição de
+`x-forwarded-for` às cegas seria ler um valor que o atacante escolhe, e
+escolher o valor é escolher um contador novo a cada tentativa.
+
+Continua a ser limitação de IP: quem tenha muitos endereços tem cinco
+tentativas em cada um. A barreira real é a senha.
 
 ## Por fazer, fora do SQL
 
